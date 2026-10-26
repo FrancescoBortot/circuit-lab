@@ -95,6 +95,7 @@
     value(id,nullable=false){const s=$(id).value.trim();if(nullable&&!s)return null;return A.number(s,',');}
     readState(){
       const f=A.UNITS[$('rcTimeUnit').value],s={...copy(this.state),method:$('rcMethod').value,finalMode:$('rcFinalMode').value,finalValue:this.value('rcFinalValue'),from:this.value('rcFrom')*f,to:this.value('rcTo')*f,segment:Number($('rcSegment').value||0),timeUnit:$('rcTimeUnit').value,commonSigma:this.state.source==='experiment'&&!$('rcCommonSigma').disabled?this.value('rcCommonSigma',true):null,deltaTime:this.value('rcDeltaTime')/1000,deltaVoltage:this.value('rcDeltaVoltage'),overlay:$('rcOverlay').checked,logPlot:$('rcLogPlot').checked,stamp:this.ctx.stamp};
+      if(s.to<=s.from)throw new Error('La fine del tratto deve essere maggiore dell’inizio.');
       const scale=(id,f)=>{const v=this.value(id,true);return v===null?null:v*f;};s.reference={R:scale('rcR',1e3),C:scale('rcC',1e-9),uR:scale('rcUR',1e3),uC:scale('rcUC',1e-9),kind:$('rcReferenceKind').value,independent:$('rcIndependent').checked,...($('rcRho').value.trim()?{rho:this.value('rcRho')}:{})};window.LocalProjects.checkRCStudy(s);return s;
     }
     commit(s){const text=this.owner.snapshot();if(!text)throw new Error('Correggi il valore indicato nel circuito.');window.LocalProjects.checkStudyUpdate(text,'rcStudy',s);this.owner.save(s);this.state=copy(s);}
@@ -126,7 +127,7 @@
       $('rcCompatibility').textContent=deltaU>0?'Scarto normalizzato tra fit e R·C: '+F(Math.abs(f.tau-this.ref.tau)/deltaU,'',4)+' · assumendo indipendenza dei risultati.':'Per confrontare le incertezze servono u(V), u(R), u(C) e l’ipotesi di indipendenza. Senza questi dati vengono mostrati solo i valori.';
       const detail=document.createElement('p');detail.className='rc-fit-detail';detail.textContent='Intervallo effettivo: '+F(f.from,'s',5)+' → '+F(f.to,'s',5)+' · V∞ = '+F(f.finalValue,'V',5)+' · A = '+F(f.a,'V',5)+' · R² descrittivo = '+F(f.r2,'',5)+(f.reducedChi2===null?'':' · χ² / ν = '+F(f.reducedChi2,'',4)+' (ν = '+f.df+')');$('rcFitWarnings').append(detail);
       $('rcResidualKind').querySelector('[value=simulation]').disabled=s.source!=='experiment'||!this.ctx.points.length;if($('rcResidualKind').value==='simulation'&&(s.source!=='experiment'||!this.ctx.points.length))$('rcResidualKind').value='fit';
-      this.draw();for(const id of ['rcExportSummary','rcExportPoints','rcExportSVG','rcContinue'])$(id).disabled=false;$('rcContinue').textContent=s.source==='experiment'?'Bilancio e relazione →':'Relazione della simulazione →';
+      this.draw();for(const id of ['rcExportSummary','rcExportPoints','rcExportSVG','rcContinue'])$(id).disabled=false;$('rcContinue').textContent=s.source==='experiment'?'Bilancio e relazione →':'Relazione →';
     }
     simulationAt(x){return A.interpolate(this.ctx.points,x-this.state.deltaTime)+this.state.deltaVoltage;}
     draw(){

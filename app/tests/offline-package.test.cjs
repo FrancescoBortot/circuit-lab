@@ -32,3 +32,18 @@ with zipfile.ZipFile(folder/'Circuit-Lab-offline.zip') as archive:
 `;
   cp.execFileSync('python3',['-c',checkArchive,path.join(root,'dist')]);
 });
+
+test('public site exposes only the self-contained app and the verified offline download',()=>{
+  cp.execFileSync('python3',[path.join(root,'scripts/build-site.py')]);
+  const site=path.resolve(root,'../_site');
+  assert.deepEqual(fs.readdirSync(site).sort(),['Circuit-Lab-offline.zip','index.html']);
+  const html=fs.readFileSync(path.join(site,'index.html'),'utf8');
+  assert.match(html,/href="\.\/Circuit-Lab-offline\.zip" download=/);
+  assert.match(html,/Guida all’uso/);
+  assert.doesNotMatch(html,/data:application\/pdf|assets\/[^"']*\.pdf|JVBERi0|<script[^>]+src=|<link rel="stylesheet"/i);
+  for(const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)){
+    const hash=crypto.createHash('sha256').update(match[1]).digest('base64');
+    assert.ok(html.includes("'sha256-"+hash+"'"));
+  }
+  assert.deepEqual(fs.readFileSync(path.join(site,'Circuit-Lab-offline.zip')),fs.readFileSync(path.join(root,'dist/Circuit-Lab-offline.zip')));
+});

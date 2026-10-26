@@ -14,6 +14,11 @@ test('RC archive includes complete fit values, residuals and unchanged project',
  for(let i=1;i<rows.length;i++){const p=r.points[i-1];assert.ok(Math.abs(Number(rows[i][1])-p.y)<1e-11);assert.ok(Math.abs(Number(rows[i][4])-p.residual)<1e-11);}
  assert.match(decode(z['rc-misure.csv']),/tau_fit/);
 });
+test('report draws original observations separately from a smooth exponential model',()=>{
+ const d=fixture(),h=F.report(d),plots=[...h.matchAll(/<svg[^>]*aria-label="(?:Curva RC e fit in volt|Residui RC in volt)"[\s\S]*?<\/svg>/g)].map(m=>m[0]);
+ assert.equal(plots.length,2);for(const plot of plots)assert.equal((plot.match(/<circle /g)||[]).length,d.rcStudy.dataset.points.length);
+ const curve=plots[0].match(/<polyline points="([^"]+)"[^>]*stroke="#4264ef"/);assert.ok(curve);assert.equal(curve[1].split(' ').length,221);assert.match(h,/name="viewport"/);
+});
 test('simulation report follows analytic RC charge and discharge across six time decades',()=>{
  for(const tau of [1e-6,1e-3,1])for(const charge of [true,false]){
   const d=M.example('rc');d.components.find(c=>c.type==='R').value=10000;const capacitor=d.components.find(c=>c.type==='C');capacitor.value=tau/10000;capacitor.initial=charge?0:5;d.components.find(c=>c.type==='V').wave.level=charge?5:0;d.settings.duration=5*tau;d.settings.samples=1600;

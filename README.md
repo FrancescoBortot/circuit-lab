@@ -1,80 +1,168 @@
 # Circuit Lab
 
-Circuit Lab è un laboratorio di elettronica nel browser, pensato per chi studia fisica o ingegneria all’università. Puoi costruire un circuito, cambiare i componenti e osservare come variano tensioni, correnti e risposta in frequenza. Puoi anche importare le misure raccolte in laboratorio e confrontarle con il modello.
+Circuit Lab è un laboratorio di elettronica nel browser, pensato per chi studia fisica o ingegneria all’università. Puoi costruire un circuito, cambiare i componenti, osservare tensioni e correnti e confrontare le misure raccolte in laboratorio con un modello.
 
-L’idea è semplice: prevedere cosa dovrebbe succedere, provarlo nella simulazione e capire da dove arrivano le differenze. Gli esempi guidati aiutano a iniziare; l’editor libero permette di disegnare il proprio circuito.
+L’idea è semplice: prevedere cosa dovrebbe succedere, provarlo e capire da dove arrivano le differenze. Gli esempi guidati aiutano a iniziare; l’editor libero permette di costruire il proprio circuito.
 
-**[Scarica il pacchetto offline](app/dist/Circuit-Lab-offline.zip?raw=true)** · **[Guida rapida](docs/USO_RAPIDO.md)**
+**[Apri Circuit Lab nel browser](https://francescobortot.github.io/circuit-lab/)** · **[Scarica la versione offline](https://github.com/FrancescoBortot/circuit-lab/releases/latest/download/Circuit-Lab-offline.zip)** · **[Guida rapida](docs/USO_RAPIDO.md)**
 
-## Scarica e apri Circuit Lab
+## Inizia a usarlo
 
-Per iniziare serve un computer con un browser aggiornato, per esempio Chrome, Firefox, Edge o Safari, con JavaScript abilitato.
+Il modo più semplice è cliccare **Apri Circuit Lab nel browser**. Il sito apre direttamente il simulatore: dovresti vedere l’elenco dei circuiti a sinistra, lo schema al centro e il grafico sotto. Per iniziare scegli **Circuito RC**.
 
-1. Clicca **[Scarica il pacchetto offline](app/dist/Circuit-Lab-offline.zip?raw=true)**. Il file si chiama `Circuit-Lab-offline.zip`: cercalo nella cartella **Download** del computer. Se GitHub mostra prima la pagina del file, usa il pulsante di download in alto a destra, indicato da una freccia verso il basso.
-2. **Estrai lo ZIP.** Su Windows: clic destro sul file → **Estrai tutto…** → **Estrai**. Su macOS: doppio clic sullo ZIP. Su Linux: usa **Estrai** nel gestore dei file. Otterrai una normale cartella con i file dell’applicazione.
-3. Apri quella cartella e fai doppio clic su **Circuit Lab.html**. Se il computer lo apre con un editor, usa clic destro → **Apri con** e scegli il browser. Il nome potrebbe comparire come **Circuit Lab** se il sistema nasconde l’estensione `.html`.
-4. **Controlla l’avvio:** dovresti vedere il nome Circuit Lab, l’elenco dei circuiti a sinistra, uno schema elettrico e il grafico. Scegli **Circuito RC** per la prima prova.
+Serve un browser aggiornato con JavaScript abilitato. Non servono account, terminale, Python, Node.js o un’installazione di LTspice. Per modificare gli schemi è comodo usare un computer con mouse o trackpad e tastiera.
 
-Il file da aprire è **Circuit Lab.html**. Gli altri due file nello ZIP sono `LEGGIMI.txt`, con le istruzioni, e `integrita.json`, con i dati di verifica del pacchetto.
-
-**Accesso al download:** finché la repository è privata, devi accedere a GitHub con un account autorizzato per scaricare il pacchetto. Dopo il download, l’app funziona senza account e senza Internet. Per usarla non servono terminale, Python, Node.js o un’installazione di LTspice.
+I calcoli avvengono nel browser e l’app non invia circuiti o misure a servizi esterni. **Salva comunque una copia JSON del lavoro**, come spiegato più avanti.
 
 <details>
-<summary>Hai usato Code → Download ZIP invece del collegamento qui sopra?</summary>
+<summary>Vuoi usarlo senza Internet?</summary>
 
-Hai scaricato l’intero progetto, che contiene anche il codice e le guide. Estrai lo ZIP, apri la cartella `circuit-lab-main`, poi **app → dist → Circuit Lab.html**.
+1. Scarica **Circuit-Lab-offline.zip** dalla [versione pronta da usare](https://github.com/FrancescoBortot/circuit-lab/releases/latest/download/Circuit-Lab-offline.zip). È disponibile anche lo [ZIP incluso nel repository](app/dist/Circuit-Lab-offline.zip?raw=true).
+2. Cerca il file nella cartella **Download** ed estrailo. Su Windows: clic destro → **Estrai tutto…** → **Estrai**. Su macOS: doppio clic sullo ZIP. Su Linux: **Estrai** nel gestore dei file.
+3. Apri la cartella estratta e fai doppio clic su **Circuit Lab.html**. Se si apre un editor, scegli clic destro → **Apri con** e seleziona il browser. Il nome può comparire come **Circuit Lab** se il sistema nasconde `.html`.
+4. Controlla che compaiano lo schema RC e il grafico. Gli altri due file sono `LEGGIMI.txt`, con le istruzioni, e `integrita.json`, con i dati di verifica del pacchetto.
 
-Su macOS puoi anche usare `app/Apri versione portabile.command`. Il file HTML è il punto di ingresso comune ai diversi sistemi operativi.
+Se hai usato **Code → Download ZIP**, hai scaricato anche i sorgenti: estrai lo ZIP e apri **circuit-lab-main → app → dist → Circuit Lab.html**. Su macOS è disponibile anche `app/Apri versione portabile.command`.
+
+La versione scaricata funziona senza Internet. Il sito e il file locale hanno memorie del browser separate: per passare dall’uno all’altro, scarica e riapri il progetto JSON.
 
 </details>
 
-## Cosa puoi fare
+## Come orientarti nell’interfaccia
 
-| Se vuoi… | Parti da… |
+| Dove | A cosa serve |
 | --- | --- |
-| Capire carica, scarica e costante di tempo | Circuito RC e pannello **Misura τ** |
-| Studiare guadagno, fase e frequenza di taglio | Risposta in frequenza e diagrammi di Bode |
-| Esplorare invertente, derivatore e amplificatore delle differenze | Esperienze guidate con operazionali |
-| Disegnare un circuito personale | **Nuovo circuito**: componenti, fili, massa e sonde |
-| Analizzare misure sperimentali | Importazione CSV, fit, residui e incertezze dichiarate |
-| Conservare o presentare i risultati | Progetti JSON/ZIP, tabelle CSV, grafici SVG e relazione HTML |
+| **Elenco a sinistra** | Scegli RC, invertente, derivatore, differenze oppure l’editor libero. |
+| **Schema al centro** | Clicca i valori sottolineati per modificarli; trascina i componenti per disporli. |
+| **Pannello a destra** | Imposta componenti, segnali e analisi. **Prova guidata** propone configurazioni già pronte. |
+| **Grafico** | Cambia analisi, usa zoom e cursori, leggi le grandezze ed esporta i risultati. |
+| **Progetto e copie** | Salva o riapri il lavoro; accedi a dati, incertezze, relazione e archivio. |
 
-L’editor libero offre transitorio, analisi AC, punto di lavoro e scansione DC. Include R, C, L, generatori, operazionali e modelli didattici di diodi e transistor. Scansioni dei parametri e Monte Carlo permettono di esplorare le tolleranze dei componenti.
+Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nell’editor libero usa **Simula**; **Auto** permette di ricalcolare dopo le modifiche. Se l’app mostra un errore, leggilo e correggi la causa prima di interpretare il grafico.
 
-## Una prima prova: quanto impiega una RC a scaricarsi?
+## Prima prova: carica e scarica di una RC
 
-1. Clicca **Circuito RC** nell’elenco a sinistra. Nel menu **Prova guidata**, sopra i campi a destra, scegli **RC ideale · senza strumenti**.
-2. Nel pannello **Componenti**, imposta **R = 10 kΩ** e **C = 100 nF**, controllando le unità accanto ai valori. Puoi aprire i campi anche cliccando i valori sottolineati nello schema. Poi scegli **Solo scarica** dal menu **Prova guidata**.
-3. La previsione è `τ = R · C = 1 ms`. Dopo una costante di tempo la tensione dovrebbe essere circa il 36,8% di quella iniziale.
-4. Osserva il grafico e apri **Misura τ** per confrontare previsione e curva.
-5. Raddoppia R: prima di guardare il risultato, prova a prevedere come cambierà il tempo di scarica.
+1. Clicca **Circuito RC**. In **Prova guidata**, sopra i campi a destra, scegli **RC ideale · senza strumenti**.
+2. Nel pannello **Componenti** imposta **R = 10 kΩ** e **C = 100 nF**. Controlla le unità accanto ai valori: `100 nF` e `100 µF` descrivono circuiti molto diversi.
+3. Scegli **Solo scarica** da **Prova guidata** e osserva il transitorio.
+4. La previsione è `τ = R · C = 1 ms`. Dopo una costante di tempo resta circa il **36,8%** della tensione iniziale, misurata rispetto al valore finale.
+5. Raddoppia R. La costante di tempo dovrebbe diventare **2 ms**: prima fai la previsione, poi confrontala con il grafico.
 
-Quando aggiungi generatore, sonde e oscilloscopio, confronta il risultato con il modello del circuito completo: questi elementi possono cambiare la risposta rispetto alla RC ideale.
+Per leggere meglio la curva, ingrandisci il grafico, usa i cursori e scegli un intervallo che mostri alcune costanti di tempo. Seleziona **Due cursori** per leggere le differenze tra due istanti.
 
-## Salva il progetto, poi riaprilo
+Apri **Misura τ**, scegli **Simulazione**, seleziona un tratto di sola carica o scarica e premi **Calcola il fit**. Confronta τ ricavata dalla curva con R·C e osserva i residui, cioè gli scarti tra i punti e la curva adattata. Su campioni simulati non viene assegnata un’incertezza sperimentale inventata.
 
-Da **Progetto e copie → Scarica copia JSON** ottieni un file con circuito, parametri, impostazioni ed eventuali dati di misura. Per riprendere il lavoro usa **Apri** e scegli quel file. Puoi trasferirlo anche su un altro computer.
+Prova poi ad aggiungere generatore, sonde e oscilloscopio dal pannello dei componenti. Le loro impedenze possono cambiare la risposta: il riferimento del circuito completo può differire da quello della RC ideale.
 
-Il browser conserva una copia automatica quando possibile, ma può perderla se cancelli i dati del browser, cambi browser o sposti l’applicazione. Per conservare il lavoro, scarica il JSON prima di chiudere.
+## Seconda prova: risposta in frequenza e Bode
 
-CSV e SVG servono a portare dati e grafici in una relazione. Dal quaderno puoi preparare una relazione HTML da stampare o salvare in PDF. I calcoli e le misure rimangono sul dispositivo; i collegamenti esterni si aprono solo quando li scegli.
+Con la RC ideale da **10 kΩ e 100 nF**:
 
-## Modelli, risultati e limiti
+1. Seleziona **Bode** sopra il grafico.
+2. Imposta un intervallo di frequenze che comprenda il taglio, per esempio **10 Hz–10 kHz**.
+3. La previsione è `f_c = 1 / (2πRC) ≈ 159 Hz`. Per la RC ideale a un polo, al taglio il guadagno è circa **−3,01 dB** rispetto al valore a bassa frequenza e la fase è circa **−45°**.
+4. Usa il selettore della grandezza per passare da **Modulo (dB)** a **Fase (°)**.
+5. Aumenta R oppure C e osserva come il taglio si sposta verso frequenze più basse.
 
-Circuit Lab è uno strumento didattico in sviluppo. I componenti seguono i modelli descritti nell’interfaccia: un operazionale ideale, un modello semplificato e un componente reale possono dare risultati diversi. I modelli di diodi e transistor hanno parametri e limiti espliciti; non rappresentano automaticamente un particolare componente commerciale.
+Prima di confrontare due curve, verifica che usino lo stesso riferimento d’ingresso. L’analisi AC descrive il piccolo segnale; per vedere saturazione e forme d’onda nel tempo usa il transitorio.
 
-Il confronto numerico a risoluzione maggiore aiuta a valutare la simulazione. Per stimare un’incertezza sperimentale servono invece dati e ipotesi sul metodo di misura e sugli strumenti. Prima di usare un risultato nella relazione, controlla unità, riferimenti d’ingresso e condizioni del modello.
+## Terza prova: amplificatore invertente
 
-I file distribuiti contengono l’applicazione, gli esempi e la documentazione del progetto. **Slide e schede delle giornate di laboratorio non sono incluse.**
+1. Scegli **Amplificatore invertente** e mantieni **R₁ = 10 kΩ**, **Rf = 47 kΩ**.
+2. Da **Prova guidata** scegli **Ingresso 1 Vpp · 1 kHz**. Il guadagno atteso a bassa frequenza è circa `−Rf/R₁ = −4,7`: l’uscita è invertita e vale circa **4,7 Vpp**.
+3. Passa alla prova **Ingresso 10 Vpp · saturazione**. L’uscita richiesta dal modello lineare supera l’escursione disponibile: osserva il taglio dei picchi.
+4. Esplora **Bode** per la banda e **VTC** per la relazione tra ampiezza d’ingresso e d’uscita.
 
-## Se qualcosa non funziona
+Per i segnali periodici l’interfaccia usa **Vpp**, tensione picco-picco. Una sinusoide da 1 Vpp ha ampiezza di picco 0,5 V rispetto al proprio offset. Alimentazioni, modello dell’operazionale e carico influenzano il risultato.
 
-- **Vedi il codice anziché l’app:** scarica ed estrai lo ZIP, poi apri il file HTML con il browser. La pagina del codice su GitHub non avvia il simulatore.
-- **Il circuito libero non parte:** controlla che ci siano una massa, una sorgente e una sonda OUT collegata al nodo da misurare. Leggi il messaggio mostrato dall’app.
-- **Il grafico sembra inatteso:** verifica unità, scala degli assi, durata osservata e riferimento del segnale. Cambia un parametro alla volta.
-- **Non trovi il lavoro precedente:** apri la copia JSON salvata sul computer.
+## Importare misure RC da CSV
 
-Per segnalare un problema descrivi cosa volevi ottenere, i passaggi per riprodurlo e il risultato osservato. Se utile, allega un progetto JSON senza dati personali.
+Apri **Misura τ → Dati sperimentali → Inserisci o apri dati CSV**. Puoi aprire un file o incollare una tabella. Per una prima prova puoi copiare questi **dati sintetici**, costruiti per una scarica con τ vicina a 1 ms:
+
+```csv
+tempo_ms;tensione_V;u_V
+0;5;0.02
+0.5;3.0327;0.02
+1;1.8394;0.02
+1.5;1.1157;0.02
+2;0.6767;0.02
+3;0.2489;0.02
+4;0.0916;0.02
+```
+
+1. Imposta **Separatore = Punto e virgola**, **Unità tempo CSV = ms**, **Unità tensione CSV = V** e indica che la prima riga contiene i nomi.
+2. Associa le colonne: `tempo_ms` al tempo, `tensione_V` alla tensione e `u_V` a **u(V) standard**.
+3. Premi **Controlla e usa questi dati**. Controlla l’intervallo e scegli, per esempio, **Inizio = 0**, **Fine = 4**, con unità **ms**.
+4. Per questo esempio scegli **Fit delle tensioni**, **Valore finale V∞ → Valore noto** e **V∞ = 0 V**. Premi **Calcola il fit**.
+5. Controlla τ, grafico e residui. Una sequenza ordinata di scarti può indicare un modello inadeguato o un tratto scelto male, anche se il valore di τ sembra plausibile.
+
+`u_V` contiene incertezze standard dichiarate per l’esempio. Con misure reali usa i contributi del tuo metodo e dei tuoi strumenti. Puoi lasciare l’incertezza assente quando non la conosci: il programma mostrerà quali risultati non sono disponibili.
+
+Per provare altri formati sono inclusi [esempi CSV e progetti](app/esempi/). La [guida all’analisi RC](docs/ANALISI_RC.md) descrive metodi e ipotesi; la [guida alle misure in frequenza](docs/ANALISI_FREQUENZA.md) tratta importazione AC e confronti di Bode.
+
+## Dal fit al bilancio e alla relazione
+
+Dopo un fit RC valido:
+
+1. Con **dati importati**, premi **Bilancio e relazione →**: il quaderno apre la stessa tabella RC. Dichiara correzioni e contributi disponibili, poi calcola il bilancio.
+2. Con una **simulazione**, **Relazione →** porta ai file senza trasformare i campioni numerici in misure sperimentali.
+3. Apri **Relazione e file**, controlla l’anteprima e scarica HTML o ZIP. La relazione include curva, fit, residui e parametri del tratto selezionato.
+4. Nello ZIP trovi anche `rc-misure.csv` e `rc-dati-residui.csv`. La relazione HTML può essere stampata o salvata in PDF dal browser.
+5. Se modifichi la tabella o il circuito, torna al fit e ricalcola prima di esportare risultati aggiornati.
+
+Le incertezze del fit e il bilancio con contributi aggiuntivi hanno ipotesi distinte. Il programma le dichiara; controllale prima di riportare un numero nella relazione. Lasciare vuoto un contributo significa che non è disponibile, mentre scrivere zero significa assumerlo esatto.
+
+## Costruire un circuito nell’editor libero
+
+Per familiarizzare con l’editor puoi partire da un esempio modificabile; per un foglio vuoto usa **Nuovo circuito**.
+
+1. Aggiungi i componenti dalla libreria: per una RC servono generatore di tensione, resistenza, condensatore e massa.
+2. Con **Collega**, clicca due terminali per creare un filo. Per una RC: positivo del generatore → R → C → negativo del generatore, con il negativo collegato a massa.
+3. Imposta **OUT** sul nodo tra R e C e, se serve, **IN** sul positivo del generatore. Gli incroci dei fili non creano da soli un collegamento.
+4. Modifica valori, segnale e condizioni iniziali. Per una carica da zero, imposta una tensione iniziale del condensatore compatibile con il circuito.
+5. Scegli l’analisi e premi **Simula**. Risolvi eventuali messaggi su massa, terminali o sonde prima di leggere il risultato.
+
+Il foglio permette anche RLC, generatori di corrente, operazionali e modelli didattici di diodi e transistor. Nei circuiti non lineari, punto di lavoro e modello del componente influiscono anche sulla risposta AC.
+
+## Conservare il lavoro e condividere i risultati
+
+Da **Progetto e copie → Scarica copia JSON** ottieni il documento da riaprire con **Apri**, anche su un altro computer. Non devi riscaricare il simulatore ogni volta che inizi una nuova esperienza.
+
+| File | A cosa serve |
+| --- | --- |
+| **Progetto JSON** | Riprendere circuito, impostazioni ed eventuali dati salvati. |
+| **ZIP del progetto** | Conservare insieme progetto, relazione e file esportati. |
+| **CSV** | Portare dati e risultati in un foglio di calcolo o in un altro strumento. |
+| **SVG** | Inserire un grafico vettoriale nella relazione. |
+| **Relazione HTML** | Leggere, stampare o salvare in PDF il riepilogo dell’esperienza. |
+
+Il browser può conservare una copia automatica, ma questa dipende dal browser e dall’indirizzo dell’app. **Scarica il JSON prima di chiudere**: cancellare i dati del browser, spostare il file HTML o passare dal sito alla versione locale può rendere indisponibile la copia automatica.
+
+## Usarlo bene: controlli prima di concludere
+
+- Cambia un parametro alla volta e annota la previsione prima di simulare.
+- Controlla unità, riferimento IN/OUT e durata osservata. Per una sinusoide scegli un intervallo che mostri più periodi.
+- Se un transitorio sembra dipendere troppo dal campionamento, aumenta la risoluzione o usa il confronto di precisione disponibile.
+- Distingui incertezza sperimentale, tolleranza dei componenti ed errore numerico: rispondono a domande diverse.
+- Usa scansioni e Monte Carlo dopo aver capito il circuito nominale; dichiara distribuzioni e parametri scelti.
+- Conserva nel progetto i dati e le impostazioni che hanno prodotto il grafico esportato.
+
+## Modelli, stato del progetto e problemi comuni
+
+Circuit Lab è in sviluppo e usa modelli didattici con limiti espliciti. Un operazionale ideale, un modello semplificato e un componente commerciale possono dare risultati diversi. I modelli D/BJT/MOS non riproducono automaticamente un particolare dispositivo reale. Leggi le ipotesi mostrate dall’interfaccia.
+
+**Slide e schede delle giornate di laboratorio non sono distribuite.** Il pacchetto contiene l’applicazione e i materiali del progetto necessari al suo uso.
+
+| Problema | Cosa controllare |
+| --- | --- |
+| Vedi il codice su GitHub | Usa **Apri Circuit Lab** oppure estrai lo ZIP e apri il file HTML. |
+| Il circuito libero non parte | Massa, terminali, sorgente, OUT e messaggio mostrato dall’app. |
+| La curva è piatta o sembra tagliata | Scala, durata, frequenza, offset, alimentazioni e modello scelto. |
+| Il fit non parte o usa pochi punti | Origine dei dati, colonne/unità, intervallo e tratto senza commutazioni. |
+| Il risultato è indicato come superato | Ricalcola il fit dopo le modifiche prima di continuare alla relazione. |
+| Manca il progetto precedente | Apri il JSON scaricato; verifica browser e indirizzo usati prima. |
+
+Per segnalare un problema usa le [Issues](https://github.com/FrancescoBortot/circuit-lab/issues): descrivi i passaggi, il risultato atteso e quello osservato. Puoi allegare un progetto di esempio privo di dati personali.
 
 ## Guide per approfondire
 
@@ -89,26 +177,23 @@ Per segnalare un problema descrivi cosa volevi ottenere, i passaggi per riprodur
 <details>
 <summary>Per chi vuole modificare il codice — sezione facoltativa</summary>
 
-## Sviluppo e verifiche
-
-Il codice dell’applicazione è in `app/`; la documentazione è in `docs/`. L’interfaccia usa HTML, CSS e JavaScript e il calcolo avviene in un worker locale.
-
-Dalla radice del repository, con **Python 3** e **Node.js 24**, puoi ricostruire il pacchetto e lanciare i test:
+Il codice è in `app/` e le guide sono in `docs/`. Servono Python 3 e Node.js 24 per ricostruire e verificare la distribuzione:
 
 ```sh
 python3 app/scripts/build-offline.py
 node --test app/tests/*.test.cjs
+node app/scripts/check-rc-workflow.cjs
 ```
 
-Per una prova via HTTP sul solo computer:
+Per provare i sorgenti sul solo computer:
 
 ```sh
 python3 -m http.server 8765 --bind 127.0.0.1 --directory app
 ```
 
-Apri quindi `http://127.0.0.1:8765`. L’avvio normale della versione portabile passa direttamente dal file HTML.
+Apri `http://127.0.0.1:8765`. Per preparare il sito esegui `python3 app/scripts/build-site.py`: `_site/` conterrà soltanto l’app e lo ZIP offline.
 
-I test coprono modelli numerici, progetti, analisi dei dati e pacchetto offline. I rapporti di confronto con ngspice sono inclusi; per rigenerarli serve un’installazione separata di ngspice, indicata con `CIRCUIT_NGSPICE_BIN`. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
+Il workflow GitHub verifica modelli, dati, pacchetto e percorso RC prima di pubblicare su Pages. Per rigenerare i confronti esterni serve ngspice, indicato con `CIRCUIT_NGSPICE_BIN`; l’applicazione non lo richiede per funzionare. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
 
 Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza artificiale. I controlli automatici accompagnano lo sviluppo; il collaudo nei browser e il riscontro di chi studia restano parte della verifica.
 

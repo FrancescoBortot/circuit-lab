@@ -6,16 +6,27 @@ L’idea è semplice: prevedere cosa dovrebbe succedere, provarlo nella simulazi
 
 **[Scarica il pacchetto offline](app/dist/Circuit-Lab-offline.zip?raw=true)** · **[Guida rapida](docs/USO_RAPIDO.md)**
 
-## Parti da qui
+## Scarica e apri Circuit Lab
 
-1. Scarica il pacchetto offline dal collegamento qui sopra.
-2. Estrai lo ZIP in una cartella del computer.
-3. Apri **Circuit Lab.html** con un browser aggiornato, per esempio Chrome, Firefox, Edge o Safari.
-4. Scegli **Circuito RC** nella colonna a sinistra e modifica un componente per vedere come cambia la risposta.
+Per iniziare serve un computer con un browser aggiornato, per esempio Chrome, Firefox, Edge o Safari, con JavaScript abilitato.
 
-Puoi usarlo senza Internet. Non servono account, installazioni di Python o Node.js, né un’installazione di LTspice. JavaScript deve essere abilitato nel browser.
+1. Clicca **[Scarica il pacchetto offline](app/dist/Circuit-Lab-offline.zip?raw=true)**. Il file si chiama `Circuit-Lab-offline.zip`: cercalo nella cartella **Download** del computer. Se GitHub mostra prima la pagina del file, usa il pulsante di download in alto a destra, indicato da una freccia verso il basso.
+2. **Estrai lo ZIP.** Su Windows: clic destro sul file → **Estrai tutto…** → **Estrai**. Su macOS: doppio clic sullo ZIP. Su Linux: usa **Estrai** nel gestore dei file. Otterrai una normale cartella con i file dell’applicazione.
+3. Apri quella cartella e fai doppio clic su **Circuit Lab.html**. Se il computer lo apre con un editor, usa clic destro → **Apri con** e scegli il browser. Il nome potrebbe comparire come **Circuit Lab** se il sistema nasconde l’estensione `.html`.
+4. **Controlla l’avvio:** dovresti vedere il nome Circuit Lab, l’elenco dei circuiti a sinistra, uno schema elettrico e il grafico. Scegli **Circuito RC** per la prima prova.
 
-Se hai scaricato l’intero repository con **Code → Download ZIP**, estrailo e apri `app/dist/Circuit Lab.html`. Su macOS puoi anche usare `app/Apri versione portabile.command`. Il file HTML è il punto di ingresso comune ai diversi sistemi operativi.
+Il file da aprire è **Circuit Lab.html**. Gli altri due file nello ZIP sono `LEGGIMI.txt`, con le istruzioni, e `integrita.json`, con i dati di verifica del pacchetto.
+
+**Accesso al download:** finché la repository è privata, devi accedere a GitHub con un account autorizzato per scaricare il pacchetto. Dopo il download, l’app funziona senza account e senza Internet. Per usarla non servono terminale, Python, Node.js o un’installazione di LTspice.
+
+<details>
+<summary>Hai usato Code → Download ZIP invece del collegamento qui sopra?</summary>
+
+Hai scaricato l’intero progetto, che contiene anche il codice e le guide. Estrai lo ZIP, apri la cartella `circuit-lab-main`, poi **app → dist → Circuit Lab.html**.
+
+Su macOS puoi anche usare `app/Apri versione portabile.command`. Il file HTML è il punto di ingresso comune ai diversi sistemi operativi.
+
+</details>
 
 ## Cosa puoi fare
 
@@ -32,8 +43,8 @@ L’editor libero offre transitorio, analisi AC, punto di lavoro e scansione DC.
 
 ## Una prima prova: quanto impiega una RC a scaricarsi?
 
-1. Apri **Circuito RC** e, nelle prove guidate, scegli **RC ideale · senza strumenti**.
-2. Imposta **R = 10 kΩ** e **C = 100 nF**, poi scegli **Solo scarica**.
+1. Clicca **Circuito RC** nell’elenco a sinistra. Nel menu **Prova guidata**, sopra i campi a destra, scegli **RC ideale · senza strumenti**.
+2. Nel pannello **Componenti**, imposta **R = 10 kΩ** e **C = 100 nF**, controllando le unità accanto ai valori. Puoi aprire i campi anche cliccando i valori sottolineati nello schema. Poi scegli **Solo scarica** dal menu **Prova guidata**.
 3. La previsione è `τ = R · C = 1 ms`. Dopo una costante di tempo la tensione dovrebbe essere circa il 36,8% di quella iniziale.
 4. Osserva il grafico e apri **Misura τ** per confrontare previsione e curva.
 5. Raddoppia R: prima di guardare il risultato, prova a prevedere come cambierà il tempo di scarica.
@@ -75,7 +86,10 @@ Per segnalare un problema descrivi cosa volevi ottenere, i passaggi per riprodur
 - [Dati, incertezze e relazione](docs/FASE_6_MISURE_E_FILE.md)
 - [Tolleranze e semiconduttori](docs/FASE_7_TOLLERANZE_E_DISPOSITIVI.md)
 
-## Per chi vuole modificare il codice
+<details>
+<summary>Per chi vuole modificare il codice — sezione facoltativa</summary>
+
+## Sviluppo e verifiche
 
 Il codice dell’applicazione è in `app/`; la documentazione è in `docs/`. L’interfaccia usa HTML, CSS e JavaScript e il calcolo avviene in un worker locale.
 
@@ -97,3 +111,5 @@ Apri quindi `http://127.0.0.1:8765`. L’avvio normale della versione portabile 
 I test coprono modelli numerici, progetti, analisi dei dati e pacchetto offline. I rapporti di confronto con ngspice sono inclusi; per rigenerarli serve un’installazione separata di ngspice, indicata con `CIRCUIT_NGSPICE_BIN`. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
 
 Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza artificiale. I controlli automatici accompagnano lo sviluppo; il collaudo nei browser e il riscontro di chi studia restano parte della verifica.
+
+</details>

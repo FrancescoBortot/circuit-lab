@@ -20,7 +20,7 @@ I calcoli avvengono nel browser e l’app non invia circuiti o misure a servizi 
 1. Scarica **Circuit-Lab-offline.zip** dalla [versione pronta da usare](https://github.com/FrancescoBortot/circuit-lab/releases/latest/download/Circuit-Lab-offline.zip). È disponibile anche lo [ZIP incluso nel repository](app/dist/Circuit-Lab-offline.zip?raw=true).
 2. Cerca il file nella cartella **Download** ed estrailo. Su Windows: clic destro → **Estrai tutto…** → **Estrai**. Su macOS: doppio clic sullo ZIP. Su Linux: **Estrai** nel gestore dei file.
 3. Apri la cartella estratta e fai doppio clic su **Circuit Lab.html**. Se si apre un editor, scegli clic destro → **Apri con** e seleziona il browser. Il nome può comparire come **Circuit Lab** se il sistema nasconde `.html`.
-4. Controlla che compaiano lo schema RC e il grafico. Gli altri due file sono `LEGGIMI.txt`, con le istruzioni, e `integrita.json`, con i dati di verifica del pacchetto.
+4. Controlla che compaiano lo schema RC e il grafico. Gli altri tre file sono `LEGGIMI.txt`, con le istruzioni, `LICENSE.txt`, con la licenza MIT, e `integrita.json`, con i dati di verifica del pacchetto.
 
 Se hai usato **Code → Download ZIP**, hai scaricato anche i sorgenti: estrai lo ZIP e apri **circuit-lab-main → app → dist → Circuit Lab.html**. Su macOS è disponibile anche `app/Apri versione portabile.command`.
 
@@ -163,6 +163,10 @@ Circuit Lab è in sviluppo e usa modelli didattici con limiti espliciti. Un oper
 | Manca il progetto precedente | Apri il JSON scaricato; verifica browser e indirizzo usati prima. |
 
 Per segnalare un problema usa le [Issues](https://github.com/FrancescoBortot/circuit-lab/issues): descrivi i passaggi, il risultato atteso e quello osservato. Puoi allegare un progetto di esempio privo di dati personali.
+
+## Licenza
+
+Il codice e la documentazione del progetto sono distribuiti con [licenza MIT](LICENSE). Il pacchetto offline include `LICENSE.txt`; l’avviso completo è conservato anche nel file HTML autonomo.
 
 ## Guide per approfondire
 

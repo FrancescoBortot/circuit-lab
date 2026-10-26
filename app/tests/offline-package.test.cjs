@@ -20,10 +20,14 @@ test('portable build and student download contain the runtime without course doc
   assert.equal(manifest.sha256,crypto.createHash('sha256').update(file).digest('hex'));
   assert.equal(manifest.bytes,Buffer.byteLength(file));
   assert.equal(manifest.course_materials,false);
+  assert.equal(manifest.license,'MIT');
+  const license=fs.readFileSync(path.resolve(root,'../LICENSE'),'utf8').trim();
+  assert.ok(file.includes(license));
+  assert.equal(fs.readFileSync(path.join(root,'dist/LICENSE.txt'),'utf8').trim(),license);
   const checkArchive=`import sys,zipfile,pathlib
 folder=pathlib.Path(sys.argv[1])
 with zipfile.ZipFile(folder/'Circuit-Lab-offline.zip') as archive:
- assert sorted(archive.namelist())==['Circuit Lab.html','LEGGIMI.txt','integrita.json']
+ assert sorted(archive.namelist())==['Circuit Lab.html','LEGGIMI.txt','LICENSE.txt','integrita.json']
  assert archive.testzip() is None
  for name in archive.namelist():
   data=archive.read(name)

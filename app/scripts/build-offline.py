@@ -13,6 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 def build():
     build_solver.build()
     html = (ROOT / 'index.html').read_text()
+    license_text = (ROOT.parent / 'LICENSE').read_text().strip()
+    if not license_text.startswith('MIT License'):
+        raise ValueError('The distribution requires the project MIT license.')
+    html, notices = re.subn(r'<!doctype html>',
+                           lambda m: m[0] + '\n<!--\n' + license_text + '\n-->',
+                           html, count=1, flags=re.I)
+    if notices != 1:
+        raise ValueError('Could not include the license notice in the portable HTML.')
     if re.search(r'''(?:href|src)=["']assets/[^"']+\.pdf(?:[?#][^"']*)?["']''', html, re.I):
         raise ValueError('La distribuzione non deve includere collegamenti ai PDF locali del corso.')
     scripts = []
@@ -38,11 +46,13 @@ def build():
     destination.write_text(html)
     manifest = {'application': 'Circuit Lab', 'format': 'offline-single-html', 'file': destination.name,
                 'bytes': destination.stat().st_size, 'sha256': hashlib.sha256(destination.read_bytes()).hexdigest(),
-                'scripts': len(scripts), 'network': 'connect-src none', 'course_materials': False}
+                'scripts': len(scripts), 'network': 'connect-src none', 'course_materials': False,
+                'license': 'MIT'}
     (output / 'integrita.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    (output / 'LICENSE.txt').write_text(license_text + '\n')
     # The student download contains only the app, its instructions and integrity data.
     with zipfile.ZipFile(output / 'Circuit-Lab-offline.zip', 'w') as archive:
-        for name in ['Circuit Lab.html', 'LEGGIMI.txt', 'integrita.json']:
+        for name in ['Circuit Lab.html', 'LEGGIMI.txt', 'LICENSE.txt', 'integrita.json']:
             entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.create_system = 3

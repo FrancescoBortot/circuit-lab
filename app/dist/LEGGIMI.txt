@@ -24,6 +24,7 @@ Controlla sempre unità, impostazioni e ipotesi del modello prima di usare
 un risultato nella relazione. Prova salvataggio e riapertura del JSON
 nel tuo browser prima di iniziare una sessione di lavoro.
 
+Licenza MIT: il testo completo è in LICENSE.txt e nel file HTML.
 integrita.json riporta dimensione e SHA-256 di Circuit Lab.html.
 Uso online: https://francescobortot.github.io/circuit-lab/
 Codice e guida: https://github.com/FrancescoBortot/circuit-lab

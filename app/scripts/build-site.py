@@ -33,7 +33,7 @@ def build():
     (SITE / 'index.html').write_text(html)
     bundle = APP / 'dist/Circuit-Lab-offline.zip'
     with zipfile.ZipFile(bundle) as archive:
-        if sorted(archive.namelist()) != ['Circuit Lab.html', 'LEGGIMI.txt', 'integrita.json']:
+        if sorted(archive.namelist()) != ['Circuit Lab.html', 'LEGGIMI.txt', 'LICENSE.txt', 'integrita.json']:
             raise ValueError('Unexpected contents in the offline download.')
         for name in archive.namelist():
             payload = archive.read(name)

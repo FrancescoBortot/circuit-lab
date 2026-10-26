@@ -12,6 +12,30 @@ Apri [Circuit Lab online](https://francescobortot.github.io/circuit-lab/), oppur
 
 Gli esempi si trovano in “Parti da un esempio”. Diodi/BJT/MOS hanno modelli didattici a 27 °C con parametri e limiti visibili, non sono chip commerciali certificati.
 
+## Sessioni e prove guidate
+
+1. Scrivi il **nome della sessione** nel campo in alto. Su telefono apri le opzioni **⌄ accanto a Salva** e modifica il nome nel pannello.
+2. Scegli un circuito e una **Prova guidata**. Il suo nome resta sopra lo schema anche cambiando pannello. **Personalizzata** indica parametri o analisi diversi dalla selezione iniziale. **Nessuna prova guidata** rimuove l’etichetta senza azzerare il circuito.
+3. Le prove vengono conservate nel browser, con l’ultima versione di ciascuna combinazione sessione/circuito/prova. Le opzioni **⌄ → Prove salvate** permettono di riaprirle. Le versioni successive della stessa prova aggiornano la copia; per tenerle in sessioni distinte usa **Altre sessioni e nuova sessione → Inizia**. La nuova sessione parte dai parametri correnti senza modificare le sessioni precedenti.
+4. Premi **Salva sessione** per scaricare lo ZIP completo. Contiene una cartella della sessione, identificata anche da un codice breve, e sottocartelle dei circuiti. Ogni nome include **sessione + circuito + prova**. JSON, schema SVG e relazione HTML sono sempre inclusi; CSV e grafici corrispondono alle analisi già calcolate con quei parametri. Una modifica elettrica esclude i risultati precedenti finché non sono ricalcolati.
+5. Nei browser compatibili, **Scegli cartella…** collega una destinazione locale: poi **Salva sessione** crea le cartelle e scrive i file. La scelta non esporta nulla finché non premi Salva. Il collegamento vale per l’apertura corrente dell’app. Negli altri browser estrai lo ZIP per ottenere la stessa struttura. Rinominare la sessione genera un nuovo percorso; i vecchi file non vengono cancellati.
+
+Per riaprire una prova da file, estrai lo ZIP e scegli il suo **JSON** con **Apri**. Il manifesto `sessione.json` elenca le prove e non sostituisce i loro progetti. L’importazione dell’intero ZIP di sessione non è prevista. Il salvataggio dell’editor libero resta in **Progetto e copie**.
+
+Lo schema usa più spazio verticale: titolo e nome della prova sono nella sua barra, giornata e descrizione sono nella colonna dei circuiti. La barra tra schema e grafico continua a regolarne l’altezza.
+
+## A cosa serve Analisi
+
+Nelle esperienze guidate apri **Analisi → Che cosa vuoi studiare?**. La scelta aggiorna il grafico e mostra soltanto i relativi controlli:
+
+- **Tempo · Transitorio:** forme d’onda e carica/scarica RC. **Tempo visualizzato** stabilisce la finestra del grafico; disattiva **Durata automatica** per impostarla. I punti minimi sono in **Risoluzione del grafico**.
+- **Frequenza · Bode:** guadagno e fase al variare della frequenza, per filtri e banda passante. Scegli frequenza minima e massima; il menu sopra il grafico passa tra modulo in dB e fase in gradi. Il rapporto RC è Vout/V₁, dopo la resistenza del generatore.
+- **Ampiezza · VTC**, per gli amplificatori: uscita in Vpp al variare dell’ampiezza sinusoidale d’ingresso, a frequenza fissa. Utile per linearità e saturazione. Offset e frequenza si impostano nella stessa sezione; numero di ampiezze e metodo di calcolo sono in **Risoluzione e calcolo**.
+
+**Come leggere il grafico** spiega assi, curve e riferimento. Nell’amplificatore delle differenze puoi scegliere quale ingresso confrontare con OUT per Bode e VTC; gli ingressi del Transitorio si impostano in **Segnali**. Anche le schede sopra il grafico cambiano analisi e restano sincronizzate con il selettore.
+
+In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e confrontarli con il modello. Il pulsante degli operazionali mostra **Misure operazionali** e **VTC · banda · CMRR** su due righe. In Analisi il riepilogo dei risultati scorre con il contenuto, lasciando più spazio ai controlli. Cambiare sezione riporta il pannello all’inizio; gli errori nei parametri restano visibili e vanno corretti prima di cambiare analisi.
+
 ## Percorso consigliato per studiare
 
 Apri un’esperienza guidata o un esempio, fai una prima simulazione e modifica un solo componente alla volta. Prima prevedi il cambiamento, poi confronta le curve e misura con i cursori. Conserva circuito e impostazioni nel JSON.

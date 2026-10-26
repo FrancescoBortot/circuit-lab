@@ -10,8 +10,16 @@ Il file HTML contiene il programma, gli stili e il motore di calcolo.
 Il pacchetto non contiene slide o schede delle giornate di laboratorio.
 
 CONSERVA IL TUO LAVORO
-Da Progetto e copie scegli Scarica copia JSON. Per riprendere il lavoro,
-usa Apri e seleziona il file. La memoria automatica appartiene al browser:
+Nelle esperienze guidate, assegna il nome alla sessione in alto e scegli
+una Prova guidata. Salva sessione prepara uno ZIP con sottocartelle per
+circuito e file nominati con sessione, circuito e prova. La freccia accanto
+al pulsante apre le prove conservate e, nei browser compatibili, permette
+di scegliere una cartella locale per salvare direttamente i file.
+
+Per una singola copia JSON, apri le opzioni accanto a Salva sessione oppure
+Progetto e copie nell’editor libero e scegli Scarica copia JSON.
+Per riprendere una prova, usa Apri e seleziona il suo JSON (estrai prima
+lo ZIP, se necessario). La memoria automatica appartiene al browser:
 può cambiare spostando l’applicazione o cancellando i dati del browser.
 
 CSV esporta i dati e SVG il grafico. Dal quaderno puoi preparare una

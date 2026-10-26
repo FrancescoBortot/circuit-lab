@@ -19,7 +19,7 @@
   document.body.append(dialog);
   function refresh(text){
     const doc=Files.readJSON(text),editor=window.circuitEditor.active,state=editor?active().storageState:active().storageState();
-    $('projectCopyName').value=doc.name||'Il mio laboratorio';$('projectJSON').value=text;
+    document.querySelector('label[for=projectCopyName]').textContent=editor?'Nome del circuito':'Nome della sessione';$('projectCopyName').value=doc.name||'Il mio laboratorio';$('projectJSON').value=text;
     $('projectContents').textContent=editor?doc.components.length+' componenti · '+doc.wires.length+' fili · '+(doc.traces||[]).length+' sonde aggiuntive · vista e cursori inclusi':Object.keys(doc.circuits).length+' circuiti guidati · valori, segnali e disposizioni inclusi';
     if(doc.rcStudy)$('projectContents').textContent+=' · analisi RC'+(doc.rcStudy.dataset?' e '+doc.rcStudy.dataset.points.length+' punti originali':'')+' incluse';
     if(doc.opampStudy)$('projectContents').textContent+=' · '+doc.opampStudy.points.length+' misure operazionali incluse';
@@ -31,7 +31,7 @@
   }
   function show(){
     try{const text=snapshot();if(!text){notice('Correggi il valore indicato prima di preparare una copia.',true);return;}
-    refresh(text);$('projectDownloadStatus').textContent='';$('projectImportError').hidden=true;$('projectPaste').value='';if(!dialog.open)dialog.showModal();}catch(error){notice(error.message+' Il progetto resta aperto.',true);}
+    refresh(text);$('projectDownloadStatus').textContent='';$('projectImportError').hidden=true;$('projectPaste').value='';if(!dialog.open)dialog.showModal();document.dispatchEvent(new Event('project-panel-opened'));}catch(error){notice(error.message+' Il progetto resta aperto.',true);}
   }
   function importText(text){
     const data=Files.readJSON(text),free=window.circuitEditor.isProject(data);
@@ -46,12 +46,12 @@
   $('projectCopyName').addEventListener('change',()=>{$('projectName').value=$('projectCopyName').value.trim()||'Circuito senza titolo';$('projectName').dispatchEvent(new Event('change'));const text=snapshot();if(text)refresh(text);});
   $('projectDownload').addEventListener('click',()=>{
     $('projectName').value=$('projectCopyName').value.trim()||'Circuito senza titolo';$('projectName').dispatchEvent(new Event('change'));
-    const text=snapshot();if(!text)return;refresh(text);const name=Files.fileName($('projectCopyName').value),url=URL.createObjectURL(new Blob([text],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+    const text=snapshot();if(!text)return;refresh(text);const doc=Files.readJSON(text),name=window.circuitEditor.active?Files.fileName(doc.name):window.SessionFiles.fileName(doc),url=URL.createObjectURL(new Blob([text],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
     $('projectDownloadStatus').textContent='Download richiesto: '+name+'. La destinazione dipende dalle impostazioni dei download del browser.';
   });
   $('projectChooseFile').addEventListener('click',()=>$('projectFile').click());
   $('projectRecover').addEventListener('click',()=>{if(!snapshot())return;active().recoverPrevious();dialog.close();});
   $('projectOpenText').addEventListener('click',()=>{try{importText($('projectPaste').value);}catch(error){$('projectImportError').textContent=error.message+' Il progetto corrente è conservato.';$('projectImportError').hidden=false;}});
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();show();}});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(!window.circuitEditor.active&&window.GuidedSessions)window.GuidedSessions.save();else show();}});
   window.ProjectPanel={show,importText,updateStudies:update=>{const text=snapshot();if(!text)throw Error('Correggi prima il circuito.');if(window.circuitEditor.active){const e=window.circuitEditor,checked=window.FreeModel.parse(JSON.stringify({...Files.readJSON(text),...update}));for(const k of Object.keys(update))e.doc[k]=checked[k];e.persist();}else window.GuidedLab.updateStudies(update);}};
 })();

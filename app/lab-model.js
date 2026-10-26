@@ -1,7 +1,7 @@
 (function(root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'));
-  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'),require('./guided-trials.js'));
+  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects,root.GuidedTrials);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files,Trials) {
   'use strict';
   const clone = x => JSON.parse(JSON.stringify(x));
   const signal = (kind, vpp, frequency) => ({kind, vpp, frequency, offset:0, phase:0, duty:50, level:5});
@@ -257,7 +257,8 @@
       for(const [id,at]of Object.entries(items))if(!/^[A-Za-z][A-Za-z0-9]{0,10}$/.test(id)||!at||!Number.isFinite(at.x)||!Number.isFinite(at.y)||Math.abs(at.x)>10000||Math.abs(at.y)>10000||(at.rotation!==undefined&&![0,90,180,270].includes(at.rotation)))throw new Error('Posizione del componente '+id+' non valida.');
     }
     Files.checkRCStudy(d.rcStudy);Files.checkACStudy(d.acStudy);Files.checkOpampStudy(d.opampStudy);Files.checkMetrologyStudy(d.metrologyStudy);Files.checkParameterStudy(d.parameterStudy);
-    const normalized={experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
+    Trials.validate(d,CATALOG);
+    const normalized={...(d.session===undefined?{}:{session:d.session}),...(d.guidedTrials===undefined?{}:{guidedTrials:d.guidedTrials}),experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
   }
   function circuit(project){
     const p=project.circuits[CATALOG.find(c=>c.id===project.experiment)?.type];if(!p)throw new Error('Esperienza non disponibile.');assert(p);

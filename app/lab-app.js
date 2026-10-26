@@ -13,7 +13,15 @@
   const set=(object,path,value)=>{const keys=path.split('.'),last=keys.pop();keys.reduce((v,k)=>v[k],object)[last]=value;};
   function toast(text,error=false){clearTimeout(timer);$('toast').textContent=text;$('toast').classList.toggle('error',error);$('toast').hidden=false;timer=setTimeout(()=>$('toast').hidden=true,error?6500:3000);}
   function updateSaveStatus(){if(!window.circuitEditor?.active){$('saveStatus').textContent=storageState.ok?'Recupero automatico attivo':'Sessione locale · esporta una copia';$('saveStatus').dataset.state=storageState.ok?'saved':'unsaved';}}
-  function persist(checkpoint=false){storageState=store.write(M.serialize(project),checkpoint);updateSaveStatus();}
+  function ensureSession(){if(!project.session)project.session={id:crypto.randomUUID?crypto.randomUUID():'session-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),createdAt:new Date().toISOString()};}
+  function trialLabel(){const t=window.GuidedTrials.current(project,M.CATALOG);$('guidedTrialBadge').hidden=!t.label;$('guidedTrialName').textContent=t.label;$('guidedTrialChanged').hidden=!t.modified;$('sheetPreset').value=t.preset;}
+  function sessionState(withResult=false){
+    if(window.circuitEditor?.active)return;const detail={text:M.serialize(project)};
+    if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
+    return detail;
+  }
+  function emitState(withResult=false){const detail=sessionState(withResult);if(detail)document.dispatchEvent(new CustomEvent('guided-lab-state',{detail}));}
+  function persist(checkpoint=false){ensureSession();storageState=store.write(M.serialize(project),checkpoint);trialLabel();updateSaveStatus();emitState();}
   function activate(id){
     if(!applyFields())return;
     const next=M.selectExperience(project,id);if(!next)return;stopPlayback();project=next;quantity='voltage';selected=null;
@@ -22,7 +30,7 @@
   function renderNavigation(){
     $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[1,2].map(day=>`<section class="library-group"><h2>${day===1?'Prima':'Seconda'} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step} · pp. ${c.page}</small></span></button>`).join('')}</section>`).join('');
     const c=current();$('guidedRCAnalysis').hidden=c.type!=='rc';$('circuitKicker').textContent=`GIORNATA ${c.day} · ESPERIENZA ${c.step}`;$('circuitTitle').textContent=c.name;$('circuitDescription').textContent=c.description;
-    $$('[data-analysis]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.analysis===project.analysis));b.disabled=c.type==='rc'&&b.dataset.analysis==='vtc';b.title=b.disabled?'VTC prevista per gli amplificatori':'';});
+    $$('[data-analysis]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.analysis===project.analysis));b.disabled=c.type==='rc'&&b.dataset.analysis==='vtc';b.title=b.disabled?'VTC prevista per gli amplificatori':({time:'Segnali nel tempo: carica, scarica e forma d’onda.',bode:'Risposta in frequenza: guadagno e fase.',vtc:'Ampiezza di uscita al variare dell’ampiezza in ingresso.'})[b.dataset.analysis];});
   }
   function field(path,label,unit='',hint='',disabled=false){
     const value=get(params(),path)??M.physical(params())[path]??(path==='sweepPoints'?41:0),options=unitSets[unit];let factor=1;
@@ -37,11 +45,11 @@
     if(p.type==='rc'&&channel===1)waves.unshift(['cycle','Carica e scarica'],['charge','Carica'],['discharge','Scarica']);
     return `<section class="signal-card"><h3><span class="channel-dot ${channel===2?'teal':''}"></span>${label}</h3>${select(k+'.kind','Forma del segnale',waves)}${periodic?field(k+'.vpp','Ampiezza picco-picco','voltage')+field(k+'.frequency','Frequenza','freq')+`<div class="form-grid">${field(k+'.offset','Offset','V')}${field(k+'.phase','Fase','°')}</div>`+(w.kind==='square'?field(k+'.duty','Duty cycle','%'):''):!['discharge','ground'].includes(w.kind)?field(k+'.level','Tensione della sorgente','V'):''}${p.type==='rc'?field('initial','Tensione iniziale su C','V','Condizione del condensatore a t = 0.'):''}</section>`;
   }
-  const presets={rc:[['cycle','Carica → scarica'],['charge','Solo carica'],['discharge','Solo scarica'],['square','Onda quadra · 50 Hz'],['cutoff','Sinusoide al taglio'],['ideal','RC ideale · senza strumenti'],['direct','Oscilloscopio senza sonde'],['probe','Oscilloscopio con sonde 10×']],inverting:[['linear','Ingresso 1 Vpp · 1 kHz'],['saturation','Ingresso 10 Vpp · saturazione'],['vtc','Curva VTC · 0–10 Vpp'],['bode','Banda passante · 30 Hz–1 MHz']],derivative:[['triangle','Triangolare · verifica derivata'],['sine','Ingresso sinusoidale'],['bode','Bode · 30 Hz–1 MHz']],difference:[['independent','Sinusoide V₁ + quadra V₂'],['offset1','Offset +1 V su V₁'],['offsetBoth','Offset +1 V su entrambi'],['a1','Misura A₁ · V₂ a massa'],['a2','Misura A₂ · V₁ a massa'],['common','Modo comune · stesso ingresso'],['differential','Ingresso differenziale'],['mismatch','Modo comune · R₄ +1%']]};
+  const presets=window.GuidedTrials.PRESETS;
   function renderInspector(focus){
-    const helpOpen=Boolean($('inspectorContent').querySelector('[data-rc-help]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
-    $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Impostazioni analisi';
-    $('sheetPreset').innerHTML='<option value="">Scegli una prova…</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    const content=$('inspectorContent'),panelChanged=content.dataset.panel!==panel,helpOpen=Boolean(content.querySelector('[data-rc-help]')?.open),precisionOpen=Boolean(content.querySelector('[data-analysis-precision]')?.open),readingOpen=Boolean(content.querySelector('[data-analysis-reading]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
+    $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Analisi del circuito';
+    $('sheetPreset').innerHTML='<option value="">Nessuna prova guidata</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';
@@ -56,16 +64,30 @@
       html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent')html+=sourceFields(2,'Ingresso V₂');
       if(p.type!=='rc')html+='<p class="field-hint">Ampiezze impostate nel punto V₁/V₂ della scheda, non a vuoto sul generatore.</p>';
     }else{
-      html=`<p class="panel-description">Le impostazioni si applicano automaticamente al grafico selezionato.</p>`;
-      if(project.analysis==='time')html+=`<label class="field-checkbox" for="autoTime">Intervallo automatico<input id="autoTime" data-check="autoTime" type="checkbox" ${p.autoTime?'checked':''}></label>${field('duration','Durata totale','time','',p.autoTime)}${p.type==='rc'&&p.wave1.kind==='cycle'?field('switchTime','Inizio della scarica','time','',p.autoTime):''}${field('samples','Punti minimi','punti','Fronti e vertici vengono aggiunti automaticamente.')}<p class="field-hint">La risoluzione aumenta quando serve a rappresentare entrambi i segnali.</p>`;
-      if(project.analysis==='bode')html+=field('fmin','Frequenza minima','freq')+field('fmax','Frequenza massima','freq')+'<p class="field-hint">601 punti logaritmici. Risposta lineare a piccolo segnale: la saturazione non viene applicata.</p>';
-      if(project.analysis==='vtc')html+=field('sweepPoints','Punti della VTC','punti')+field('sweepMax','Massima ampiezza in ingresso','voltage')+field('wave1.frequency','Frequenza della sinusoide','freq')+field('wave1.offset','Offset del segnale','V')+'<p class="field-hint">Vpp,OUT misurata sull’ultimo periodo della sinusoide. Il regime è verificato confrontando due periodi; la linea tratteggiata è la previsione lineare. Calcolo locale annullabile.</p>';
-      if(p.type==='difference'&&project.analysis!=='time')html+=`<section class="form-section">${select('bodeInput','Ingresso dell’analisi',[['differential','Differenziale V₂ − V₁'],['v1','V₁ · V₂ a massa'],['v2','V₂ · V₁ a massa'],['common','Modo comune V₁ = V₂']])}</section>`;
+      const descriptions={time:p.type==='rc'?'Segui la carica e la scarica del condensatore e misura quanto tempo impiega l’uscita a cambiare.':p.type==='derivative'?'Confronta la forma dell’ingresso con l’uscita per verificare la derivazione del segnale.':'Confronta ingressi e uscita nel tempo: osserva guadagno, inversione e possibili limiti di uscita.',bode:'Scopri come cambiano guadagno e sfasamento al variare della frequenza. Utile per studiare filtri e banda passante.',vtc:'Aumenta l’ampiezza di una sinusoide a frequenza fissa e osserva dove l’uscita smette di crescere linearmente.'};
+      html=`<section class="guided-analysis-choice"><label for="guidedAnalysis">Che cosa vuoi studiare?</label><select class="form-select" id="guidedAnalysis" aria-describedby="guidedAnalysisPurpose">${[['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],...(p.type==='rc'?[]:[['vtc','Ampiezza · VTC']])].map(([value,label])=>`<option value="${value}" ${project.analysis===value?'selected':''}>${label}</option>`).join('')}</select><p id="guidedAnalysisPurpose">${descriptions[project.analysis]}</p></section>`;
+      if(p.type==='difference'&&project.analysis!=='time')html+=select('bodeInput','Quale ingresso confrontare con OUT',[['differential','Differenza V₂ − V₁'],['v1','V₁ · V₂ a massa'],['v2','V₂ · V₁ a massa'],['common','Modo comune V₁ = V₂']],'Questa scelta vale per Bode e VTC. I segnali del Transitorio si impostano in Segnali.');
+      let reading='';
+      if(project.analysis==='time'){
+        html+=`<div class="guided-analysis-settings"><h3>Intervallo del grafico</h3><label class="field-checkbox" for="autoTime">Durata automatica<input id="autoTime" data-check="autoTime" type="checkbox" ${p.autoTime?'checked':''}></label><p class="field-hint">Disattiva per scegliere il tempo da visualizzare.</p>${field('duration','Tempo visualizzato','time','Asse orizzontale del grafico.',p.autoTime)}${p.type==='rc'&&p.wave1.kind==='cycle'?field('switchTime','Inizio della scarica','time','',p.autoTime):''}</div><details class="details-settings" data-analysis-precision${precisionOpen?' open':''}><summary>Risoluzione del grafico</summary>${field('samples','Punti minimi','punti','Da 400 a 10 000. Il calcolo aggiunge fronti e vertici e aumenta la risoluzione quando serve. Maggiori valori possono richiedere più tempo.')}</details>`;
+        reading='L’asse orizzontale mostra il tempo.'+(p.type==='rc'?' Dal menu sopra il grafico scegli Tensioni oppure Corrente in R; l’asse verticale mostra la grandezza scelta.':' L’asse verticale mostra le tensioni di ingresso e uscita.')+' Attiva Due cursori per leggere valori e differenze tra due istanti.';
+      }
+      if(project.analysis==='bode'){
+        html+=`<div class="guided-analysis-settings"><h3>Intervallo delle frequenze</h3>${field('fmin','Frequenza minima','freq')}${field('fmax','Frequenza massima','freq')}</div><p class="field-hint">Risposta a piccolo segnale, attorno al punto di lavoro: la curva descrive il comportamento lineare del modello.</p>`;
+        reading='L’asse orizzontale è la frequenza in Hz, su scala logaritmica. Nel menu sopra il grafico scegli Modulo (dB) o Fase (°). 0 dB corrisponde a un rapporto di ampiezza pari a 1; 20 dB a 10.'+(p.type==='rc'?' Il rapporto è Vout/V₁, dopo la resistenza del generatore.':p.type==='difference'?' Il rapporto è riferito all’ingresso scelto qui sopra.':' Il rapporto è Vout/V₁.')+' La curva usa 601 frequenze.'+(p.type==='rc'?' Per vedere carica e scarica scegli Tempo · Transitorio.':' La saturazione si osserva nel Transitorio o nella VTC.');
+      }
+      if(project.analysis==='vtc'){
+        html+=`<div class="guided-analysis-settings"><h3>Sinusoide della prova</h3>${field('sweepMax','Ampiezza massima in ingresso','voltage','La scansione parte da 0 Vpp.')}${field('wave1.frequency','Frequenza fissa','freq')}${field('wave1.offset','Offset','V')}</div><details class="details-settings" data-analysis-precision${precisionOpen?' open':''}><summary>Risoluzione e calcolo</summary>${field('sweepPoints','Ampiezze da provare','punti','Da 11 a 101. Per ogni ampiezza si calcola la risposta a regime.')}<p class="field-hint">Il regime è verificato confrontando due periodi; Vpp,OUT è misurata sull’ultimo. Puoi annullare il calcolo dal pulsante sopra il grafico.</p></details>`;
+        reading='L’asse orizzontale mostra l’ampiezza in ingresso (Vpp), quello verticale l’ampiezza di uscita (Vpp). La linea tratteggiata è la previsione lineare. Per osservare la saturazione scegli un operazionale con limiti in Componenti.';
+      }
+      html+=`<details class="details-settings guided-analysis-reading" data-analysis-reading${readingOpen?' open':''}><summary>Come leggere il grafico</summary><p>${reading}</p></details><p class="guided-analysis-auto">Le modifiche avviano il calcolo del grafico in basso.</p>`;
     }
-    if(p.type!=='rc')html='<button class="rc-launch rc-launch-panel" data-open-opamp>Misure operazionali · VTC, banda e CMRR</button>'+html;
-    if(p.type==='rc')html='<button class="rc-launch rc-launch-panel" data-open-rc>Misura τ · tempo e frequenza</button>'+html;
+    const measureButton=p.type==='rc'?'<button class="rc-launch rc-launch-panel" data-open-rc><span>Misura τ</span><small>Tempo e frequenza</small></button>':'<button class="rc-launch rc-launch-panel" data-open-opamp><span>Misure operazionali</span><small>VTC · banda · CMRR</small></button>';
+    html=panel==='analysis'?html+'<section class="guided-analysis-measures"><h3>Hai misure di laboratorio?</h3><p>Importa i dati e confrontali con il modello.</p>'+measureButton+'</section>':measureButton+html;
     if(p.type==='rc'&&panel==='components')html+='<details class="details-settings component-help" data-rc-help'+(helpOpen?' open':'')+'><summary>Come R e C cambiano la risposta</summary><p>R limita la corrente; C accumula carica. Nel circuito RC ideale, τ = R·C = <strong>'+format(p.R*p.C,'s',4)+'</strong>. Raddoppiare R oppure C raddoppia il tempo caratteristico.</p><p>Dopo una τ resta il 36,8% della differenza dal valore finale. Generatore, sonde e oscilloscopio possono modificare la risposta: nel pannello Misura τ trovi i riferimenti distinti.</p></details>';
-    $('inspectorContent').innerHTML=html;
+    content.innerHTML=html;content.dataset.panel=panel;trialLabel();
+    if(panel==='analysis')content.after($('summary'));else $('resetCircuit').before($('summary'));
+    if(panelChanged)content.parentElement.scrollTop=0;
     if(focus){const input=$('inspectorContent').querySelector(`[data-field="${focus}"], [data-select="${focus}"]`);if(input){input.focus({preventScroll:true});input.select?.();input.closest('.field').scrollIntoView({block:'nearest'});}}
   }
   function setInspector(open){$('appLayout').classList.toggle('inspector-closed',!open);$('editButton').setAttribute('aria-expanded',String(open));requestAnimationFrame(()=>plot.draw());}
@@ -123,7 +145,7 @@
     const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;stopPlayback();calculating=true;calculationReady=false;$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();diagram.render(p,project.layouts[p.type]||{},selected);measurements();try{
       const result=await tasks.run(analysis==='time'?'guidedTime':analysis==='bode'?'guidedBode':'guidedVtc',{params:p},fraction=>{if(revision===calculationRevision)$('calculationStatus').textContent='Calcolo locale · '+Math.round(fraction*100)+'%';});if(revision!==calculationRevision)return;data=result;calculating=false;calculationReady=true;
       quantityControls();renderLegend();
-      plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
+      plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
       diagram.render(p,project.layouts[p.type]||{},selected);measurements();
       $('timeline').hidden=project.analysis!=='time';$('timelineDuration').textContent=format(p.duration,'s');
       $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
@@ -132,7 +154,7 @@
       $('resultNotice').hidden=!clipped&&!zeroCommon;
       $('resultNotice').textContent=clipped?(p.opamp==='physical'?'Uno o più limiti fisici sono attivi (alimentazione, slew rate o corrente). I valori si modificano nell’operazionale.':'Saturazione nella retroazione: escursione ±'+format(p.rail-p.headroom,'V')+'.'):zeroCommon?'Rapporti resistivi bilanciati: il modo comune si annulla nel modello. Introduci una differenza tra R₄/R₃ e Rf/R₁ per misurare un CMRR finito.':'';
       $('rotateComponent').disabled=!['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected);
-      showErrors({});
+      showErrors({});emitState(true);
     }catch(error){if(revision!==calculationRevision)return;calculating=false;$('exportCSV').disabled=true;$('exportSVG').disabled=true;$('calculationStatus').textContent=error.name==='AbortError'?'Calcolo annullato':'Calcolo non disponibile';if(error.name!=='AbortError')toast('Calcolo non disponibile: '+error.message,true);}
     finally{if(revision===calculationRevision)$('guidedCancel').textContent='Ricalcola';}
   }
@@ -146,7 +168,7 @@
     $('timeCursor').setAttribute('aria-valuetext',project.analysis==='time'?format(d.x,'s',4):format(d.x,''));
   }
   function applyPreset(key){
-    if(!key)return;let p=copy(params());const w=p.wave1;
+    if(!applyFields())return;if(!key){window.GuidedTrials.select(project,'',M.CATALOG);renderInspector();persist();return;}let p=copy(params());const w=p.wave1;
     if(p.type==='rc'){
       if(['cycle','charge','discharge'].includes(key)){w.kind=key;p.initial=key==='discharge'?w.level:0;}
       if(['square','ideal','direct','probe'].includes(key)){Object.assign(w,{kind:'square',frequency:50,vpp:4,offset:2,phase:0});p.initial=0;}
@@ -165,7 +187,7 @@
       if(key==='common'||key==='mismatch'){p.drive='common';p.bodeInput='common';if(key==='mismatch')p.R4=p.Rf*1.01;}
       if(key==='differential'){p.drive='differential';p.bodeInput='differential';}project.analysis='time';
     }
-    p.autoTime=true;project.circuits[p.type]=M.normalizeTime(p);quantity='voltage';renderNavigation();renderInspector();calculate();persist();
+    p.autoTime=true;project.circuits[p.type]=M.normalizeTime(p);window.GuidedTrials.select(project,key,M.CATALOG);quantity='voltage';renderNavigation();renderInspector();calculate();persist();
   }
   function stopPlayback(){if(frame)cancelAnimationFrame(frame);frame=null;animation=null;$('playButton').setAttribute('aria-pressed','false');$('playButton').setAttribute('aria-label','Anima la lettura del transitorio');$('playButton').innerHTML='<svg><use href="#i-play"/></svg>';}
   function play(){if(animation){stopPlayback();return;}if(!valid||project.analysis!=='time')return;plot.fit();const start=plot.cursor?.x/params().duration||0;animation={time:performance.now(),fraction:start>.99?0:start};$('playButton').setAttribute('aria-pressed','true');$('playButton').setAttribute('aria-label','Metti in pausa la lettura');$('playButton').innerHTML='<svg><use href="#i-pause"/></svg>';
@@ -175,20 +197,22 @@
   const plot=new window.LabPlot($('plot'),cursor);
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));
-  $$('[data-analysis]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;project.analysis=b.dataset.analysis;panel='analysis';quantity=project.analysis==='bode'?'db':'voltage';renderNavigation();renderInspector();calculate();persist();}));
+  function changeAnalysis(value){if(!['time','bode','vtc'].includes(value)||(value==='vtc'&&params().type==='rc'))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
+  $$('[data-analysis]').forEach(b=>b.addEventListener('click',()=>changeAnalysis(b.dataset.analysis)));
   $('editButton').addEventListener('click',()=>{setInspector(true);panel='components';renderInspector();const input=$('inspectorContent').querySelector('input');if(input){input.focus({preventScroll:true});input.select();}});
   $('closeInspector').addEventListener('click',()=>setInspector(false));
   $('inspectorContent').addEventListener('input',e=>{if(e.target.matches('[data-field]')){clearTimeout(debounce);debounce=setTimeout(()=>applyFields(),140);}});
   $('inspectorContent').addEventListener('change',e=>{
     const el=e.target;
-    if(el.matches('[data-unit]')){const physical=Number(el.parentElement.querySelector('input').value)*Number(el.dataset.previous),factor=Number(el.value);units[el.dataset.unit]=factor;el.dataset.previous=String(factor);el.parentElement.querySelector('input').value=Number((physical/factor).toPrecision(12));applyFields();}
+    if(el.id==='guidedAnalysis')changeAnalysis(el.value);
+    else if(el.matches('[data-unit]')){const physical=Number(el.parentElement.querySelector('input').value)*Number(el.dataset.previous),factor=Number(el.value);units[el.dataset.unit]=factor;el.dataset.previous=String(factor);el.parentElement.querySelector('input').value=Number((physical/factor).toPrecision(12));applyFields();}
     else if(el.matches('[data-select]'))applyFields(true,el.dataset.select);
     else if(el.matches('[data-check]'))applyFields(true);
     else if(el.matches('[data-field]'))applyFields();
   });
   $('inspectorContent').addEventListener('click',e=>{if(e.target.closest('#balanceResistors')){const p=params();p.R3=p.R1;p.R4=p.Rf;renderInspector();calculate();persist();}});
   $('sheetPreset').addEventListener('change',()=>applyPreset($('sheetPreset').value));
-  $('resetCircuit').addEventListener('click',()=>{project.circuits[current().type]=M.defaults(current().type);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();diagram.fit();calculate();persist(true);toast('Valori della scheda ripristinati.');});
+  $('resetCircuit').addEventListener('click',()=>{project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();diagram.fit();calculate();persist(true);toast('Valori della scheda ripristinati.');});
   $('rotateComponent').addEventListener('click',()=>diagram.rotate());$('diagramIn').addEventListener('click',()=>diagram.zoom(1.2));$('diagramOut').addEventListener('click',()=>diagram.zoom(1/1.2));$('diagramFit').addEventListener('click',()=>diagram.fit());
   $('resetLayout').addEventListener('click',()=>{delete project.layouts[params().type];diagram.fit();diagram.render(params(),{},selected);persist();});
   $('toggleSchematic').addEventListener('click',()=>{const collapsed=$('appLayout').classList.toggle('schematic-collapsed');$('toggleSchematic').textContent=collapsed?'Espandi schema':'Riduci schema';});
@@ -199,7 +223,7 @@
   let resizeStart;
   function resizeSchematic(height){
     const workbench=$('schematicStage').closest('.workbench'),available=workbench.getBoundingClientRect().height;
-    const maximum=window.matchMedia('(max-width:760px)').matches?440:Math.max(120,available-430);
+    const maximum=window.matchMedia('(max-width:760px)').matches?440:Math.max(180,available-385);
     document.documentElement.style.setProperty('--diagram-height',Math.max(120,Math.min(maximum,height))+'px');
   }
   $('paneDivider').addEventListener('pointerdown',e=>{resizeStart={y:e.clientY,height:$('schematicStage').getBoundingClientRect().height};$('paneDivider').setPointerCapture(e.pointerId);});
@@ -207,18 +231,18 @@
   for(const type of ['pointerup','pointercancel'])$('paneDivider').addEventListener(type,()=>resizeStart=null);
   $('paneDivider').addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();resizeSchematic($('schematicStage').getBoundingClientRect().height+(e.key==='ArrowUp'?-20:20));}});
   function download(content,mime,name){const url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
-  $('saveProject').addEventListener('click',()=>window.ProjectPanel.show());
+  $('saveProject').addEventListener('click',()=>window.circuitEditor?.active||!window.GuidedSessions?window.ProjectPanel.show():window.GuidedSessions.save());
   $('openProject').addEventListener('click',()=>$('projectFile').click());
   $('projectFile').addEventListener('change',async()=>{const file=$('projectFile').files[0];if(!file)return;try{if(file.size>window.LocalProjects.MAX_BYTES)throw new Error('Il progetto supera il limite di 1 MB.');window.ProjectPanel.importText(await file.text());}catch(error){toast(error.message,true);}finally{$('projectFile').value='';}});
   $('guidedCancel').addEventListener('click',()=>calculating?tasks.cancel():calculate());
-  $('exportCSV').addEventListener('click',()=>{if(!applyFields()||calculating)return;download(M.csv(params(),project.analysis,data),'text/csv;charset=utf-8',current().type+'-'+project.analysis+'.csv');toast('Download CSV richiesto al browser · unità SI.');});
-  $('exportSVG').addEventListener('click',()=>{const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Arial,sans-serif;font-size:10px;fill:#7185a1}.axis-unit,.guide-text{font-size:9px}';svg.prepend(style);download(svg.outerHTML,'image/svg+xml',current().type+'-'+project.analysis+'.svg');toast('Download SVG richiesto al browser.');});
+  $('exportCSV').addEventListener('click',()=>{if(!applyFields()||calculating)return;download(M.csv(params(),project.analysis,data),'text/csv;charset=utf-8',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.csv');toast('Download CSV richiesto al browser · unità SI.');});
+  $('exportSVG').addEventListener('click',()=>{const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Arial,sans-serif;font-size:10px;fill:#7185a1}.axis-unit,.guide-text{font-size:9px}';svg.prepend(style);download(svg.outerHTML,'image/svg+xml',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.svg');toast('Download SVG richiesto al browser.');});
   $('projectName').addEventListener('change',()=>{if(window.circuitEditor?.active)return;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();});
   $('helpButton').addEventListener('click',()=>window.circuitEditor?.active?window.circuitEditor.showHelp():$('helpDialog').showModal());for(const id of ['closeHelp','helpDone'])$(id).addEventListener('click',()=>$('helpDialog').close());
   function loadProject(text){const next=M.parse(text);if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();diagram.fit();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}
-  window.GuidedLab={updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());}};
+  window.GuidedLab={sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
   const loaded=store.read();if(loaded.doc){project=loaded.doc;storageState.ok=true;}else if(!loaded.error)try{const old=localStorage.getItem('rc-studio-project-v1');if(old)project=M.parse(old);}catch{}
   if(loaded.recovered||loaded.error)setTimeout(()=>toast(loaded.recovered?'Recuperata la copia precedente del laboratorio: la più recente non era leggibile.':loaded.error,true),200);
-  $('projectName').value=project.name;renderNavigation();renderInspector();calculate();updateSaveStatus();
+  ensureSession();$('projectName').value=project.name;renderNavigation();renderInspector();calculate();persist();
   if(window.matchMedia('(max-width:760px)').matches)setInspector(false);
 })();

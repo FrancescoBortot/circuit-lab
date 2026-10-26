@@ -2,7 +2,7 @@
 from pathlib import Path
 import json
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ['rc-analysis.js', 'ac-analysis.js', 'opamp-analysis.js', 'metrology.js', 'local-projects.js', 'semiconductors.js', 'free-model.js', 'parameter-study.js', 'rc-model.js', 'lab-model.js', 'study-context.js']
+FILES = ['rc-analysis.js', 'ac-analysis.js', 'opamp-analysis.js', 'metrology.js', 'local-projects.js', 'semiconductors.js', 'free-model.js', 'parameter-study.js', 'rc-model.js', 'guided-trials.js', 'lab-model.js', 'study-context.js']
 DISPATCH = '''
 self.onmessage = event => {
   const {action, doc, params} = event.data;

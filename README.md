@@ -36,9 +36,12 @@ La versione scaricata funziona senza Internet. Il sito e il file locale hanno me
 | **Schema al centro** | Clicca i valori sottolineati per modificarli; trascina i componenti per disporli. |
 | **Pannello a destra** | Imposta componenti, segnali e analisi. **Prova guidata** propone configurazioni già pronte. |
 | **Grafico** | Cambia analisi, usa zoom e cursori, leggi le grandezze ed esporta i risultati. |
-| **Progetto e copie** | Salva o riapri il lavoro; accedi a dati, incertezze, relazione e archivio. |
+| **Salva sessione / ⌄**, nelle esperienze guidate | Assegna un nome alla sessione, conserva le prove e prepara cartelle con progetti e risultati. |
+| **Progetto e copie**, nell’editor libero | Salva o riapri il lavoro; accedi a dati, incertezze, relazione e archivio. |
 
 Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nell’editor libero usa **Simula**; **Auto** permette di ricalcolare dopo le modifiche. Se l’app mostra un errore, leggilo e correggi la causa prima di interpretare il grafico.
+
+In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Frequenza · Bode** oppure **Ampiezza · VTC** (per gli amplificatori). Il pannello spiega lo scopo della prova e mostra i relativi controlli. **Come leggere il grafico** chiarisce assi e curve; risoluzione e dettagli del calcolo si aprono su richiesta. In fondo trovi gli strumenti per confrontare il modello con misure raccolte in laboratorio.
 
 ## Prima prova: carica e scarica di una RC
 
@@ -126,7 +129,11 @@ Il foglio permette anche RLC, generatori di corrente, operazionali e modelli did
 
 ## Conservare il lavoro e condividere i risultati
 
-Da **Progetto e copie → Scarica copia JSON** ottieni il documento da riaprire con **Apri**, anche su un altro computer. Non devi riscaricare il simulatore ogni volta che inizi una nuova esperienza.
+Nelle **esperienze guidate**, scrivi il nome della sessione in alto e scegli una **Prova guidata**. Il nome della prova resta sopra lo schema; **personalizzata** indica che ne hai cambiato parametri o analisi. Le opzioni **⌄ → Prove salvate** permettono di riaprire l’ultima copia di ciascuna combinazione sessione/circuito/prova. Da **Altre sessioni e nuova sessione** puoi iniziarne un’altra mantenendo le precedenti.
+
+**Salva sessione** scarica uno ZIP con una cartella della sessione e sottocartelle dei circuiti. I nomi dei file includono sessione, circuito e prova. Sono inclusi JSON, schema e relazione; CSV e grafici corrispondono alle analisi già calcolate con i parametri salvati. Nei browser compatibili, **⌄ → Scegli cartella…** permette di scegliere una destinazione locale: al successivo salvataggio l’app crea la struttura e scrive i file. Negli altri browser basta estrarre lo ZIP. Per riaprire una prova scegli il suo JSON con **Apri**.
+
+Per una singola copia JSON usa **⌄ → Scarica copia JSON** nelle esperienze guidate oppure **Progetto e copie → Scarica copia JSON** nell’editor libero. Il documento si riapre con **Apri**, anche su un altro computer. Non devi riscaricare il simulatore ogni volta che inizi una nuova esperienza.
 
 | File | A cosa serve |
 | --- | --- |

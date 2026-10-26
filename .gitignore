@@ -11,11 +11,24 @@
 *.pdf
 *.PDF
 
+# Credenziali e chiavi private.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+.aws/
+.ssh/
+
 # Dati grezzi e progetti personali di collaudo.
 /app/benchmark/**/*.dat
 /app/benchmark/**/*.log
 /app/benchmark/editor/
 /app/benchmark/phase6-demo/
+/app/benchmark/rc-workflow/
 
 # Guide distribuite; i registri storici restano in locale.
 /docs/*

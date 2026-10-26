@@ -24,6 +24,8 @@ Per riaprire una prova da file, estrai lo ZIP e scegli il suo **JSON** con **Apr
 
 Lo schema usa più spazio verticale: titolo e nome della prova sono nella sua barra, giornata e descrizione sono nella colonna dei circuiti. La barra tra schema e grafico continua a regolarne l’altezza.
 
+Per togliere l’evidenziazione di un componente, **clicca sullo sfondo dello schema oppure premi Esc**. Vale anche per l’editor libero, dove Esc interrompe anche un collegamento iniziato. Deselezionare conserva i valori validi modificati; interrompere un trascinamento ripristina la posizione precedente. Nell’editor libero un valore non valido resta da correggere prima di chiudere la sua modifica, così non viene perso.
+
 ## A cosa serve Analisi
 
 Nelle esperienze guidate apri **Analisi → Che cosa vuoi studiare?**. La scelta aggiorna il grafico e mostra soltanto i relativi controlli:

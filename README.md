@@ -41,6 +41,8 @@ La versione scaricata funziona senza Internet. Il sito e il file locale hanno me
 
 Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nell’editor libero usa **Simula**; **Auto** permette di ricalcolare dopo le modifiche. Se l’app mostra un errore, leggilo e correggi la causa prima di interpretare il grafico.
 
+Per deselezionare un componente, **clicca sullo sfondo dello schema o premi Esc**. Nell’editor libero Esc interrompe anche un collegamento iniziato. I valori validi modificati restano conservati.
+
 In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Frequenza · Bode** oppure **Ampiezza · VTC** (per gli amplificatori). Il pannello spiega lo scopo della prova e mostra i relativi controlli. **Come leggere il grafico** chiarisce assi e curve; risoluzione e dettagli del calcolo si aprono su richiesta. In fondo trovi gli strumenti per confrontare il modello con misure raccolte in laboratorio.
 
 ## Prima prova: carica e scarica di una RC

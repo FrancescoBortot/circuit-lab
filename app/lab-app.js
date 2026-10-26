@@ -91,6 +91,13 @@
     if(focus){const input=$('inspectorContent').querySelector(`[data-field="${focus}"], [data-select="${focus}"]`);if(input){input.focus({preventScroll:true});input.select?.();input.closest('.field').scrollIntoView({block:'nearest'});}}
   }
   function setInspector(open){$('appLayout').classList.toggle('inspector-closed',!open);$('editButton').setAttribute('aria-expanded',String(open));requestAnimationFrame(()=>plot.draw());}
+  function clearSelection(){
+    diagram.cancelGesture();selected=null;$('rotateComponent').disabled=true;
+    $$('#inspectorContent .field.selected').forEach(field=>field.classList.remove('selected'));
+    if(panel==='components')$('inspectorTitle').textContent='Componenti';
+    if($('schematic').contains(document.activeElement))$('schematic').focus({preventScroll:true});
+    diagram.render(params(),project.layouts[params().type]||{},null);
+  }
   function selectComponent(id){
     if(!applyFields())return;
     selected=id;panel=id==='V1'||id==='V2'?'signals':'components';setInspector(true);
@@ -193,7 +200,8 @@
   function play(){if(animation){stopPlayback();return;}if(!valid||project.analysis!=='time')return;plot.fit();const start=plot.cursor?.x/params().duration||0;animation={time:performance.now(),fraction:start>.99?0:start};$('playButton').setAttribute('aria-pressed','true');$('playButton').setAttribute('aria-label','Metti in pausa la lettura');$('playButton').innerHTML='<svg><use href="#i-pause"/></svg>';
     const tick=now=>{if(!animation)return;const f=animation.fraction+(now-animation.time)/8000;plot.setFraction(Math.min(f,1));if(f>=1)stopPlayback();else frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
   }
-  const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
+  const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,deselect:clearSelection,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||window.circuitEditor?.active||e.target.closest('select,dialog')||document.querySelector('dialog[open]'))return;clearSelection();});
   const plot=new window.LabPlot($('plot'),cursor);
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));

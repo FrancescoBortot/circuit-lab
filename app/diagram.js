@@ -10,7 +10,9 @@
       svg.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.008),this.point(e));},{passive:false});
       svg.addEventListener('pointerdown',e=>this.down(e));svg.addEventListener('pointermove',e=>this.move(e));
       for(const type of ['pointerup','pointercancel'])svg.addEventListener(type,e=>this.up(e));
+      svg.addEventListener('lostpointercapture',e=>this.up({pointerId:e.pointerId,type:'pointercancel'}));
       svg.addEventListener('keydown',e=>{
+        if(e.ctrlKey||e.metaKey||e.altKey)return;
         const id=e.target.closest('[data-component]')?.dataset.component;
         if(id&&['Enter',' '].includes(e.key)){e.preventDefault();this.callbacks.select(id);}
         if(id&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const c=this.components[id],d=e.shiftKey?20:5;this.commit(id,{x:c.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),y:c.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0),rotation:c.rotation});}
@@ -90,7 +92,7 @@
       const vertical=['resistor','capacitor'].includes(c.kind)&&rot%180===90;
       const labelX=c.kind==='source'?-38:vertical?36:0,anchor=c.kind==='source'?'end':vertical?'start':'middle';
       const nameY=c.kind==='opamp'?-55:c.kind==='source'?-3:vertical?-5:-26,valueY=c.kind==='opamp'?68:c.kind==='source'?18:vertical?17:39;
-      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${labelX}" y="${valueY}" text-anchor="${anchor}">${c.value}</text>`}</g>`;
+      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${labelX}" y="${valueY}" text-anchor="${anchor}">${c.value}</text>`}</g>`;
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     transform(){const g=this.svg.querySelector('#diagramScene');if(g)g.setAttribute('transform',`translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);this.callbacks.zoom?.(Math.round(this.view.k*100));}
@@ -98,8 +100,10 @@
     fit(){this.view={x:0,y:0,k:1};this.transform();}
     rotate(){const id=this.selected,c=this.components[id];if(!c||!['resistor','capacitor'].includes(c.kind))return;this.commit(id,{x:c.x,y:c.y,rotation:(c.rotation+90)%360});}
     commit(id,value){this.layout[id]=value;this.callbacks.move(id,value);this.render(this.p,this.layout,this.selected);}
+    cancelDrag(){const drag=this.drag;this.drag=null;if(drag?.id&&drag.moved){this.components[drag.id]={...drag.start};this.draw();}}
+    cancelGesture(){this.cancelDrag();const pointers=[...this.pointers.keys()];this.pointers.clear();this.pinch=null;for(const id of pointers)if(this.svg.hasPointerCapture(id))this.svg.releasePointerCapture(id);}
     down(e){if(e.button!==0)return;const point=this.point(e);this.pointers.set(e.pointerId,point);this.svg.setPointerCapture(e.pointerId);
-      if(this.pointers.size===2){const[a,b]=[...this.pointers.values()];this.pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};this.drag=null;return;}
+      if(this.pointers.size>=2){this.cancelDrag();const[a,b]=[...this.pointers.values()];this.pinch=this.pointers.size===2?{distance:Math.hypot(a.x-b.x,a.y-b.y),mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}:null;return;}
       const id=e.target.closest('[data-component]')?.dataset.component;this.drag={id,point,start:id?{...this.components[id]}:{...this.view},moved:false};
     }
     move(e){if(!this.pointers.has(e.pointerId))return;const point=this.point(e);this.pointers.set(e.pointerId,point);
@@ -107,7 +111,10 @@
       if(!this.drag)return;const dx=point.x-this.drag.point.x,dy=point.y-this.drag.point.y;if(Math.hypot(dx,dy)>4)this.drag.moved=true;
       if(this.drag.moved){if(this.drag.id){const c=this.drag.start;this.components[this.drag.id]={...c,x:bounded(Math.round((c.x+dx/this.view.k)/5)*5,60,860,c.x),y:bounded(Math.round((c.y+dy/this.view.k)/5)*5,38,this.p.type==='difference'?300:245,c.y)};this.draw();}else{this.view.x=this.drag.start.x+dx;this.view.y=this.drag.start.y+dy;this.transform();}}
     }
-    up(e){if(this.drag?.id&&e.type==='pointerup'){const id=this.drag.id,c=this.components[id];if(this.drag.moved)this.commit(id,{x:c.x,y:c.y,rotation:c.rotation});this.callbacks.select(id);}this.pointers.delete(e.pointerId);this.drag=null;this.pinch=null;}
+    up(e){if(!this.pointers.has(e.pointerId))return;const drag=this.drag;this.drag=null;this.pointers.delete(e.pointerId);this.pinch=null;
+      if(e.type==='pointerup'&&drag){if(drag.id){const id=drag.id,c=this.components[id];if(drag.moved)this.commit(id,{x:c.x,y:c.y,rotation:c.rotation});this.callbacks.select(id);}else if(!drag.moved)this.callbacks.deselect?.();}
+      else if(drag?.id&&drag.moved){this.components[drag.id]={...drag.start};this.draw();}
+    }
   }
   window.LabDiagram=LabDiagram;
 })();

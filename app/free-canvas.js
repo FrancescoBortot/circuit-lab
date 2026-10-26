@@ -6,8 +6,10 @@
     constructor(svg,callbacks){
       this.svg=svg;this.callbacks=callbacks;this.view={x:0,y:0,w:1000,h:600};this.mode='select';this.pointers=new Map();
       svg.addEventListener('pointerdown',e=>this.down(e));svg.addEventListener('pointermove',e=>this.move(e));for(const t of ['pointerup','pointercancel'])svg.addEventListener(t,e=>this.up(e));
+      svg.addEventListener('lostpointercapture',e=>this.up({pointerId:e.pointerId,type:'pointercancel'}));
       svg.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.007),this.point(e));},{passive:false});
       svg.addEventListener('keydown',e=>{
+        if(e.ctrlKey||e.metaKey||e.altKey)return;
         const pin=e.target.closest('[data-pin]')?.dataset.pin,id=e.target.closest('[data-part]')?.dataset.part,wire=e.target.closest('[data-wire]')?.dataset.wire;
         if(['Enter',' '].includes(e.key)&&(pin||id||wire)){e.preventDefault();if(pin)this.callbacks.pin(pin);else this.callbacks.select(id?'component':'wire',id||wire,e.shiftKey||this.mode==='multi');}
         if(id&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const c=this.doc.components.find(c=>c.id===id),d=e.shiftKey?40:10;this.callbacks.move(id,c.x+(e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0),c.y+(e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0));}
@@ -77,27 +79,35 @@
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     reveal(ref){const p=this.port(ref);if(p.x<this.view.x+35||p.x>this.view.x+this.view.w-35||p.y<this.view.y+35||p.y>this.view.y+this.view.h-35){this.view.x=p.x-this.view.w/2;this.view.y=p.y-this.view.h/2;}this.draw();this.callbacks.view?.();}
+    restoreDrag(drag){
+      if(drag.groupStart)for(const start of drag.groupStart){const c=this.doc.components.find(c=>c.id===start.id);if(c)Object.assign(c,{x:start.x,y:start.y});}
+      else if(drag.id){const c=this.doc.components.find(c=>c.id===drag.id);if(c)Object.assign(c,{x:drag.start.x,y:drag.start.y});}
+      if(drag.wire){const index=this.doc.wires.findIndex(w=>w.id===drag.wire);if(index>=0)this.doc.wires[index]={...drag.wireStart};}
+    }
+    cancelDrag(){const drag=this.drag;this.drag=null;if(drag&&(drag.moved||drag.region)){this.restoreDrag(drag);this.draw();}}
+    cancelGesture(){this.cancelDrag();const pointers=[...this.pointers.keys()];this.pointers.clear();this.pinch=null;for(const id of pointers)if(this.svg.hasPointerCapture(id))this.svg.releasePointerCapture(id);}
     down(e){if(e.button!==0)return;const point=this.point(e);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});this.svg.setPointerCapture(e.pointerId);
-      if(this.pointers.size===2){const[a,b]=[...this.pointers.values()];this.pinch=Math.hypot(a.x-b.x,a.y-b.y);this.drag=null;return;}
+      if(this.pointers.size>=2){this.cancelDrag();const[a,b]=[...this.pointers.values()];this.pinch=this.pointers.size===2?Math.hypot(a.x-b.x,a.y-b.y):null;return;}
       const pin=e.target.closest('[data-pin]')?.dataset.pin,id=e.target.closest('[data-part]')?.dataset.part,wire=e.target.closest('[data-wire]')?.dataset.wire;
       this.drag={pin,id,wire,point,matrix:this.svg.getScreenCTM().inverse(),view:{...this.view},start:id?{...this.doc.components.find(c=>c.id===id)}:null,moved:false,multi:e.shiftKey||this.mode==='multi',wireStart:wire?{...this.doc.wires.find(w=>w.id===wire)}:null,groupStart:id&&this.selection?.kind==='group'&&this.selection.ids.includes(id)?this.doc.components.filter(c=>this.selection.ids.includes(c.id)).map(c=>({id:c.id,x:c.x,y:c.y})):null};
     }
     move(e){
       const point=this.point(e),pending=this.svg.querySelector('#freePendingWire');if(pending&&this.pending){const a=this.port(this.pending);pending.setAttribute('d',`M${a.x},${a.y}H${point.x}V${point.y}`);}
       if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(this.pointers.size===2&&this.pinch){const[a,b]=[...this.pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);this.zoom(distance/this.pinch);this.pinch=distance;return;}
+      if(this.pointers.size===2&&this.pinch!==null&&this.pinch!==undefined){const[a,b]=[...this.pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);if(this.pinch>0&&distance>0)this.zoom(distance/this.pinch);this.pinch=distance;return;}
       if(!this.drag||this.drag.pin)return;const fixed=new DOMPoint(e.clientX,e.clientY).matrixTransform(this.drag.matrix),dx=fixed.x-this.drag.point.x,dy=fixed.y-this.drag.point.y;if(Math.hypot(dx,dy)>5)this.drag.moved=true;
       if(this.drag.wire){if(this.drag.moved){const w=this.doc.wires.find(w=>w.id===this.drag.wire),a=this.port(w.a),b=this.port(w.b),original=this.drag.wireStart;w.route=original.route&&original.route!=='auto'?original.route:a.dx&&b.dx?'horizontal':'vertical';w.offset=Math.round(((original.offset||0)+(w.route==='horizontal'?dx:dy))/10)*10;this.draw();}return;}
       if(!this.drag.id&&this.drag.multi){this.drag.region={x0:Math.min(this.drag.point.x,fixed.x),y0:Math.min(this.drag.point.y,fixed.y),x1:Math.max(this.drag.point.x,fixed.x),y1:Math.max(this.drag.point.y,fixed.y)};this.draw();return;}
       if(this.drag.moved){if(this.drag.groupStart){for(const start of this.drag.groupStart){const c=this.doc.components.find(c=>c.id===start.id);c.x=start.x+Math.round(dx/10)*10;c.y=start.y+Math.round(dy/10)*10;}this.draw();}else if(this.drag.id){const c=this.doc.components.find(c=>c.id===this.drag.id);c.x=Math.round((this.drag.start.x+dx)/10)*10;c.y=Math.round((this.drag.start.y+dy)/10)*10;this.draw();}else{this.view.x=this.drag.view.x-dx;this.view.y=this.drag.view.y-dy;this.draw();}}
     }
     up(e){
-      const drag=this.drag;if(drag&&e.type==='pointerup'){
+      if(!this.pointers.has(e.pointerId))return;const drag=this.drag;this.drag=null;this.pointers.delete(e.pointerId);this.pinch=null;
+      if(drag&&e.type==='pointerup'){
         if(drag.pin)this.callbacks.pin(drag.pin);
-        else if(drag.id){if(drag.moved){if(drag.groupStart){const c=this.doc.components.find(c=>c.id===drag.id),start=drag.groupStart.find(c=>c.id===drag.id),dx=c.x-start.x,dy=c.y-start.y;for(const s of drag.groupStart)Object.assign(this.doc.components.find(c=>c.id===s.id),{x:s.x,y:s.y});this.callbacks.moveGroup(drag.groupStart.map(c=>c.id),dx,dy);}else{const c=this.doc.components.find(c=>c.id===drag.id),x=c.x,y=c.y;c.x=drag.start.x;c.y=drag.start.y;this.callbacks.move(drag.id,x,y);}}else this.callbacks.select('component',drag.id,drag.multi);}
-        else if(drag.wire){if(drag.moved){const w=this.doc.wires.find(w=>w.id===drag.wire),route=w.route,offset=w.offset;Object.assign(w,drag.wireStart);this.callbacks.moveWire(drag.wire,route,offset);}else this.callbacks.select('wire',drag.wire);}else if(drag.moved&&drag.region)this.callbacks.region(drag.region);else if(!drag.moved)this.callbacks.select(null,null);
-      }this.pointers.delete(e.pointerId);this.drag=null;this.pinch=null;
-      if(drag&&e.type==='pointercancel'&&drag.moved){if(drag.groupStart)for(const s of drag.groupStart)Object.assign(this.doc.components.find(c=>c.id===s.id),{x:s.x,y:s.y});else if(drag.id){const c=this.doc.components.find(c=>c.id===drag.id);c.x=drag.start.x;c.y=drag.start.y;}if(drag.wire)Object.assign(this.doc.wires.find(w=>w.id===drag.wire),drag.wireStart);this.draw();}if(drag?.region)this.draw();
+        else if(drag.id){if(drag.moved){if(drag.groupStart){const c=this.doc.components.find(c=>c.id===drag.id),start=drag.groupStart.find(c=>c.id===drag.id),dx=c.x-start.x,dy=c.y-start.y;this.restoreDrag(drag);this.callbacks.moveGroup(drag.groupStart.map(c=>c.id),dx,dy);}else{const c=this.doc.components.find(c=>c.id===drag.id),x=c.x,y=c.y;this.restoreDrag(drag);this.callbacks.move(drag.id,x,y);}}else this.callbacks.select('component',drag.id,drag.multi);}
+        else if(drag.wire){if(drag.moved){const w=this.doc.wires.find(w=>w.id===drag.wire),route=w.route,offset=w.offset;this.restoreDrag(drag);this.callbacks.moveWire(drag.wire,route,offset);}else this.callbacks.select('wire',drag.wire);}else if(drag.moved&&drag.region)this.callbacks.region(drag.region);else if(!drag.moved){this.svg.focus({preventScroll:true});this.callbacks.select(null,null);}
+      }else if(drag?.moved)this.restoreDrag(drag);
+      if(drag&&(drag.moved||drag.region))this.draw();
       if(drag?.moved&&!drag.id&&!drag.wire&&!drag.multi)this.callbacks.view?.();
     }
     zoom(factor,anchor={x:this.view.x+this.view.w/2,y:this.view.y+this.view.h/2}){const w=Math.max(220,Math.min(4000,this.view.w/factor)),ratio=w/this.view.w;this.view={x:anchor.x-(anchor.x-this.view.x)*ratio,y:anchor.y-(anchor.y-this.view.y)*ratio,w,h:this.view.h*ratio};this.draw();this.callbacks.view?.();}

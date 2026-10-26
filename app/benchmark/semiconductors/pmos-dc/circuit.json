@@ -1,0 +1,128 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "MOSFET PMOS · source comune",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 150,
+      "y": 280,
+      "rotation": 0,
+      "wave": {
+        "kind": "sine",
+        "level": 5,
+        "vpp": 0.02,
+        "frequency": 1000,
+        "offset": -2.5,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002,
+        "dc": -2.5
+      }
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 150,
+      "y": 460,
+      "rotation": 0
+    },
+    {
+      "id": "Vcc",
+      "type": "V",
+      "x": 750,
+      "y": 280,
+      "rotation": 0,
+      "wave": {
+        "kind": "dc",
+        "level": -5,
+        "vpp": 2,
+        "frequency": 1000,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002,
+        "dc": -5
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 620,
+      "y": 160,
+      "rotation": 0,
+      "value": 1000
+    },
+    {
+      "id": "M1",
+      "type": "M",
+      "x": 500,
+      "y": 300,
+      "rotation": 0,
+      "polarity": "p",
+      "kp": 0.001,
+      "vto": 1.5,
+      "lambda": 0.02,
+      "bodyIs": 1e-14
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W2",
+      "a": "Vcc:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W3",
+      "a": "Vcc:p",
+      "b": "R1:a"
+    },
+    {
+      "id": "W4",
+      "a": "V1:p",
+      "b": "M1:g"
+    },
+    {
+      "id": "W5",
+      "a": "M1:s",
+      "b": "G1:g"
+    },
+    {
+      "id": "W6",
+      "a": "R1:b",
+      "b": "M1:d"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "M1:d"
+  },
+  "settings": {
+    "duration": 0.003,
+    "samples": 2400,
+    "fmin": 10,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "dc",
+    "dcSource": "V1",
+    "dcStart": -4,
+    "dcStop": 0,
+    "dcPoints": 121
+  },
+  "traces": [
+    {
+      "id": "P1",
+      "kind": "current",
+      "component": "M1"
+    }
+  ]
+}

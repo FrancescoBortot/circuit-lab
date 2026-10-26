@@ -1,0 +1,8 @@
+Circuit Lab independent RC benchmark
+V1 in 0 PULSE(0 5 0 0 0 10m 20m)
+R1 in out 10k
+C1 out 0 100n IC=0
+.tran 0 6m 0 1u UIC
+.options plotwinsize=0
+.save V(in) V(out)
+.end

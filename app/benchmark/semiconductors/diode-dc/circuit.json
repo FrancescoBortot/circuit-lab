@@ -1,0 +1,106 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "Diodo · caratteristica e rampa delle slide",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 150,
+      "y": 280,
+      "rotation": 0,
+      "wave": {
+        "kind": "pwl",
+        "level": 5,
+        "vpp": 2,
+        "frequency": 1000,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002,
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            20,
+            20
+          ]
+        ],
+        "dc": 0
+      }
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 150,
+      "y": 460,
+      "rotation": 0
+    },
+    {
+      "id": "D1",
+      "type": "D",
+      "x": 550,
+      "y": 280,
+      "rotation": 0,
+      "is": 3.5e-11,
+      "n": 1.5
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 350,
+      "y": 180,
+      "rotation": 0,
+      "value": 500
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W2",
+      "a": "V1:p",
+      "b": "R1:a"
+    },
+    {
+      "id": "W3",
+      "a": "R1:b",
+      "b": "D1:a"
+    },
+    {
+      "id": "W4",
+      "a": "D1:b",
+      "b": "G1:g"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "D1:a"
+  },
+  "settings": {
+    "duration": 20,
+    "samples": 2400,
+    "fmin": 10,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "dc",
+    "dcSource": "V1",
+    "dcStart": -10,
+    "dcStop": 20,
+    "dcPoints": 121
+  },
+  "traces": [
+    {
+      "id": "P1",
+      "kind": "current",
+      "component": "D1"
+    }
+  ]
+}

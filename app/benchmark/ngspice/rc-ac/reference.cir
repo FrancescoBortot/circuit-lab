@@ -1,0 +1,14 @@
+Circuit Lab independent ngspice reference
+V_V1 N1 0 DC 0 AC 1
+R_R1 N1 N2 10000
+C_C1 N2 0 1e-7 IC=0
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+ac dec 50 1 1e6
+wrdata reference.dat real(v(N2)) imag(v(N2))
+quit
+.endc
+.end

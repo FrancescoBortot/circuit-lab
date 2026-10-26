@@ -1,0 +1,22 @@
+Circuit Lab · Invertente libero
+* ngspice subset: generated from explicit connections; no hidden ground or leakage.
+* Transient initial conditions require UIC. DC bias is separate from the waveform.
+* CLAB_OUT N3
+* CLAB_IN N1
+V_V1 N1 0 DC 0.000000000000000e+0 AC 1.000000000000000e+0 0.000000000000000e+0 SIN(0.000000000000000e+0 5.000000000000000e-1 1.000000000000000e+3 0 0 0.000000000000000e+0)
+R_R1 N1 N2 1.000000000000000e+4
+C_U1state Z_U1 0 7.957747154594767e-3 IC=0.000000000000000e+0
+B_U1state Z_U1 0 I=-(v(Z_U1)>=1.350000000000000e+1 ? min(0,(2.000000000000000e+5*(v(0)-v(N2))-v(Z_U1)))-(v(Z_U1)-1.350000000000000e+1) : (v(Z_U1)<=-1.350000000000000e+1 ? max(0,(2.000000000000000e+5*(v(0)-v(N2))-v(Z_U1)))-(v(Z_U1)--1.350000000000000e+1) : (2.000000000000000e+5*(v(0)-v(N2))-v(Z_U1))))
+E_U1out N3 0 Z_U1 0 1
+R_Rf N2 N3 4.700000000000000e+4
+* Model definitions are generic; original JSON is needed for full editing and measurement data.
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+dc V_V1 -5 5 0.1
+wrdata reference.dat v(N3)
+quit
+.endc
+.end

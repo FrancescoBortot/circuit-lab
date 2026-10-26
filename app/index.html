@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; worker-src blob:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob:; font-src 'self' file:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Circuit Lab · Laboratorio di fisica</title>
+  <meta name="description" content="Costruisci circuiti da zero o esplora le esperienze di laboratorio: componenti, collegamenti e simulazioni locali.">
+  <meta name="theme-color" content="#f6f8fb">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%233e5ff6'/%3E%3Cpath d='M19 16v32l29-16z' stroke='white' fill='none' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="lab.css?v=phase2">
+  <link rel="stylesheet" href="free-editor.css?v=phase2">
+  <link rel="stylesheet" href="rc-workbench.css?v=phase2">
+  <script defer src="rc-analysis.js?v=phase2"></script><script defer src="ac-analysis.js?v=phase2"></script>
+  <script defer src="opamp-analysis.js?v=phase4"></script><script defer src="metrology.js?v=phase6"></script><script defer src="local-projects.js?v=phase2"></script><script defer src="semiconductors.js?v=phase7"></script><script defer src="free-model.js?v=phase2"></script><script defer src="rc-model.js?v=phase2"></script><script defer src="lab-model.js?v=phase2"></script>
+  <script defer src="solver-source.js?v=phase2"></script><script defer src="solver-tasks.js?v=phase2"></script>
+  <script defer src="measurements.js?v=phase2"></script><script defer src="diagram.js?v=phase2"></script><script defer src="plot.js?v=phase2"></script><script defer src="lab-app.js?v=phase2"></script>
+  <script defer src="circuit-operations.js?v=phase3"></script><script defer src="free-canvas.js?v=phase3"></script><script defer src="analysis-views.js?v=phase5"></script><script defer src="free-editor.js?v=phase3"></script>
+  <script defer src="study-context.js?v=phase2"></script>
+  <script defer src="spice-netlist.js?v=phase6"></script><script defer src="spice-import.js?v=phase6"></script><script defer src="lab-files.js?v=phase6"></script><script defer src="parameter-study.js?v=phase7"></script>
+  <script defer src="project-panel.js?v=phase2"></script>
+  <script defer src="rc-workbench.js?v=phase2"></script><script defer src="ac-workbench.js?v=phase2"></script><script defer src="opamp-workbench.js?v=phase4"></script>
+<link rel="stylesheet" href="opamp-workbench.css?v=phase4">
+<link rel="stylesheet" href="lab-workbench.css?v=phase6">
+<script defer src="lab-workbench.js?v=phase6"></script><script defer src="parameter-workbench.js?v=phase7"></script>
+</head>
+<body>
+<svg class="icon-definitions" aria-hidden="true"><defs>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/><rect x="8" y="8" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 1 9M4 3v6h6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v14H3V3ZM7 3v6h10V3M7 21v-8h10v8"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 4v6h6M3.5 10a9 9 0 1 1 1.3 8"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 4 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+</defs></svg>
+<header class="topbar">
+  <div class="brand"><span class="brand-symbol">▷</span>Circuit<span>Lab</span><i></i></div>
+  <span class="topbar-divider"></span><input id="projectName" class="project-name" value="Il mio laboratorio" maxlength="80" aria-label="Nome del progetto">
+  <div class="topbar-actions"><button class="save-status" id="saveStatus" title="Progetto, copie e funzionamento locale"><i></i>Solo sul dispositivo</button>
+    <button class="button" id="newCircuit" aria-label="Nuovo circuito"><svg><use href="#i-plus"/></svg><span>Nuovo circuito</span></button>
+    <button class="button subtle" id="openProject"><svg><use href="#i-folder"/></svg><span>Apri</span></button>
+    <button class="button primary" id="saveProject" aria-label="Progetto e copie" aria-haspopup="dialog"><svg><use href="#i-save"/></svg><span>Progetto e copie</span></button>
+    <button class="icon-button" id="helpButton" aria-label="Guida: come modificare e simulare"><svg><use href="#i-info"/></svg></button>
+  </div>
+</header>
+<div class="app-layout" id="appLayout">
+  <aside class="library" aria-label="Circuiti del laboratorio">
+    <div class="library-title">IL TUO LABORATORIO</div>
+    <nav id="circuitList" aria-label="Scegli il circuito"></nav>
+    <div class="library-bottom">
+      <span class="offline-note"><i></i>Calcoli sul tuo dispositivo</span>
+    </div>
+  </aside>
+  <main class="workbench">
+    <div class="circuit-heading"><div><div class="circuit-kicker" id="circuitKicker">GIORNATA 1 · ESPERIENZA 1a</div><h1 id="circuitTitle">Circuito RC</h1><p id="circuitDescription"></p></div><button class="button edit-button" id="editButton" aria-expanded="true"><svg><use href="#i-settings"/></svg>Modifica componenti</button></div>
+    <section class="schematic-pane" aria-labelledby="schematicTitle">
+      <div class="pane-toolbar"><div class="pane-title"><h2 id="schematicTitle">Schema</h2><span class="live-badge">Modificabile</span></div>
+        <div class="schematic-tools"><button class="icon-button" id="rotateComponent" aria-label="Ruota il componente selezionato" title="Ruota il componente selezionato"><svg><use href="#i-rotate"/></svg></button><span class="tool-divider"></span><button class="icon-button" id="diagramOut" aria-label="Riduci schema"><svg><use href="#i-minus"/></svg></button><span id="diagramZoom" class="zoom-number">100%</span><button class="icon-button" id="diagramIn" aria-label="Ingrandisci schema"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="diagramFit" aria-label="Centra schema"><svg><use href="#i-fit"/></svg></button><button class="icon-button" id="resetLayout" aria-label="Ripristina disposizione dei componenti" title="Ripristina disposizione"><svg><use href="#i-reset"/></svg></button></div>
+      </div>
+      <div class="schematic-stage" id="schematicStage"><svg id="schematic" role="group" tabindex="0" aria-label="Schema modificabile: clicca un componente per modificarne i valori, trascinalo per spostarlo."></svg></div>
+      <div class="schematic-hint"><span><i></i><strong>Clicca un valore per modificarlo.</strong> Trascina i componenti per disporli.</span><button class="text-button" id="toggleSchematic">Riduci schema</button></div>
+    </section>
+    <div class="pane-divider" id="paneDivider" role="separator" aria-label="Ridimensiona schema e grafico" aria-orientation="horizontal" tabindex="0"><span></span></div>
+    <section class="analysis-pane" aria-labelledby="analysisTitle">
+      <div class="analysis-toolbar"><div class="analysis-tabs" role="group" aria-label="Tipo di analisi"><button data-analysis="time" aria-pressed="true">Transitorio</button><button data-analysis="bode" aria-pressed="false">Bode</button><button data-analysis="vtc" aria-pressed="false">VTC</button></div>
+        <div class="analysis-actions"><select id="plotQuantity" aria-label="Grandezza visualizzata"><option value="voltage">Tensioni</option><option value="current">Corrente in R</option></select><button class="text-button" id="guidedCancel" hidden>Annulla calcolo</button><button class="text-button export-button" id="exportCSV"><svg><use href="#i-download"/></svg>CSV</button><button class="icon-button" id="exportSVG" aria-label="Esporta il grafico SVG" title="Esporta il grafico SVG"><svg><use href="#i-save"/></svg></button></div>
+      </div>
+      <h2 id="analysisTitle" class="sr-only">Risultati della simulazione</h2>
+      <div class="plot-meta"><div id="plotLegend" class="plot-legend"></div><button class="rc-launch" data-open-rc id="guidedRCAnalysis">Misura τ</button><span id="calculationStatus" class="calculation-status">Aggiornamento automatico</span></div>
+      <div class="plot-area"><svg id="plot" role="img" tabindex="0" aria-label="Grafico interattivo: rotella per zoom, trascina per spostare, frecce per il cursore."></svg></div>
+      <div class="plot-bottom"><div class="readout" id="readout" tabindex="0" aria-label="Letture dei cursori, scorri per tutte le sonde"></div><div class="plot-tools"><button id="plotOut" class="icon-button" aria-label="Riduci grafico"><svg><use href="#i-minus"/></svg></button><button id="plotIn" class="icon-button" aria-label="Ingrandisci grafico"><svg><use href="#i-plus"/></svg></button><button id="plotFit" class="icon-button" aria-label="Mostra tutto il grafico"><svg><use href="#i-fit"/></svg></button></div></div>
+      <div class="timeline" id="timeline"><button id="playButton" class="icon-button" aria-label="Anima la lettura del transitorio" aria-pressed="false"><svg><use href="#i-play"/></svg></button><input type="range" id="timeCursor" min="0" max="10000" value="1500" aria-label="Istante di lettura"><span id="timelineDuration"></span></div>
+      <div class="result-notice" id="resultNotice" role="status" hidden></div>
+    </section>
+  </main>
+  <aside class="inspector" id="inspector" aria-label="Modifica circuiti e impostazioni">
+    <div class="inspector-heading"><div><span class="inspector-eyebrow">MODIFICA IL CIRCUITO</span><h2 id="inspectorTitle">Componenti</h2></div><button id="closeInspector" class="icon-button" aria-label="Chiudi pannello di modifica"><svg><use href="#i-close"/></svg></button></div>
+    <div class="inspector-tabs" role="group" aria-label="Impostazioni da modificare"><button data-panel="components" aria-pressed="true">Componenti</button><button data-panel="signals" aria-pressed="false">Segnali</button><button data-panel="analysis" aria-pressed="false">Analisi</button></div>
+    <div class="inspector-scroll"><div class="sheet-preset"><label for="sheetPreset">PROVA GUIDATA</label><select id="sheetPreset"></select></div><div id="inspectorContent"></div></div>
+    <div class="inspector-summary" id="summary"></div>
+    <button class="reset-circuit" id="resetCircuit"><svg><use href="#i-reset"/></svg>Ripristina questo circuito</button>
+  </aside>
+</div>
+<input id="projectFile" type="file" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" hidden></div>
+<dialog id="helpDialog">
+  <div class="dialog-heading"><div><span class="inspector-eyebrow">COME FUNZIONA</span><h2>Il circuito si modifica qui.</h2></div><button id="closeHelp" class="icon-button" aria-label="Chiudi guida"><svg><use href="#i-close"/></svg></button></div>
+  <ol class="help-steps"><li><strong>Scegli un’esperienza a sinistra.</strong><p>Parti da RC, invertente, derivatore o amplificatore delle differenze.</p></li><li><strong>Clicca R, C o l’operazionale nello schema.</strong><p>Il pannello a destra mostra i valori da modificare. Puoi anche trascinare i componenti e ruotare resistenze e condensatori; i fili li seguono.</p></li><li><strong>Imposta l’ingresso in “Segnali”.</strong><p>Ampiezze sempre in Vpp per le forme periodiche; offset, frequenza e fase sono indipendenti. Nel differenziale puoi usare due segnali diversi o gli stessi ingressi delle misure A₁, A₂ e di modo comune.</p></li><li><strong>Passa tra Transitorio, Bode e VTC.</strong><p>Bode mostra la risposta a piccolo segnale. La VTC mostra l’ampiezza Vpp di uscita in funzione della Vpp d’ingresso, a frequenza fissata. Il grafico e i risultati cambiano automaticamente.</p></li></ol>
+  <details><summary>Modelli fisici e limiti</summary><p>R e C sono ideali. Il modello RC con strumenti comprende 50 Ω del generatore (modificabili) e le impedenze d’ingresso di entrambi i canali dell’oscilloscopio. I valori di capacità delle sonde e dei cavi sono esempi modificabili, da sostituire con quelli del tuo montaggio.</p><p>“TL082 semplificato” usa un guadagno aperto a un polo: A₀ = 200 000 e GBW = 4 MHz, con limiti d’uscita regolabili; i valori iniziali ±13,5 V corrispondono all’escursione tipica indicata con ±15 V e carico di 10 kΩ nel <a href="https://www.st.com/resource/en/datasheet/tl082.pdf" target="_blank" rel="noopener">datasheet ST</a>. Nel transitorio la saturazione viene risolta nel circuito di retroazione, con lo stesso motore dell’editor libero. La VTC in ampiezza misura l’ultimo periodo del transitorio, dopo aver verificato il regime. Il modello “Fisico semplificato” aggiunge slew rate interno, resistenza e limite bidirezionale di corrente d’uscita e alimentazioni indipendenti: i valori iniziali sono esempi generici modificabili. Rumore, offset, CMRR intrinseco, assorbimento dalle alimentazioni e recupero reale dalla saturazione non sono inclusi.</p><p>Il CMRR visualizzato riguarda i rapporti delle quattro resistenze: valori esattamente bilanciati danno cancellazione perfetta nel modello. Non rappresenta un CMRR infinito dell’operazionale reale.</p><p>La RC e gli operazionali ideali usano l’evoluzione esponenziale delle reti lineari; gli operazionali a banda finita usano il motore nodale del secondo ordine dell’editor libero; i fronti e i vertici delle onde sono inseriti nel campionamento. Non è un motore SPICE generale. Le topologie sono quelle guidate della scheda; posizione, orientamento e valori dei componenti sono modificabili.</p></details>
+  <details><summary>Tastiera, zoom e salvataggio</summary><p>Schema e grafico hanno zoom indipendenti. Usa rotella o pinch, oppure + e −; 0 centra la vista. Sul componente selezionato, le frecce lo spostano (Maiusc per passi maggiori); Invio apre i valori. Sul grafico le frecce spostano il cursore. La barra tra schema e grafico ne regola lo spazio.</p><p>Il progetto conserva tutti i circuiti, i valori, i segnali e le disposizioni. “Progetto e copie” permette di scaricare un JSON; “Apri” lo ripristina. Sono importabili anche i progetti della precedente versione RC Studio. CSV e SVG esportano l’analisi attuale.</p></details>
+  <button id="helpDone" class="button primary">Ho capito</button>
+</dialog>
+<noscript>Abilita JavaScript per modificare e simulare i circuiti. Non servono account o installazioni.</noscript>
+</body>
+</html>

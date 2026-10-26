@@ -1,0 +1,109 @@
+{
+  "engineSha256": "9e3929f6ffc8c3a6350cdbd99419170a48e7dd2daf116274544df5cdc5671222",
+  "reference": "ngspice, compiled locally from official verified source",
+  "version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n******",
+  "externalConnectionDuringSimulation": false,
+  "initialization": "-n (no user configuration)",
+  "cases": [
+    {
+      "name": "rc",
+      "analysis": "transient",
+      "sameModel": true,
+      "referencePoints": 30020,
+      "appPoints": 2400,
+      "maxAbsoluteError": 1.1921393472391628e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "rl",
+      "analysis": "transient",
+      "sameModel": true,
+      "referencePoints": 30020,
+      "appPoints": 2400,
+      "maxAbsoluteError": 1.1921414611038017e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "rlc",
+      "analysis": "transient",
+      "sameModel": true,
+      "referencePoints": 20138,
+      "appPoints": 2400,
+      "maxAbsoluteError": 0.000002131278030947925,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "loaded-rc",
+      "analysis": "transient",
+      "sameModel": true,
+      "referencePoints": 30428,
+      "appPoints": 2781,
+      "maxAbsoluteError": 0.0000010907029486489756,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "finite-band-inverting",
+      "analysis": "transient",
+      "sameModel": true,
+      "referencePoints": 20595,
+      "appPoints": 2410,
+      "maxAbsoluteError": 1.3456466625195746e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "rc-ac",
+      "analysis": "AC",
+      "sameModel": true,
+      "referencePoints": 301,
+      "appPoints": 301,
+      "maxAbsoluteError": 3.989471777117382e-15,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "loaded-rc-ac",
+      "analysis": "AC",
+      "sameModel": true,
+      "referencePoints": 301,
+      "appPoints": 301,
+      "maxAbsoluteError": 4.331292925015253e-15,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "inverting-ac",
+      "analysis": "AC",
+      "sameModel": true,
+      "referencePoints": 301,
+      "appPoints": 301,
+      "maxAbsoluteError": 5.2329087678349965e-14,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "difference-v1",
+      "analysis": "AC",
+      "sameModel": true,
+      "referencePoints": 301,
+      "appPoints": 301,
+      "maxAbsoluteError": 5.2329087678349965e-14,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

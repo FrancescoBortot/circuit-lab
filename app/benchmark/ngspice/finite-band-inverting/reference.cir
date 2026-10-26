@@ -1,0 +1,18 @@
+Circuit Lab independent ngspice reference
+V_V1 N1 0 SIN(0 0.05 1000 0 0 0) AC 1
+R_R1 N1 N2 10000
+EU1a U1drive 0 0 N2 200000
+RU1pole U1drive U1pole 1
+CU1pole U1pole 0 0.007957747154594767 IC=0
+EU1buffer N3 0 U1pole 0 1
+R_Rf N2 N3 47000
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+tran 1e-7 0.002 0 1e-7 uic
+wrdata reference.dat v(N3) v(N1)
+quit
+.endc
+.end

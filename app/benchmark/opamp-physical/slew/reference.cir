@@ -1,0 +1,17 @@
+Circuit Lab independent ngspice reference
+V_V1 N1 0 SIN(0 1 200000 0 0 0) AC 1
+R_R1 N1 N2 10000
+R_Rf N2 N3 47000
+CZ z 0 0.007957747154594767 IC=0
+BZ z 0 I=-(v(z)>=11 ? min(0,max(-7957.747154594767, min(7957.747154594767, 200000*(v(0)-v(N2))-v(z)))) : (v(z)<=-4 ? max(0,max(-7957.747154594767, min(7957.747154594767, 200000*(v(0)-v(N2))-v(z)))) : max(-7957.747154594767, min(7957.747154594767, 200000*(v(0)-v(N2))-v(z)))))
+BOUT N3 0 I=max(-0.02, min(0.02, (v(N3)-v(z))/50))
+.options reltol=1e-8 abstol=1e-12 vntol=1e-10
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+tran 1.3333333333333335e-9 0.00004 0 1.3333333333333335e-9 uic
+wrdata reference.dat v(N3) v(z)
+quit
+.endc
+.end

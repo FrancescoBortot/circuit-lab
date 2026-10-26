@@ -1,0 +1,134 @@
+{
+  "engineSha256": "9e3929f6ffc8c3a6350cdbd99419170a48e7dd2daf116274544df5cdc5671222",
+  "exporterSha256": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3",
+  "reference": "Official locally compiled ngspice 47",
+  "externalConnectionDuringSimulation": false,
+  "cases": [
+    {
+      "name": "dc-divider",
+      "kind": "dc",
+      "compared": 101,
+      "appPoints": 101,
+      "referencePoints": 101,
+      "skipped": [],
+      "maxAbsoluteError": 8.881784197001252e-16,
+      "tolerance": 0.000002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "dc-inverting-saturation",
+      "kind": "dc",
+      "compared": 101,
+      "appPoints": 101,
+      "referencePoints": 101,
+      "skipped": [],
+      "maxAbsoluteError": 1.0658141036401503e-14,
+      "tolerance": 0.000002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "dc-physical-current",
+      "kind": "dc",
+      "compared": 101,
+      "appPoints": 101,
+      "referencePoints": 101,
+      "skipped": [],
+      "maxAbsoluteError": 4.440892098500626e-15,
+      "tolerance": 0.000002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "finite-pulse",
+      "kind": "time",
+      "compared": 4812,
+      "appPoints": 4813,
+      "referencePoints": 40058,
+      "skipped": [],
+      "maxAbsoluteError": 1.1672275790353126e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "pwl-rc",
+      "kind": "time",
+      "compared": 4803,
+      "appPoints": 4804,
+      "referencePoints": 40038,
+      "skipped": [],
+      "maxAbsoluteError": 4.736212466660561e-8,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "pwl-direct-capacitor",
+      "kind": "time",
+      "compared": 4803,
+      "appPoints": 4804,
+      "referencePoints": 40049,
+      "skipped": [],
+      "maxAbsoluteError": 5.88418203051333e-15,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "ac-linear-phasor",
+      "kind": "ac",
+      "compared": 51,
+      "appPoints": 51,
+      "referencePoints": 51,
+      "skipped": [],
+      "maxAbsoluteError": 1.1102230246251565e-16,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "ac-octave-differential",
+      "kind": "ac",
+      "compared": 107,
+      "appPoints": 108,
+      "referencePoints": 107,
+      "skipped": [
+        {
+          "x": 100000,
+          "reason": "Exact fmax endpoint added by the application; outside the native octave grid."
+        }
+      ],
+      "maxAbsoluteError": 1.439709405814168e-11,
+      "tolerance": 1e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "pwl-current",
+      "kind": "time",
+      "compared": 4802,
+      "appPoints": 4803,
+      "referencePoints": 40035,
+      "skipped": [],
+      "maxAbsoluteError": 7.346356856174907e-10,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "ac-current-reference",
+      "kind": "ac",
+      "compared": 31,
+      "appPoints": 31,
+      "referencePoints": 31,
+      "skipped": [],
+      "maxAbsoluteError": 2.962496632772369e-11,
+      "tolerance": 1e-7,
+      "unit": "Ω",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

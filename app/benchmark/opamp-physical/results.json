@@ -1,0 +1,44 @@
+{
+  "engineSha256": "9e3929f6ffc8c3a6350cdbd99419170a48e7dd2daf116274544df5cdc5671222",
+  "reference": "ngspice 47 behavioral ODE and output transconductance; official local build",
+  "externalConnectionDuringSimulation": false,
+  "cases": [
+    {
+      "name": "linear",
+      "maxAbsoluteError": 3.400378881877994e-8,
+      "unit": "V",
+      "tolerance": 0.001,
+      "comparedPoints": 5383,
+      "referencePoints": 200248,
+      "pass": true
+    },
+    {
+      "name": "slew",
+      "maxAbsoluteError": 0.00001490675444593137,
+      "unit": "V",
+      "tolerance": 0.001,
+      "comparedPoints": 3225,
+      "referencePoints": 30172,
+      "pass": true
+    },
+    {
+      "name": "current",
+      "maxAbsoluteError": 0.00032386261772687774,
+      "unit": "V",
+      "tolerance": 0.001,
+      "comparedPoints": 5399,
+      "referencePoints": 200431,
+      "pass": true
+    },
+    {
+      "name": "supplies",
+      "maxAbsoluteError": 0.000027863800335481415,
+      "unit": "V",
+      "tolerance": 0.001,
+      "comparedPoints": 6125,
+      "referencePoints": 200359,
+      "pass": true
+    }
+  ],
+  "pass": true
+}

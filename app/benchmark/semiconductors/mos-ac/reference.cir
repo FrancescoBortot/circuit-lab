@@ -1,0 +1,23 @@
+Circuit Lab · MOSFET NMOS · source comune
+* ngspice subset: generated from explicit connections; no hidden ground or leakage.
+* Transient initial conditions require UIC. DC bias is separate from the waveform.
+* CLAB_OUT N3
+* CLAB_IN N1
+V_V1 N1 0 DC 2.500000000000000e+0 AC 1.000000000000000e+0 0.000000000000000e+0 SIN(2.500000000000000e+0 1.000000000000000e-2 1.000000000000000e+3 0 0 0.000000000000000e+0)
+V_Vcc N2 0 DC 5.000000000000000e+0 AC 0.000000000000000e+0 0.000000000000000e+0 PWL(0 5.000000000000000e+0 3.000000000000000e-3 5.000000000000000e+0)
+R_R1 N2 N3 1.000000000000000e+3
+M_M1 N3 N1 0 0 Model_M1 W=1u L=1u
+.model Model_M1 NMOS(LEVEL=1 KP=1.000000000000000e-3 VTO=1.500000000000000e+0 LAMBDA=2.000000000000000e-2 IS=1.000000000000000e-14 GAMMA=0 TNOM=27)
+C_LoadC N3 0 1.000000000000000e-8 IC=0.000000000000000e+0
+.temp 27
+* Model definitions are generic; original JSON is needed for full editing and measurement data.
+.options reltol=1e-10 abstol=1e-14 vntol=1e-12 gmin=1e-18
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+ac lin 51 10 100000
+wrdata reference.dat real(v(N3)) imag(v(N3))
+quit
+.endc
+.end

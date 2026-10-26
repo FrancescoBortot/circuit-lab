@@ -1,0 +1,18 @@
+Circuit Lab independent ngspice reference
+V_V1 N1 0 DC 5 AC 1
+R_R1 N2 N3 100000
+C_C1 N3 0 1e-8 IC=0
+R_Rg N1 N2 50
+C_Cc1 N2 0 1e-10 IC=0
+R_Ro N3 0 10000000
+C_Co N3 0 1.5e-11 IC=0
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+tran 2e-7 0.006 0 2e-7 uic
+wrdata reference.dat v(N3) v(N1)
+quit
+.endc
+.end

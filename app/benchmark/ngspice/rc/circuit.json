@@ -1,0 +1,93 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "RC libero",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 170,
+      "y": 300,
+      "rotation": 0,
+      "wave": {
+        "kind": "step",
+        "level": 5,
+        "vpp": 2,
+        "frequency": 1000,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 400,
+      "y": 200,
+      "rotation": 0,
+      "value": 10000
+    },
+    {
+      "id": "C1",
+      "type": "C",
+      "x": 670,
+      "y": 300,
+      "rotation": 90,
+      "value": 1e-7,
+      "initial": 0
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 170,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 670,
+      "y": 470,
+      "rotation": 0
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:p",
+      "b": "R1:a"
+    },
+    {
+      "id": "W2",
+      "a": "R1:b",
+      "b": "C1:a"
+    },
+    {
+      "id": "W3",
+      "a": "C1:b",
+      "b": "G2:g"
+    },
+    {
+      "id": "W4",
+      "a": "V1:n",
+      "b": "G1:g"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "C1:a"
+  },
+  "settings": {
+    "duration": 0.006,
+    "samples": 1200,
+    "fmin": 1,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "time",
+    "integration": "adaptive",
+    "rtol": 1e-7
+  }
+}

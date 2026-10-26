@@ -1,0 +1,29 @@
+# Materiali personali e strumenti locali: restano sul computer.
+.DS_Store
+**/node_modules/
+**/__pycache__/
+*.py[cod]
+/versioni/
+/ricerca/
+/supporto_locale/
+/app/.tools/
+/app/assets/
+*.pdf
+*.PDF
+
+# Dati grezzi e progetti personali di collaudo.
+/app/benchmark/**/*.dat
+/app/benchmark/**/*.log
+/app/benchmark/editor/
+/app/benchmark/phase6-demo/
+
+# Guide distribuite; i registri storici restano in locale.
+/docs/*
+!/docs/USO_RAPIDO.md
+!/docs/ANALISI_RC.md
+!/docs/ANALISI_FREQUENZA.md
+!/docs/FASE_2_MOTORE.md
+!/docs/FASE_4_OPERAZIONALI.md
+!/docs/FASE_5_ANALISI.md
+!/docs/FASE_6_MISURE_E_FILE.md
+!/docs/FASE_7_TOLLERANZE_E_DISPOSITIVI.md

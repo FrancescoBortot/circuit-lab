@@ -1,0 +1,10 @@
+{
+  "application": "Circuit Lab",
+  "format": "offline-single-html",
+  "file": "Circuit Lab.html",
+  "bytes": 793474,
+  "sha256": "b83a10b39cfb1b5fbbfb6076206a5f055fe5d6da08f0570e8ebe8314a0631867",
+  "scripts": 30,
+  "network": "connect-src none",
+  "course_materials": false
+}

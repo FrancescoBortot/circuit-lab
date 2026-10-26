@@ -1,0 +1,23 @@
+Circuit Lab · RC caricato · slide 13–15
+* ngspice subset: generated from explicit connections; no hidden ground or leakage.
+* Transient initial conditions require UIC. DC bias is separate from the waveform.
+* CLAB_OUT N3
+* CLAB_IN N1
+V_V1 N1 0 DC 5.000000000000000e+0 AC 1.000000000000000e+0 4.000000000000000e+1 PWL(0.000000000000000e+0 1.000000000000000e+1 1.000000000000000e-2 1.000000000000000e+1 1.000000000000000e-2 0.000000000000000e+0 2.000000000000000e-2 0.000000000000000e+0 2.000000000000000e-2 1.000000000000000e+1 3.000000000000000e-2 1.000000000000000e+1 3.000000000000000e-2 0.000000000000000e+0)
+R_R1 N2 N3 1.000000000000000e+5
+C_C1 N3 0 1.000000000000000e-8 IC=0.000000000000000e+0
+R_Rg N1 N2 5.000000000000000e+1
+C_Cc1 N2 0 1.000000000000000e-10 IC=0.000000000000000e+0
+R_Ro N3 0 1.000000000000000e+7
+C_Co N3 0 1.500000000000000e-11 IC=0.000000000000000e+0
+* Model definitions are generic; original JSON is needed for full editing and measurement data.
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+ac lin 51 10 100000
+wrdata reference.dat real(v(N3)) imag(v(N3))
+quit
+.endc
+.end

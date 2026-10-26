@@ -1,0 +1,172 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "RC caricato · slide 13–15",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 170,
+      "y": 300,
+      "rotation": 0,
+      "wave": {
+        "kind": "square",
+        "vpp": 10,
+        "offset": 5,
+        "frequency": 50,
+        "level": 10,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 400,
+      "y": 200,
+      "rotation": 0,
+      "value": 100000
+    },
+    {
+      "id": "C1",
+      "type": "C",
+      "x": 670,
+      "y": 300,
+      "rotation": 90,
+      "value": 1e-8,
+      "initial": 0
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 170,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 670,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "Rg",
+      "type": "R",
+      "x": 330,
+      "y": 300,
+      "rotation": 0,
+      "value": 50
+    },
+    {
+      "id": "Cc1",
+      "type": "C",
+      "x": 410,
+      "y": 400,
+      "rotation": 90,
+      "value": 1e-10,
+      "initial": 0
+    },
+    {
+      "id": "Ro",
+      "type": "R",
+      "x": 800,
+      "y": 320,
+      "rotation": 90,
+      "value": 10000000
+    },
+    {
+      "id": "Co",
+      "type": "C",
+      "x": 920,
+      "y": 320,
+      "rotation": 90,
+      "value": 1.5e-11,
+      "initial": 0
+    }
+  ],
+  "wires": [
+    {
+      "id": "W2",
+      "a": "R1:b",
+      "b": "C1:a"
+    },
+    {
+      "id": "W3",
+      "a": "C1:b",
+      "b": "G2:g"
+    },
+    {
+      "id": "W4",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "S4",
+      "a": "V1:p",
+      "b": "Rg:a"
+    },
+    {
+      "id": "S5",
+      "a": "Rg:b",
+      "b": "R1:a"
+    },
+    {
+      "id": "S6",
+      "a": "R1:a",
+      "b": "Cc1:a"
+    },
+    {
+      "id": "S7",
+      "a": "Cc1:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "S8",
+      "a": "C1:a",
+      "b": "Ro:a"
+    },
+    {
+      "id": "S9",
+      "a": "Ro:b",
+      "b": "G2:g"
+    },
+    {
+      "id": "S10",
+      "a": "C1:a",
+      "b": "Co:a"
+    },
+    {
+      "id": "S11",
+      "a": "Co:b",
+      "b": "G2:g"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "C1:a"
+  },
+  "settings": {
+    "duration": 0.03,
+    "samples": 2400,
+    "fmin": 1,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "bode"
+  },
+  "traces": [
+    {
+      "id": "P1",
+      "kind": "voltage",
+      "positive": "R1:a",
+      "negative": null
+    },
+    {
+      "id": "P2",
+      "kind": "current",
+      "component": "R1"
+    }
+  ]
+}

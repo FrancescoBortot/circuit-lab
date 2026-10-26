@@ -1,0 +1,70 @@
+{
+  "referenceType": "mathematical, not an external SPICE run",
+  "method": "SDIRK2 fixed/adaptive as declared in each document",
+  "cases": [
+    {
+      "name": "RC step · tau=0.000001",
+      "reference": "independent closed-form equation",
+      "samples": 965,
+      "maxAbsoluteError": 0.000009451287377615358,
+      "tolerance": 0.00002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "RC step · tau=0.001",
+      "reference": "independent closed-form equation",
+      "samples": 800,
+      "maxAbsoluteError": 0.0000010490235711202445,
+      "tolerance": 0.00002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "RL step",
+      "reference": "independent closed-form equation",
+      "samples": 800,
+      "maxAbsoluteError": 0.0000010490235060611752,
+      "tolerance": 0.00002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "RLC underdamped step",
+      "reference": "independent closed-form equation",
+      "samples": 879,
+      "maxAbsoluteError": 0.000011541134898429561,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "Ideal inverting amplifier",
+      "reference": "independent closed-form equation",
+      "samples": 4800,
+      "maxAbsoluteError": 6.827871601444713e-15,
+      "tolerance": 1e-9,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "Finite A0 and GBW · real",
+      "reference": "independent closed-form equation",
+      "samples": 301,
+      "maxAbsoluteError": 1.7763568394002505e-15,
+      "tolerance": 1e-8,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "Finite A0 and GBW · imaginary",
+      "reference": "independent closed-form equation",
+      "samples": 301,
+      "maxAbsoluteError": 8.881784197001252e-16,
+      "tolerance": 1e-8,
+      "unit": "V/V",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

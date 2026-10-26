@@ -1,0 +1,114 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "Invertente libero",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 160,
+      "y": 300,
+      "rotation": 0,
+      "wave": {
+        "kind": "sine",
+        "level": 5,
+        "vpp": 0.1,
+        "frequency": 1000,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 350,
+      "y": 190,
+      "rotation": 0,
+      "value": 10000
+    },
+    {
+      "id": "U1",
+      "type": "U",
+      "x": 670,
+      "y": 310,
+      "rotation": 0,
+      "model": "limited",
+      "a0": 200000,
+      "gbw": 4000000,
+      "rail": 15,
+      "headroom": 1.5
+    },
+    {
+      "id": "Rf",
+      "type": "R",
+      "x": 670,
+      "y": 120,
+      "rotation": 0,
+      "value": 47000
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 160,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 570,
+      "y": 470,
+      "rotation": 0
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:p",
+      "b": "R1:a"
+    },
+    {
+      "id": "W2",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W3",
+      "a": "U1:minus",
+      "b": "Rf:a"
+    },
+    {
+      "id": "W4",
+      "a": "Rf:b",
+      "b": "U1:out"
+    },
+    {
+      "id": "W5",
+      "a": "R1:b",
+      "b": "U1:minus"
+    },
+    {
+      "id": "W6",
+      "a": "U1:plus",
+      "b": "G2:g"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "U1:out"
+  },
+  "settings": {
+    "duration": 0.002,
+    "samples": 1200,
+    "fmin": 1,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "time",
+    "integration": "adaptive",
+    "rtol": 1e-7
+  }
+}

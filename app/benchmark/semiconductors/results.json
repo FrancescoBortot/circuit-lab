@@ -1,0 +1,133 @@
+{
+  "hashes": {
+    "free-model.js": "9e3929f6ffc8c3a6350cdbd99419170a48e7dd2daf116274544df5cdc5671222",
+    "semiconductors.js": "aecc64de8c1524bec78866f0c91e811d26e43abbb0cf982f6301c9df77d4c02a",
+    "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
+  },
+  "reference": "Official locally compiled ngspice 47, native D/Q/M Level 1, 27 °C",
+  "externalConnectionDuringSimulation": false,
+  "cases": [
+    {
+      "name": "diode-dc",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 121,
+      "appPoints": 121,
+      "maxAbsoluteError": 6.009051589650483e-11,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "bjt-dc",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 121,
+      "appPoints": 121,
+      "maxAbsoluteError": 8.435296905418e-11,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "pnp-dc",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 121,
+      "appPoints": 121,
+      "maxAbsoluteError": 1.5331025338127802e-10,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "mos-dc",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 121,
+      "appPoints": 121,
+      "maxAbsoluteError": 1.4064127640267543e-10,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "pmos-dc",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 121,
+      "appPoints": 121,
+      "maxAbsoluteError": 7.031397686318996e-11,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "mos-reverse-body",
+      "kind": "dc",
+      "nativeDeviceModels": true,
+      "compared": 81,
+      "appPoints": 81,
+      "maxAbsoluteError": 8.198219880739543e-12,
+      "tolerance": 0.000003,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "bjt-ac",
+      "kind": "ac",
+      "nativeDeviceModels": true,
+      "compared": 51,
+      "appPoints": 51,
+      "maxAbsoluteError": 4.1847438400913246e-13,
+      "tolerance": 0.000002,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "bjt-transient",
+      "kind": "time",
+      "nativeDeviceModels": true,
+      "compared": 4799,
+      "appPoints": 4800,
+      "maxAbsoluteError": 6.652343564894636e-8,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "mos-ac",
+      "kind": "ac",
+      "nativeDeviceModels": true,
+      "compared": 51,
+      "appPoints": 51,
+      "maxAbsoluteError": 1.5543126920241993e-15,
+      "tolerance": 0.000002,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "mos-transient",
+      "kind": "time",
+      "nativeDeviceModels": true,
+      "compared": 4799,
+      "appPoints": 4800,
+      "maxAbsoluteError": 1.0438195197082223e-8,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "rectifier-filter",
+      "kind": "time",
+      "nativeDeviceModels": true,
+      "compared": 6712,
+      "appPoints": 6713,
+      "maxAbsoluteError": 0.0000016276203265164213,
+      "tolerance": 0.002,
+      "unit": "V",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

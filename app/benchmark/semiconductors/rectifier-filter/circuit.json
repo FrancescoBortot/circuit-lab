@@ -1,0 +1,127 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "Raddrizzatore a diodo con filtro RC",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 170,
+      "y": 320,
+      "rotation": 0,
+      "wave": {
+        "kind": "sine",
+        "level": 5,
+        "vpp": 10,
+        "frequency": 50,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.002,
+        "dc": 0
+      }
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 170,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "D1",
+      "type": "D",
+      "x": 400,
+      "y": 220,
+      "rotation": 0,
+      "is": 3.5e-11,
+      "n": 1.5
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 650,
+      "y": 320,
+      "rotation": 90,
+      "value": 10000
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 650,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "G3",
+      "type": "G",
+      "x": 500,
+      "y": 470,
+      "rotation": 0
+    },
+    {
+      "id": "C1",
+      "type": "C",
+      "x": 500,
+      "y": 320,
+      "rotation": 90,
+      "value": 0.00001,
+      "initial": 0
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W2",
+      "a": "V1:p",
+      "b": "D1:a"
+    },
+    {
+      "id": "W3",
+      "a": "D1:b",
+      "b": "R1:a"
+    },
+    {
+      "id": "W4",
+      "a": "R1:b",
+      "b": "G2:g"
+    },
+    {
+      "id": "W5",
+      "a": "D1:b",
+      "b": "C1:a"
+    },
+    {
+      "id": "W6",
+      "a": "C1:b",
+      "b": "G3:g"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "D1:b"
+  },
+  "settings": {
+    "duration": 0.08,
+    "samples": 2400,
+    "fmin": 10,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "time",
+    "integration": "adaptive",
+    "rtol": 1e-7
+  },
+  "traces": [
+    {
+      "id": "P1",
+      "kind": "current",
+      "component": "D1"
+    }
+  ]
+}

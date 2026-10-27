@@ -5,3 +5,5 @@
 @media(max-width:620px){#benchDialog{padding:20px 16px}#benchDialog h2{font-size:19px}.bench-channels,.bench-values-grid{grid-template-columns:1fr}.bench-channel{padding:14px}.bench-actions .button{font-size:12px;padding-inline:12px}.summary-item.metric>strong{font-size:12px}}
 
 .bench-part .part-name{fill:#438776}.bench-part .part-ink{stroke:#70998f}.metric-note{padding:8px 3px;line-height:1.7}#opSummary{display:block;border-radius:6px;background:#eff5ff;padding:8px 10px;color:#315d98}
+
+.latex-code-details{margin-top:15px;color:#587198;font-size:12px}.latex-code-details summary{cursor:pointer}.latex-code-details textarea{display:block;box-sizing:border-box;width:100%;height:240px;resize:vertical;font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:#324b70;background:#f7f9fd;border:1px solid #dce5f4;border-radius:7px;margin:12px 0;padding:12px;white-space:pre;overflow:auto}.latex-code-details button{margin-bottom:8px}

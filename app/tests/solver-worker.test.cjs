@@ -42,3 +42,5 @@ test('task cancellation terminates the running worker and ignores late results',
   const client=new scope.window.CircuitTasks(),a=client.run('time',{}),old=FakeWorker.last;client.cancel();await assert.rejects(a,e=>e.name==='AbortError');assert.equal(old.terminated,true);assert.equal(revoked.length,1);
   const b=client.run('bode',{});old.onmessage({data:{type:'result',result:'stale'}});FakeWorker.last.onmessage({data:{type:'result',result:'fresh'}});assert.equal(await b,'fresh');
 });
+
+test('worker real instrument models match direct transient and calibrated AC probe calculations',async()=>{const L=require('../lab-model.js'),B=require('../bench-model.js'),p=L.defaults('rc');p.bench={...B.defaults(),mode:'real'};assert.deepEqual((await execute('guidedTime',{params:p})).result,L.simulate(p));for(const ch of p.bench.channels){ch.kind='probe10';ch.coupling='ac';}assert.deepEqual((await execute('guidedBode',{params:p})).result,L.bode(p));});

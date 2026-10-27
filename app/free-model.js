@@ -62,6 +62,7 @@
       }
     }
     const s=doc.settings;
+    for(const key of ['probeScaleInput','probeScaleOutput'])if(s?.[key]!==undefined&&(!Number.isFinite(s[key])||s[key]<=0||s[key]>1000))errors.push('Scala della sonda non valida.');
     if(s?.dcSource!==undefined&&s.dcSource!==null&&!doc.components.some(c=>c.id===s.dcSource&&['V','I'].includes(c.type)))errors.push('Sorgente DC non valida.');
     if([s?.dcStart,s?.dcStop].some(v=>v!==undefined&&(!Number.isFinite(v)||Math.abs(v)>1000))||s?.dcPoints!==undefined&&(!Number.isInteger(s.dcPoints)||s.dcPoints<2||s.dcPoints>1001))errors.push('Intervallo o punti DC non validi.');
     if(s?.integration!==undefined&&!['fixed','adaptive'].includes(s.integration))errors.push('Metodo di integrazione non valido.');
@@ -168,6 +169,23 @@
   const difference=(s,x,c,a,b)=>voltage(s,x,c.id+':'+a)-voltage(s,x,c.id+':'+b);
   // Independent capacitor constraints avoid redundant initial voltage sources
   // for parallel capacitors, while rejecting inconsistent initial conditions.
+  // An ideal amplifier can fix an output capacitor voltage through resistive
+  // feedback. Redundant IC current multipliers must not invalidate unique
+  // node voltages. Accept rank deficiency only in source/IC currents.
+  function initialFactor(s,matrix){
+    try{return factor(matrix);}catch(original){if(s.nonlinear.length||matrix.length===s.N)throw original;
+      return rhs=>{const n=matrix.length,A=matrix.map((row,i)=>{const scale=Math.max(...row.map(Math.abs),1e-300);return row.map(v=>v/scale).concat(rhs[i]/scale);}),columns=Array.from({length:n},(_,j)=>Math.max(...A.map(row=>Math.abs(row[j])),1e-300));
+        for(const row of A)for(let j=0;j<n;j++)row[j]/=columns[j];
+        const pivots=[];let rank=0;for(let j=0;j<n;j++){let p=rank;for(let i=rank;i<n;i++)if(Math.abs(A[i][j])>Math.abs(A[p]?.[j]||0))p=i;if(p>=n||Math.abs(A[p][j])<1e-11)continue;[A[p],A[rank]]=[A[rank],A[p]];const pivot=A[rank][j];for(let k=j;k<=n;k++)A[rank][k]/=pivot;for(let i=0;i<n;i++)if(i!==rank){const q=A[i][j];for(let k=j;k<=n;k++)A[i][k]-=q*A[rank][k];}pivots.push(j);rank++;}
+        for(let i=rank;i<n;i++)if(Math.abs(A[i][n])>1e-7*Math.max(1,...rhs.map(Math.abs)))throw new Error('Tensioni iniziali incompatibili con i vincoli del circuito ideale.');
+        const fixed=new Set(pivots),free=Array.from({length:n},(_,i)=>i).filter(i=>!fixed.has(i)),required=new Set([...Array.from({length:s.topo.count},(_,i)=>i),...s.stateIndex.values(),...s.doc.components.filter(c=>c.type==='L').map(c=>s.index.get(c.id))]),unknown=new Set();
+        for(const col of free){const direction=Array(n).fill(0);direction[col]=1;for(let i=0;i<rank;i++)direction[pivots[i]]=-A[i][col];if([...required].some(k=>Math.abs(direction[k])>1e-9))throw original;for(const c of s.doc.components.filter(c=>c.type==='V'||c.type==='U'))if(Math.abs(direction[s.index.get(c.id)])>1e-9)unknown.add(c.id);}
+        s.initialUnknownCurrents=[...new Set([...(s.initialUnknownCurrents||[]),...unknown])];const x=Array(n).fill(0);for(let i=0;i<rank;i++)x[pivots[i]]=A[i][n]/columns[pivots[i]];
+        if(x.some(v=>!Number.isFinite(v)||Math.abs(v)>1e15))throw original;
+        for(let i=0;i<n;i++){const value=matrix[i].reduce((sum,a,j)=>sum+a*x[j],0),scale=Math.max(1,Math.abs(rhs[i]),matrix[i].reduce((sum,a,j)=>sum+Math.abs(a*x[j]),0));if(Math.abs(value-rhs[i])>1e-7*scale)throw original;}return x;
+      };
+    }
+  }
   function initial(s,t=0,previous=null){
     const G=s.G.map(r=>r.slice()),r=rhs(s,t),constraints=[],edges=new Map(),slopeEdges=new Map();
     const edge=(a,b,v)=>{if(!edges.has(a))edges.set(a,[]);if(!edges.has(b))edges.set(b,[]);edges.get(a).push([b,-v]);edges.get(b).push([a,v]);};
@@ -197,7 +215,7 @@
     const n=s.N+constraints.length;for(const row of G)while(row.length<n)row.push(0);while(G.length<n)G.push(Array(n).fill(0));while(r.length<n)r.push(0);
     constraints.forEach(([a,b,v],i)=>{const k=s.N+i;if(a>=0){G[a][k]=1;G[k][a]=1;}if(b>=0){G[b][k]=-1;G[k][b]=-1;}r[k]=v;});
     const amps=s.doc.components.filter(c=>c.type==='U'&&c.model==='physical');let active=new Map(),solution;
-    for(let iteration=0;iteration<32;iteration++){const A=G.map(row=>row.slice()),right=r.slice();for(const[k,current]of active){A[k].fill(0);A[k][k]=1;right[k]=current;}solution=Semi.solve(s,A,right,factor,solution||previous);const changed=new Map();for(const c of amps){const k=s.index.get(c.id),q=physical(c),current=(voltage(s,solution,c.id+':out')-solution[s.stateIndex.get(c.id)])/q.rout;if(Math.abs(current)>q.ilimit+1e-10)changed.set(k,Math.sign(current)*q.ilimit);}if(changed.size===active.size&&[...changed].every(([k,v])=>active.get(k)===v))return solution.slice(0,s.N);active=changed;}
+    for(let iteration=0;iteration<32;iteration++){const A=G.map(row=>row.slice()),right=r.slice();for(const[k,current]of active){A[k].fill(0);A[k][k]=1;right[k]=current;}solution=Semi.solve(s,A,right,matrix=>initialFactor(s,matrix),solution||previous);const changed=new Map();for(const c of amps){const k=s.index.get(c.id),q=physical(c),current=(voltage(s,solution,c.id+':out')-solution[s.stateIndex.get(c.id)])/q.rout;if(Math.abs(current)>q.ilimit+1e-10)changed.set(k,Math.sign(current)*q.ilimit);}if(changed.size===active.size&&[...changed].every(([k,v])=>active.get(k)===v))return solution.slice(0,s.N);active=changed;}
     throw new Error('Condizioni iniziali incompatibili con il limite di corrente dell’operazionale.');
   }
   function events(doc){const out=new Map(),duration=doc.settings.duration;
@@ -223,6 +241,7 @@
       if(['D','Q','M'].includes(c.type)){const ports=Semi.pins[c.type],d=Semi.device(c,ports.map(p=>voltage(s,x,c.id+':'+p)));currents[c.id]=d.currents[0];for(let i=1;i<ports.length;i++)currents[c.id+':'+ports[i]]=d.currents[i];}
     }return currents;
   }
+  function initialVoltages(doc){const s=assemble(doc),x=initial(s,0);return Object.fromEntries(Object.entries(s.topo.nodes).map(([pin,node])=>[pin,node<0?0:x[node]]));}
   function simulate(doc,options={}){
     const s=assemble(doc),duration=doc.settings.duration,ev=events(doc),frequencies=doc.components.filter(c=>['V','I'].includes(c.type)&&(['sine','square','triangle'].includes(c.wave.kind)||c.wave.kind==='pulse'&&c.wave.period>0)).map(c=>c.wave.kind==='pulse'?1/c.wave.period:c.wave.frequency),periods=duration*Math.max(0,...frequencies);
     if(periods>400)throw new Error('Riduci durata o frequenza: massimo 400 periodi visibili.');
@@ -233,7 +252,7 @@
     // also supplies capacitor derivatives consistent with nodal KCL.
     if(options.initialState&&(!Array.isArray(options.initialState)||options.initialState.length!==s.N||options.initialState.some(v=>!Number.isFinite(v)||Math.abs(v)>1e15)))throw new Error('Stato iniziale del calcolo non valido.');
     const gamma=1-1/Math.sqrt(2);let x=initial(s,0,options.initialState||null),clipped=false,limits=[],maxResidual=0;
-    const record=(t,side='right',derivative=null)=>{if(data.length*(s.topo.count+3*doc.components.length+doc.components.filter(c=>['C','L'].includes(c.type)).length+s.stateIndex.size+14)>4000000)throw new Error('Troppi dati per questa rete: riduci punti, durata o precisione richiesta.');const values=Object.fromEntries(s.topo.groups.map(n=>[n.name,x[n.index]]));data.push({x:t,vin:voltage(s,x,doc.probes.input),out:voltage(s,x,doc.probes.output),clipped,limits:[...limits],states:Object.fromEntries([...s.stateIndex].map(([id,k])=>[id,x[k]])),regions:s.nonlinear.length?Semi.evaluate(s,x).regions:{},values,currents:branchCurrents(s,x,t,side,derivative)});};
+    const record=(t,side='right',derivative=null)=>{if(data.length*(s.topo.count+3*doc.components.length+doc.components.filter(c=>['C','L'].includes(c.type)).length+s.stateIndex.size+14)>4000000)throw new Error('Troppi dati per questa rete: riduci punti, durata o precisione richiesta.');const values=Object.fromEntries(s.topo.groups.map(n=>[n.name,x[n.index]]));data.push({x:t,vin:voltage(s,x,doc.probes.input)*(doc.settings.probeScaleInput??1),out:voltage(s,x,doc.probes.output)*(doc.settings.probeScaleOutput??1),clipped,limits:[...limits],states:Object.fromEntries([...s.stateIndex].map(([id,k])=>[id,x[k]])),regions:s.nonlinear.length?Semi.evaluate(s,x).regions:{},values,currents:branchCurrents(s,x,t,side,derivative)});};
     function stage(time,h,predictor,side){
       const v=rhs(s,time,side),base=s.G.map((r,j)=>r.map((g,k)=>g+s.E[j][k]/h));
       for(let j=0;j<s.N;j++)for(let k=0;k<s.N;k++)v[j]+=s.E[j][k]*predictor[k]/h;
@@ -348,7 +367,7 @@
   function operatingPoint(doc,overrides={}){
     const s=assemble(doc),r=solveOperating(s,overrides),values=Object.fromEntries(s.topo.groups.map(n=>[n.name,r.x[n.index]])),currents=branchCurrents(s,r.x,0,'right',Array(s.N).fill(0));
     for(const c of doc.components.filter(c=>c.type==='I'))currents[c.id]=r.bias[c.id];
-    const row={x:0,vin:voltage(s,r.x,doc.probes.input),out:voltage(s,r.x,doc.probes.output),values,currents,regions:s.nonlinear.length?Semi.evaluate(s,r.x).regions:{},states:Object.fromEntries([...s.stateIndex].map(([id,k])=>[id,r.x[k]])),clipped:r.active.size>0,limits:[...r.active.values()].map(c=>c.id+':'+c.kind)};
+    const row={x:0,vin:voltage(s,r.x,doc.probes.input)*(doc.settings.probeScaleInput??1),out:voltage(s,r.x,doc.probes.output)*(doc.settings.probeScaleOutput??1),values,currents,regions:s.nonlinear.length?Semi.evaluate(s,r.x).regions:{},states:Object.fromEntries([...s.stateIndex].map(([id,k])=>[id,r.x[k]])),clipped:r.active.size>0,limits:[...r.active.values()].map(c=>c.id+':'+c.kind)};
     return quantities(doc,{data:[row],nodes:s.topo.groups,newton:s.newton||null,method:'DC · condensatori aperti, induttori in corto'+(s.nonlinear.length?' · Newton':''),bias:r.bias,count:1,maxResidual:r.residual});
   }
   function dcSweep(doc,options={}){
@@ -402,7 +421,7 @@
     const frequencies=options.frequencies||frequencyGrid(doc.settings);if(!frequencies.length||frequencies.some(f=>!Number.isFinite(f)||f<0||f>1e9))throw new Error('Frequenze AC non valide.');
     for(const frequency of frequencies){
       const a=complexSolve(G,E.map(r=>r.map(v=>v*2*Math.PI*frequency)),r,ri);
-      let real=node<0?0:a.real[node],imag=node<0?0:a.imag[node];if(doc.settings.acReference==='input'){const input=s.topo.nodes[doc.probes.input],vr=input<0?0:a.real[input],vi=input<0?0:a.imag[input],den=vr*vr+vi*vi;if(!den||!Number.isFinite(den))throw new Error('Il riferimento IN si annulla: scegli un altro nodo per il Bode.');[real,imag]=[(real*vr+imag*vi)/den,(imag*vr-real*vi)/den];}const magnitude=Math.hypot(real,imag);let phase=magnitude===0?NaN:Math.atan2(imag,real)*180/Math.PI;
+      let real=(node<0?0:a.real[node])*(doc.settings.probeScaleOutput??1),imag=(node<0?0:a.imag[node])*(doc.settings.probeScaleOutput??1);if(doc.settings.acReference==='input'){const input=s.topo.nodes[doc.probes.input],vr=(input<0?0:a.real[input])*(doc.settings.probeScaleInput??1),vi=(input<0?0:a.imag[input])*(doc.settings.probeScaleInput??1),den=vr*vr+vi*vi;if(!den||!Number.isFinite(den))throw new Error('Il riferimento IN si annulla: scegli un altro nodo per il Bode.');[real,imag]=[(real*vr+imag*vi)/den,(imag*vr-real*vi)/den];}const magnitude=Math.hypot(real,imag);let phase=magnitude===0?NaN:Math.atan2(imag,real)*180/Math.PI;
       if(previous===undefined&&phase>90)phase-=360;if(Number.isFinite(previous)){while(phase-previous>180)phase-=360;while(phase-previous < -180)phase+=360;}previous=phase;
       data.push({x:frequency,real,imag,magnitude,db:magnitude===0?-Infinity:20*Math.log10(magnitude),phase});
     }return{data,nodes:s.topo.groups,bias:bias?.bias||null,warnings:bias?.active.size?['Polarizzazione DC al limite: il piccolo segnale usa i vincoli attivi.']:[],source:sourceID,reference:doc.settings.acReference||'source',unit:doc.settings.acReference!=='input'&&(doc.settings.acWeights?doc.components.find(c=>doc.settings.acWeights[c.id])?.type:sourceComponent.type)==='I'?'Ω':'V/V'};
@@ -479,5 +498,5 @@
     if(kind==='derivative'&&!p.wave1){d.components[0].wave.kind='triangle';d.components[0].wave.frequency=500;d.settings.duration=.004;}
     return d;
   }
-  return{physical,PINS,NAMES,blank,component,example,validate,diagnostics,issues,validPin,topology,pinLabel,dcValue,source,sourceSlope,assemble,simulate,quantities,reactiveSummary,operatingPoint,dcSweep,convergence,traceValue,traceReader,frequencyGrid,bode,serialize,parse,csv,clone};
+  return{physical,PINS,NAMES,blank,component,example,validate,diagnostics,issues,validPin,topology,pinLabel,dcValue,source,sourceSlope,assemble,initialVoltages,simulate,quantities,reactiveSummary,operatingPoint,dcSweep,convergence,traceValue,traceReader,frequencyGrid,bode,serialize,parse,csv,clone};
 });

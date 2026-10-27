@@ -40,8 +40,9 @@
       if(p.type!=='rc')throw new Error('Apri l’esperienza RC per usare questo pannello.');
       out.stamp=stamp(doc);out.reference={R:p.R,C:p.C,tau:Lab.rcSummary(p).tau};out.onePole=Lab.system(p).n===1;out.voltageGain=true;out.acSource='V₁';
       try{out.points=Lab.simulate(p).map(p=>({x:p.x,y:p.out}));}catch(e){out.timeError=e.message;}
-      try{out.bode=Lab.bode(p);out.dcGain=Lab.response(p,0).magnitude;}catch(e){out.acError=e.message;}
+      try{out.bode=Lab.bode(p);out.dcGain=Lab.real(p)&&p.bench.channels?.some(ch=>ch.enabled&&ch.coupling==='ac')?null:Lab.response(p,0).magnitude;}catch(e){out.acError=e.message;}
       out.notice=out.onePole?'Vout è misurata rispetto a massa. Il transitorio è eccitato da Vg; il taglio AC è riferito a Vout/V₁, dopo Rg: le τ possono differire. R·C usa i soli valori R e C del confronto.':'Gli strumenti introducono più stati dinamici: τ del fit è equivalente sull’intervallo scelto. Il taglio è riferito a Vout/V₁, dopo la resistenza del generatore.';
+      if(Lab.real(p))out.notice='Montaggio reale con più poli. τ=R·C è solo il riferimento nominale; il fit restituisce una τ equivalente nell’intervallo scelto. Bode: '+(p.benchReference==='source'?'uscita / generatore ideale.':'CH2 / CH1, letture comprensive dell’accoppiamento.');
       if(out.timeError)out.notice+=' Transitorio non disponibile: '+out.timeError;
       if(out.acError)out.notice+=' Bode non disponibile: '+out.acError;
     }

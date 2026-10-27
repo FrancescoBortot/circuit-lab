@@ -1,0 +1,28 @@
+Circuit Lab · RC libero
+* ngspice subset: generated from explicit connections; no hidden ground or leakage.
+* Transient initial conditions require UIC. DC bias is separate from the waveform.
+* CLAB_OUT N5
+* CLAB_IN N3
+V_V1 N1 N2 DC 0.000000000000000e+0 AC 1.000000000000000e+0 0.000000000000000e+0 PULSE(0.000000000000000e+0 5.000000000000000e+0 0.000000000000000e+0 0.000000000000000e+0 0.000000000000000e+0 1.880000000000000e-3 7.579999999999999e-3)
+R_R1 N3 N4 1.000000000000000e+5
+C_C1 N5 N6 4.700000000000000e-9 IC=0.000000000000000e+0
+R_RG1 N1 N7 5.000000000000000e+1
+R_RW1 N7 N3 5.000000000000000e-2
+R_RW2 N4 N5 5.000000000000000e-2
+R_RW3 N6 0 5.000000000000000e-2
+R_RW4 N2 0 5.000000000000000e-2
+R_RE1 N3 0 1.000000000000000e+7
+C_CE1 N3 0 1.200000000000000e-11 IC=5.000000000000000e+0
+R_RE2 N5 0 1.000000000000000e+7
+C_CE2 N5 0 1.200000000000000e-11 IC=0.000000000000000e+0
+* Model definitions are generic; original JSON is needed for full editing and measurement data.
+.options reltol=1e-10 abstol=1e-14 vntol=1e-12
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+ac dec 20 .1 1000000
+wrdata reference.dat real(v(N5)) imag(v(N5)) real(v(N3)) imag(v(N3))
+quit
+.endc
+.end

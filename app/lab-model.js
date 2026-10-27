@@ -1,7 +1,7 @@
 (function(root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'),require('./guided-trials.js'));
-  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects,root.GuidedTrials);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files,Trials) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'),require('./guided-trials.js'),require('./bench-model.js'));
+  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects,root.GuidedTrials,root.BenchModel);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files,Trials,Bench) {
   'use strict';
   const clone = x => JSON.parse(JSON.stringify(x));
   const signal = (kind, vpp, frequency) => ({kind, vpp, frequency, offset:0, phase:0, duty:50, level:5});
@@ -37,7 +37,7 @@
     p=clone(p);
     if(p.autoTime){
       if(p.type==='rc' && ['charge','discharge','cycle'].includes(p.wave1.kind)){
-        const tau=rcSummary(p).tau;p.duration=tau*(p.wave1.kind==='cycle'?10:6);p.switchTime=4*tau;
+        let tau=rcSummary(p).tau;if(Bench.real(p)){const b=Bench.config(p.bench);tau=Math.max(tau,...b.channels.filter(ch=>ch.enabled&&ch.coupling==='ac').map(ch=>(ch.kind==='probe10'?b.probeR:b.scopeR)*b.acC));}p.duration=tau*(p.wave1.kind==='cycle'?10:6);p.switchTime=4*tau;
       } else {
         const frequencies=activeWaves(p).filter(w=>!['dc','ground','charge','discharge','cycle'].includes(w.kind)).map(w=>w.frequency);
         p.duration=frequencies.length?2/Math.min(...frequencies):.002;
@@ -47,6 +47,8 @@
   }
   function validate(p) {
     const e={};
+    if(p.bench!==undefined)try{Bench.config(p.bench);}catch(error){e.bench=error.message;}
+    if(p.benchReference!==undefined&&!['source','input'].includes(p.benchReference))e.benchReference='Riferimento Bode non valido.';
     if(typeof p.autoTime!=='boolean')e.autoTime='Impostazione del tempo automatico non valida.';
     if(!['differential','v1','v2','common'].includes(p.bodeInput))e.bodeInput='Ingresso dell’analisi non valido.';
     if(!['rc','inverting','derivative','difference'].includes(p.type))e.type='Circuito non valido.';
@@ -85,18 +87,24 @@
     return e;
   }
   function assert(p){const e=validate(p);if(Object.keys(e).length)throw new Error(Object.values(e)[0]);}
+  function network(p,drive=null){
+    const q={...clone(p),instrument:'ideal',...(drive?{drive}:{})},d=Free.example(p.type,q),b=Bench.config(p.bench);d.probes.input='R1:a';
+    if(p.type==='difference'&&['v1','v2'].includes(q.drive))b.sourceIds=(b.sourceIds||['V1','V2']).filter(id=>id===(q.drive==='v1'?'V1':'V2'));
+    for(const c of d.components){c.x*=1.6;c.y*=1.25;}const out=Bench.apply(d,b);out.settings.integration='adaptive';out.settings.rtol=1e-5;out.settings.acReference=p.type==='rc'?(p.benchReference||'input'):'source';if(p.type==='difference')out.settings.acWeights=drives(drive||p.bodeInput);return out;
+  }
   function instrument(p){
     if(p.instrument==='ideal')return{rg:0,scopeR:Infinity,scopeC:0};
     if(p.instrument==='generator')return{rg:p.rg,scopeR:Infinity,scopeC:0};
     return{rg:p.rg,scopeR:p.scopeR,scopeC:p.scopeC};
   }
-  function rcSummary(p){const s=instrument(p),rp=1/(1/(p.R+s.rg)+1/s.scopeR);let tau=rp*(p.C+s.scopeC);
+  function rcSummary(p){if(Bench.real(p))return{tau:p.R*p.C,cutoff:1/(2*Math.PI*p.R*p.C),nominal:true};const s=instrument(p),rp=1/(1/(p.R+s.rg)+1/s.scopeR);let tau=rp*(p.C+s.scopeC);
     if(s.rg>0&&s.scopeC>0){const a=system(p).A,tr=(a[0]+a[3])/2,q=Math.sqrt((a[0]-a[3])**2/4+a[1]*a[2]);tau=-1/(tr+q);}
     return{tau,cutoff:1/(2*Math.PI*(1/(1/p.R+1/s.scopeR))*(p.C+s.scopeC))};}
   function coefficients(p){const k=p.Rf/p.R1,ng=1+k,a1=-k,a2=ng*p.R4/(p.R3+p.R4),factor=p.opamp==='ideal'?1:p.a0/(p.a0+ng);return{a1:a1*factor,a2:a2*factor,ad:(a2-a1)/2*factor,ac:(a1+a2)*factor,noiseGain:ng,cmrr:Math.abs(a1+a2)<1e-13*Math.max(1,Math.abs(a1),Math.abs(a2))?Infinity:20*Math.log10(Math.abs((a2-a1)/(2*(a1+a2))))};}
   // Linear state-space networks. Every source is specified at V1/V2 for op-amps;
   // the RC instrument model includes the generator and both oscilloscope channels.
   function system(p){
+    if(Bench.real(p))return{n:network(p).components.filter(c=>['C','L'].includes(c.type)).length,descriptor:true};
     const z={n:0,A:[],B:[],out:[],direct:[0,0],vin:null,initial:[]};
     if(p.type==='rc'){
       const ins=instrument(p),g=1/p.R,gs=1/ins.scopeR,co=p.C+ins.scopeC;
@@ -189,6 +197,7 @@
   }
   function simulate(p){
     assert(p);
+    if(Bench.real(p)){const d=network(p),result=Free.simulate(d),t=Free.topology(d),node=t.nodes['R3:a'];return result.data.map((row,i)=>({...row,source:inputs(p,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right')[0],vin2:node>=0?row.values['N'+(node+1)]:0,linear:p.type==='rc'||p.opamp==='ideal'?row.out:NaN,current:row.currents.R1}));}
     if(p.type==='rc'||p.opamp==='ideal')return simulateLinear(p);
     const result=Free.simulate(Free.example(p.type,p)),linear=simulateLinear(p);let i=0;
     return result.data.map((d,j)=>{
@@ -200,6 +209,7 @@
   const complex=(r=0,i=0)=>({r,i}),ca=(a,b)=>complex(a.r+b.r,a.i+b.i),cm=(a,b)=>complex(a.r*b.r-a.i*b.i,a.r*b.i+a.i*b.r),cd=(a,b)=>{const d=b.r*b.r+b.i*b.i;return complex((a.r*b.r+a.i*b.i)/d,(a.i*b.r-a.r*b.i)/d);};
   const scale=(a,b)=>complex(a.r*b,a.i*b);
   function response(p,frequency,input='default'){
+    if(Bench.real(p)){const d=network(p,p.type==='difference'?(input==='default'?p.bodeInput:input):null);if(p.type==='rc'&&input==='generator')d.settings.acReference='source';return Free.bode(d,{frequencies:[frequency],ignoreBias:true}).data[0];}
     if(p.opamp==='physical'&&p.type!=='rc'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(input==='default'?p.bodeInput:input);return Free.bode(d,{frequencies:[frequency],ignoreBias:true}).data[0];}
     const s=system(p),w=2*Math.PI*frequency;
     let drive=input==='v1'?[1,0]:input==='v2'?[0,1]:input==='common'?[1,1]:input==='differential'?[-.5,.5]:p.type==='difference'?(p.bodeInput==='v1'?[1,0]:p.bodeInput==='v2'?[0,1]:p.bodeInput==='common'?[1,1]:[-.5,.5]):[1,0];
@@ -214,7 +224,7 @@
     const magnitude=Math.hypot(H.r,H.i);
     return{real:H.r,imag:H.i,magnitude,db:magnitude===0?-Infinity:20*Math.log10(magnitude),phase:magnitude===0?NaN:Math.atan2(H.i,H.r)*180/Math.PI};
   }
-  function bode(p){assert(p);if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;}const data=[];let previous;for(let i=0;i<601;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/600),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
+  function bode(p){assert(p);if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;}const data=[];let previous;for(let i=0;i<601;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/600),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
   const drives=mode=>({v1:{V1:1,V2:0},v2:{V1:0,V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}})[mode]||{V1:1};
   function vtc(p,options={}){
     assert(p);if(p.type==='rc')throw new Error('La VTC in ampiezza richiede un amplificatore.');
@@ -223,7 +233,7 @@
     for(let i=0;i<count;i++){
       if(options.cancelled?.())throw new Error('Calcolo annullato.');const x=p.sweepMax*i/(count-1),q=clone(p);q.drive=p.type==='difference'?p.bodeInput:'v1';Object.assign(q.wave1,{kind:'sine',vpp:x,phase:0});let settled=false,result,cycles,state=null,delta=0;
       for(cycles=8;cycles<=128;cycles+=8){
-        const d=Free.example(p.type,q);d.settings.duration=8*period;if(d.settings.duration>100)throw new Error('Per la VTC scegli una frequenza di almeno 0,08 Hz.');d.settings.samples=1024;d.settings.integration='fixed';
+        const d=Bench.real(q)?network(q,q.drive):Free.example(p.type,q);d.settings.duration=8*period;if(d.settings.duration>100)throw new Error('Per la VTC scegli una frequenza di almeno 0,08 Hz.');d.settings.samples=1024;d.settings.integration='fixed';
         const sampleTimes=[];for(let n=0;n<=128;n++)sampleTimes.push((6+n/64)*period);
         result=Free.simulate(d,{sampleTimes,steps:4096,initialState:state});state=result.finalState;delta=0;let scale=1;
         for(let n=0;n<=64;n++){const a=interpolate(result.data,(6+n/64)*period),b=interpolate(result.data,(7+n/64)*period);for(const k of Object.keys(a)){delta=Math.max(delta,Math.abs(a[k]-b[k]));scale=Math.max(scale,Math.abs(a[k]),Math.abs(b[k]));}}
@@ -236,12 +246,15 @@
     return data;
   }
   function summary(p){
+    if(Bench.real(p)){const b=Bench.config(p.bench);return[...(p.type==='rc'?[{label:'τ nominale R·C',value:format(p.R*p.C,'s'),primary:true},{label:'f_taglio nominale RC',value:format(1/(2*Math.PI*p.R*p.C),'Hz'),primary:true}]:[]),{label:'Montaggio',value:'Reale · R/C espliciti'},{label:'R_G per generatore attivo',value:format(b.rg,'Ω')},{label:'R per collegamento',value:format(b.wireR,'Ω')},{label:'Riferimento Bode',value:p.type==='rc'&&p.benchReference!=='source'?'CH2 / CH1':'Uscita / generatore ideale'}];}
     if(p.type==='rc'){const r=rcSummary(p);return[{label:'Costante di tempo',value:RC.format(r.tau,'s')},{label:'Frequenza di taglio Vout/V1',value:RC.format(r.cutoff,'Hz')},{label:'Carico di misura',value:p.instrument==='ideal'?'Nessuno':p.instrument==='generator'?'Solo generatore':p.instrument==='probe'?'Sonde 10×':'Oscilloscopio'}];}
     const c=coefficients(p),gain=p.type==='difference'?c.ad:c.a1;
     if(p.type==='difference')return[{label:'Guadagno differenziale Aᴅ',value:format(c.ad)+' V/V'},{label:'Guadagno di modo comune Aᴄ',value:format(c.ac)+' V/V'},{label:'CMRR dei rapporti resistivi',value:Number.isFinite(c.cmrr)?format(c.cmrr)+' dB':'∞ · rapporti bilanciati'}];
     return[{label:p.type==='derivative'?'Guadagno HF ideale':'Guadagno a bassa frequenza',value:RC.format(p.type==='derivative'?-p.Rf/p.R1:gain,'')+' V/V'},{label:p.type==='derivative'?'Taglio della rete R₁C₁':'Banda del modello',value:p.type==='derivative'?RC.format(1/(2*Math.PI*p.R1*p.C1),'Hz'):p.opamp==='ideal'?'Infinita':RC.format(p.gbw*(p.a0+1+p.Rf/p.R1)/(p.a0*(1+p.Rf/p.R1)),'Hz')},{label:'Escursione di uscita',value:p.opamp==='ideal'?'Illimitata (ideale)':p.opamp==='physical'?format(Free.physical(p).negative+p.headroom,'V')+' … '+format(Free.physical(p).positive-p.headroom,'V')+' · prima del carico':'±'+RC.format(p.rail-p.headroom,'V')}];
   }
-  function csv(p,analysis,data){const keys=analysis==='time'?['x','source','vin','vin2','out','linear','current']:analysis==='bode'?['x','magnitude','db','phase']:['x','out','linear'];const headers=analysis==='time'?'tempo_s,Vg_V,V1_V,V2_V,Vout_V,Vout_lineare_V,corrente_R_A':analysis==='bode'?'frequenza_Hz,guadagno_V_V,guadagno_dB,fase_gradi':'Vin_Vpp,Vout_Vpp,Vout_lineare_Vpp';return '\uFEFF'+headers+'\r\n'+data.map(d=>keys.map(k=>Number.isFinite(d[k])?d[k].toExponential(12):'').join(',')).join('\r\n');}
+  function csv(p,analysis,data){const keys=analysis==='time'?['x','source','vin','vin2','out','linear','current']:analysis==='bode'?['x','magnitude','db','phase']:['x','out','linear'];const headers=analysis==='time'?(Bench.real(p)?'tempo_s,Vg_V,IN_lettura_V,V2_nodo_V,OUT_lettura_V,Vout_lineare_V,corrente_R1_A':'tempo_s,Vg_V,V1_V,V2_V,Vout_V,Vout_lineare_V,corrente_R_A'):analysis==='bode'?'frequenza_Hz,guadagno_V_V,guadagno_dB,fase_gradi':'Vin_Vpp,Vout_Vpp,Vout_lineare_Vpp';return '\uFEFF'+headers+'\r\n'+data.map(d=>keys.map(k=>Number.isFinite(d[k])?d[k].toExponential(12):'').join(',')).join('\r\n');}
+  function metrics(p,excitation=null){if(!Bench.real(p)||p.type!=='difference')return[];const f=p.wave1.frequency,base=network(p,excitation),read=drive=>{const d=clone(base);d.settings.acWeights=drives(drive);return Free.bode(d,{frequencies:[f]}).data[0].magnitude;},ad=read('differential'),ac=read('common'),limited=ac<=Math.max(1e-15,ad*1e-12);return[{label:'A_D a '+format(f,'Hz'),value:format(ad,'V/V'),primary:true},{label:'A_C a '+format(f,'Hz'),value:format(ac,'V/V'),primary:true},{label:'CMRR a '+format(f,'Hz'),value:ad<=1e-15?'Non definito · A_D nullo':limited?'Cancellazione entro risoluzione':format(20*Math.log10(ad/ac),'dB'),primary:true,note:'Stesso montaggio e punto di lavoro per A_D e A_C. Comprende gli strumenti; il CMRR intrinseco del chip non è modellato.'}];}
+  function curveMetrics(data){if(!data?.length)return[];let peak=-1,index=-1;for(let i=0;i<data.length;i++)if(Number.isFinite(data[i].magnitude)&&data[i].magnitude>peak){peak=data[i].magnitude;index=i;}if(!(peak>0))return[];const level=peak/Math.SQRT2,cross=(a,b)=>Math.exp(Math.log(a.x)+(Math.log(level)-Math.log(a.magnitude))/(Math.log(b.magnitude)-Math.log(a.magnitude))*(Math.log(b.x)-Math.log(a.x)));let low=null,high=null;for(let i=1;i<=index;i++)if(data[i-1].magnitude<level&&data[i].magnitude>=level)low=cross(data[i-1],data[i]);for(let i=index+1;i<data.length;i++)if(data[i-1].magnitude>level&&data[i].magnitude<=level){high=cross(data[i-1],data[i]);break;}return[...(low?[{label:'f bassa −3 dB',value:format(low,'Hz'),primary:true}]:[]),{label:'f alta −3 dB',value:high?format(high,'Hz'):'Fuori intervallo',primary:true,note:'Rispetto al massimo della risposta nell’intervallo visualizzato; interpolazione logaritmica.'}];}
   function serialize(project){return JSON.stringify({application:'Circuit Lab',version:2,...project},null,2);}
   function parse(text){const d=Files.readJSON(text);
     if(!d||typeof d!=='object')throw new Error('Il file non contiene un progetto.');
@@ -253,7 +266,7 @@
     const layouts=d.layouts??{};
     if(!layouts||typeof layouts!=='object'||Array.isArray(layouts))throw new Error('Disposizione dei componenti non valida.');
     for(const [type,items]of Object.entries(layouts)){
-      if(!['rc','inverting','derivative','difference'].includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>20)throw new Error('Disposizione dei componenti non valida.');
+      if(!['rc','inverting','derivative','difference'].includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>40)throw new Error('Disposizione dei componenti non valida.');
       for(const [id,at]of Object.entries(items))if(!/^[A-Za-z][A-Za-z0-9]{0,10}$/.test(id)||!at||!Number.isFinite(at.x)||!Number.isFinite(at.y)||Math.abs(at.x)>10000||Math.abs(at.y)>10000||(at.rotation!==undefined&&![0,90,180,270].includes(at.rotation)))throw new Error('Posizione del componente '+id+' non valida.');
     }
     Files.checkRCStudy(d.rcStudy);Files.checkACStudy(d.acStudy);Files.checkOpampStudy(d.opampStudy);Files.checkMetrologyStudy(d.metrologyStudy);Files.checkParameterStudy(d.parameterStudy);
@@ -262,13 +275,13 @@
   }
   function circuit(project){
     const p=project.circuits[CATALOG.find(c=>c.id===project.experiment)?.type];if(!p)throw new Error('Esperienza non disponibile.');assert(p);
-    const d=Free.example(p.type,p);d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':'time';
-    if(p.type==='rc'){d.probes.input='R1:a';d.settings.acReference='input';for(const key of ['rcStudy','acStudy'])if(project[key])d[key]=clone(project[key]);if(d.acStudy?.reference==='after-generator')d.acStudy.reference='input';}
+    const d=Bench.real(p)?network(p,p.type==='difference'&&project.analysis!=='time'?p.bodeInput:null):Free.example(p.type,p);if(Bench.real(p))for(const part of d.components)Object.assign(part,project.layouts?.[p.type]?.[part.id]||{});d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':'time';
+    if(p.type==='rc'){if(!Bench.real(p)){d.probes.input='R1:a';d.settings.acReference='input';}for(const key of ['rcStudy','acStudy'])if(project[key])d[key]=clone(project[key]);if(d.acStudy?.reference==='after-generator')d.acStudy.reference='input';}
     if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);
     if(p.type!=='rc'&&project.opampStudy)d.opampStudy=clone(project.opampStudy);
     if(p.type==='difference'){d.settings.acWeights=drives(p.bodeInput||'differential');}
     return Free.parse(Free.serialize(d));
   }
   const format=(value,unit='',digits=3)=>!Number.isFinite(value)?'—':!unit||['dB','°'].includes(unit)?new Intl.NumberFormat('it-IT',{maximumSignificantDigits:digits}).format(Object.is(value,-0)?0:value)+(unit?' '+unit:''):RC.format(Number(value.toPrecision(digits)),unit,digits);
-  return{physical:Free.physical,circuit,CATALOG,defaults,selectExperience,normalizeTime,validate,system,simulate,response,bode,vtc,summary,coefficients,rcSummary,instrument,inputs,csv,serialize,parse,format,clone};
+  return{physical:Free.physical,network,real:Bench.real,metrics,curveMetrics,circuit,CATALOG,defaults,selectExperience,normalizeTime,validate,system,simulate,response,bode,vtc,summary,coefficients,rcSummary,instrument,inputs,csv,serialize,parse,format,clone};
 });

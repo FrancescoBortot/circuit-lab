@@ -67,3 +67,22 @@ Le incertezze del fit con tempi assunti esatti e il bilancio con contributi aggi
 Esempio completo con dati sintetici: dalla radice del repository esegui `node app/scripts/check-rc-workflow.cjs`. Il comando genera in locale `app/benchmark/rc-workflow/relazione.html` e `laboratorio.zip`; questi risultati non sono inclusi nel download del codice. La verifica del contenuto dei file è distinta dal collaudo del loro download nel browser nativo.
 
 I test automatici e i rapporti dei confronti numerici sono inclusi nel repository. Per i comandi e i limiti generali leggi il [README](../README.md). Prova apertura, simulazione, download e riapertura del progetto nel tuo browser prima di affidarti alla memoria automatica.
+
+## Montaggio reale e schema LaTeX
+
+Nel pannello **Modifica**, la riga **Montaggio** apre **Ideale / Reale**. Vale sia per le esperienze guidate sia per l’editor libero.
+
+1. Scegli **Reale** e indica quali generatori hanno R in serie.
+2. Per ciascun canale scegli il nodo, il collegamento diretto o la sonda ×10, e l’accoppiamento DC/AC. Disattiva i canali non collegati.
+3. Apri **Valori degli strumenti e dei collegamenti** per modificare le specifiche. I valori iniziali sono R_G = 50 Ω, R_O = 1 MΩ, C_O = 20 pF, C_AC = 20 nF, R_E = 10 MΩ, C_E = 12 pF, cavo = 90 pF/m e R per filo = 0,05 Ω.
+4. Premi **Applica al circuito**: gli elementi diventano R e C espliciti, inclusi nel calcolo e nelle esportazioni. Clicca un elemento aggiunto per riconoscerne la funzione. Usa zoom e trascinamento nei montaggi più densi.
+
+Con una sonda ×10, C_E comprende già sonda, cavo e oscilloscopio: la lunghezza del cavo non viene aggiunta di nuovo. In AC la sonda usa un divisore compensato; IN/OUT mostrano la lettura riferita al puntale, mentre tensioni nodali, correnti e potenze restano quelle fisiche. Un canale disattivato lascia una sonda virtuale senza carico. Le masse dei canali sono comuni.
+
+Le capacità degli strumenti partono dalla tensione iniziale nominale del nodo, ripartita sul divisore della sonda; C_AC parte da 0 V. Nell’editor libero puoi modificare questi valori. Riapplicare la configurazione ricrea gli elementi aggiunti e sostituisce le loro eventuali modifiche manuali. Se ne hai cambiato i collegamenti, l’app impedisce una riconfigurazione che perderebbe tali modifiche: usa Annulla o rimuovi prima i nuovi collegamenti.
+
+**τ, frequenze di taglio e CMRR** hanno uno sfondo azzurro. Con gli strumenti reali τ = R·C e il taglio RC sono riferimenti nominali; i tagli ricavati dal Bode sono a −3 dB rispetto al massimo nell’intervallo visualizzato. Il CMRR comprende il montaggio e il carico degli strumenti, allo stesso punto di lavoro DC; non comprende il CMRR intrinseco del chip.
+
+Per il LaTeX apri la **freccia accanto a Salva sessione** (oppure **Progetto e copie** nell’editor), poi **Scarica schema .tex**. Puoi includere la tabella delle specifiche oppure scegliere **Solo figura TikZ** per inserirla in una relazione esistente. Nei circuiti compatti la tabella è a fianco; negli altri occupa le pagine successive. Il documento completo richiede i pacchetti TikZ, graphicx, tabularx, longtable, array e adjustbox. Anche gli archivi ZIP della relazione e della sessione includono i sorgenti .tex.
+
+Il montaggio reale è un modello concentrato di laboratorio: non include induttanze parassite, rumore o propagazione nei cavi. Tutti i calcoli e la generazione dei file restano sul dispositivo.

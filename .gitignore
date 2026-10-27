@@ -43,3 +43,5 @@ id_ed25519
 
 # Sito generato per GitHub Pages.
 /_site/
+
+/app/benchmark/latex-export*/

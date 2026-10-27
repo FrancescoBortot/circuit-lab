@@ -1,0 +1,493 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "RC libero",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 272,
+      "y": 375,
+      "rotation": 0,
+      "wave": {
+        "kind": "pulse",
+        "level": 5,
+        "vpp": 1,
+        "frequency": 50,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0,
+        "width": 0.0018799999999999997
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 640,
+      "y": 250,
+      "rotation": 0,
+      "value": 100000
+    },
+    {
+      "id": "C1",
+      "type": "C",
+      "x": 1072,
+      "y": 375,
+      "rotation": 90,
+      "value": 4.7e-9,
+      "initial": 0
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 272,
+      "y": 587.5,
+      "rotation": 0
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 1072,
+      "y": 587.5,
+      "rotation": 0
+    },
+    {
+      "id": "RG1",
+      "type": "R",
+      "x": 382,
+      "y": 280,
+      "rotation": 0,
+      "value": 50,
+      "benchRole": "R_G · V1"
+    },
+    {
+      "id": "RW1",
+      "type": "R",
+      "x": 511,
+      "y": 265,
+      "rotation": 0,
+      "value": 0.05,
+      "benchRole": "Collegamento W1"
+    },
+    {
+      "id": "RW2",
+      "type": "R",
+      "x": 878,
+      "y": 295.5,
+      "rotation": 0,
+      "value": 0.05,
+      "benchRole": "Collegamento W2"
+    },
+    {
+      "id": "RW3",
+      "type": "R",
+      "x": 1072,
+      "y": 487.25,
+      "rotation": 90,
+      "value": 0.05,
+      "benchRole": "Collegamento W3"
+    },
+    {
+      "id": "RW4",
+      "type": "R",
+      "x": 272,
+      "y": 491.75,
+      "rotation": 90,
+      "value": 0.05,
+      "benchRole": "Collegamento W4"
+    },
+    {
+      "id": "CC1",
+      "type": "C",
+      "x": 470,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 9e-11,
+      "initial": 5,
+      "benchRole": "CH1 · C cavo (1 m)"
+    },
+    {
+      "id": "RO1",
+      "type": "R",
+      "x": 250,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 1000000,
+      "benchRole": "CH1 · R oscilloscopio"
+    },
+    {
+      "id": "CO1",
+      "type": "C",
+      "x": 350,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 2e-11,
+      "initial": 5,
+      "benchRole": "CH1 · C oscilloscopio"
+    },
+    {
+      "id": "CC2",
+      "type": "C",
+      "x": 940,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 9e-11,
+      "initial": 0,
+      "benchRole": "CH2 · C cavo (1 m)"
+    },
+    {
+      "id": "RO2",
+      "type": "R",
+      "x": 720,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 1000000,
+      "benchRole": "CH2 · R oscilloscopio"
+    },
+    {
+      "id": "CO2",
+      "type": "C",
+      "x": 820,
+      "y": 767.5,
+      "rotation": 90,
+      "value": 2e-11,
+      "initial": 0,
+      "benchRole": "CH2 · C oscilloscopio"
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "RG1:b",
+      "b": "RW1:a"
+    },
+    {
+      "id": "W2",
+      "a": "R1:b",
+      "b": "RW2:a"
+    },
+    {
+      "id": "W3",
+      "a": "C1:b",
+      "b": "RW3:a"
+    },
+    {
+      "id": "W4",
+      "a": "V1:n",
+      "b": "RW4:a"
+    },
+    {
+      "id": "WB1",
+      "a": "V1:p",
+      "b": "RG1:a"
+    },
+    {
+      "id": "WB2",
+      "a": "RW1:b",
+      "b": "R1:a"
+    },
+    {
+      "id": "WB3",
+      "a": "RW2:b",
+      "b": "C1:a"
+    },
+    {
+      "id": "WB4",
+      "a": "RW3:b",
+      "b": "G2:g"
+    },
+    {
+      "id": "WB5",
+      "a": "RW4:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB6",
+      "a": "R1:a",
+      "b": "CC1:a"
+    },
+    {
+      "id": "WB7",
+      "a": "CC1:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB8",
+      "a": "R1:a",
+      "b": "RO1:a"
+    },
+    {
+      "id": "WB9",
+      "a": "RO1:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB10",
+      "a": "R1:a",
+      "b": "CO1:a"
+    },
+    {
+      "id": "WB11",
+      "a": "CO1:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB12",
+      "a": "C1:a",
+      "b": "CC2:a"
+    },
+    {
+      "id": "WB13",
+      "a": "CC2:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB14",
+      "a": "C1:a",
+      "b": "RO2:a"
+    },
+    {
+      "id": "WB15",
+      "a": "RO2:b",
+      "b": "G1:g"
+    },
+    {
+      "id": "WB16",
+      "a": "C1:a",
+      "b": "CO2:a"
+    },
+    {
+      "id": "WB17",
+      "a": "CO2:b",
+      "b": "G1:g"
+    }
+  ],
+  "probes": {
+    "input": "R1:a",
+    "output": "C1:a"
+  },
+  "settings": {
+    "duration": 0.004699999999999999,
+    "samples": 1600,
+    "fmin": 10,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "bode",
+    "probeScaleInput": 1,
+    "probeScaleOutput": 1,
+    "integration": "adaptive",
+    "rtol": 0.00001,
+    "acReference": "source"
+  },
+  "benchSetup": {
+    "version": 1,
+    "config": {
+      "mode": "real",
+      "rg": 50,
+      "wireR": 0.05,
+      "scopeR": 1000000,
+      "scopeC": 2e-11,
+      "acC": 2e-8,
+      "probeR": 10000000,
+      "probeC": 1.2e-11,
+      "cableC": 9e-11,
+      "sourceIds": null,
+      "channels": [
+        {
+          "enabled": true,
+          "target": "input",
+          "kind": "direct",
+          "coupling": "dc",
+          "length": 1
+        },
+        {
+          "enabled": true,
+          "target": "output",
+          "kind": "direct",
+          "coupling": "dc",
+          "length": 1
+        }
+      ]
+    },
+    "parts": [
+      "RG1",
+      "RW1",
+      "RW2",
+      "RW3",
+      "RW4",
+      "CC1",
+      "RO1",
+      "CO1",
+      "CC2",
+      "RO2",
+      "CO2"
+    ],
+    "wires": [
+      "WB1",
+      "WB2",
+      "WB3",
+      "WB4",
+      "WB5",
+      "WB6",
+      "WB7",
+      "WB8",
+      "WB9",
+      "WB10",
+      "WB11",
+      "WB12",
+      "WB13",
+      "WB14",
+      "WB15",
+      "WB16",
+      "WB17"
+    ],
+    "baseWires": [
+      {
+        "id": "W1",
+        "a": "V1:p",
+        "b": "R1:a"
+      },
+      {
+        "id": "W2",
+        "a": "R1:b",
+        "b": "C1:a"
+      },
+      {
+        "id": "W3",
+        "a": "C1:b",
+        "b": "G2:g"
+      },
+      {
+        "id": "W4",
+        "a": "V1:n",
+        "b": "G1:g"
+      }
+    ],
+    "expected": [
+      {
+        "id": "W1",
+        "a": "RG1:b",
+        "b": "RW1:a"
+      },
+      {
+        "id": "W2",
+        "a": "R1:b",
+        "b": "RW2:a"
+      },
+      {
+        "id": "W3",
+        "a": "C1:b",
+        "b": "RW3:a"
+      },
+      {
+        "id": "W4",
+        "a": "V1:n",
+        "b": "RW4:a"
+      },
+      {
+        "id": "WB1",
+        "a": "V1:p",
+        "b": "RG1:a"
+      },
+      {
+        "id": "WB2",
+        "a": "RW1:b",
+        "b": "R1:a"
+      },
+      {
+        "id": "WB3",
+        "a": "RW2:b",
+        "b": "C1:a"
+      },
+      {
+        "id": "WB4",
+        "a": "RW3:b",
+        "b": "G2:g"
+      },
+      {
+        "id": "WB5",
+        "a": "RW4:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB6",
+        "a": "R1:a",
+        "b": "CC1:a"
+      },
+      {
+        "id": "WB7",
+        "a": "CC1:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB8",
+        "a": "R1:a",
+        "b": "RO1:a"
+      },
+      {
+        "id": "WB9",
+        "a": "RO1:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB10",
+        "a": "R1:a",
+        "b": "CO1:a"
+      },
+      {
+        "id": "WB11",
+        "a": "CO1:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB12",
+        "a": "C1:a",
+        "b": "CC2:a"
+      },
+      {
+        "id": "WB13",
+        "a": "CC2:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB14",
+        "a": "C1:a",
+        "b": "RO2:a"
+      },
+      {
+        "id": "WB15",
+        "a": "RO2:b",
+        "b": "G1:g"
+      },
+      {
+        "id": "WB16",
+        "a": "C1:a",
+        "b": "CO2:a"
+      },
+      {
+        "id": "WB17",
+        "a": "CO2:b",
+        "b": "G1:g"
+      }
+    ],
+    "probes": {
+      "input": "R1:a",
+      "output": "C1:a"
+    },
+    "appliedProbes": {
+      "input": "R1:a",
+      "output": "C1:a"
+    },
+    "labels": null,
+    "scales": {
+      "input": null,
+      "output": null
+    },
+    "sourceMap": {
+      "V1:p": "RG1:b"
+    },
+    "appliedLabels": {}
+  }
+}

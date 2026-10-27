@@ -1,0 +1,85 @@
+{
+  "hashes": {
+    "free-model.js": "2c998dfbf49c58689e7fcff6c423c61716fea526b2c87bc4cf9d6d8c11171f20",
+    "bench-model.js": "81175270b4683495679500a06eb00408dcf6e5cd4f7a1978e4c4b199e8acf02d",
+    "lab-model.js": "fff701901ab71c7ab13b64a75344f183ffe27635278e3254623f66de2a2390cb",
+    "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
+  },
+  "reference": "Official locally compiled ngspice 47; native R/C and controlled sources",
+  "externalConnectionDuringSimulation": false,
+  "cases": [
+    {
+      "name": "direct-dc",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 3.4146733346642175e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "direct-ac",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 5.300145164218495e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "probe-dc",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 4.778292830935517e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "probe-ac",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 4.906462083498389e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "difference-common",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 3.310026584691493e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "difference-differential",
+      "kind": "ac",
+      "compared": 141,
+      "maxAbsoluteError": 1.6600847048767693e-10,
+      "tolerance": 2e-7,
+      "unit": "V/V",
+      "pass": true
+    },
+    {
+      "name": "rc-discharge",
+      "kind": "time",
+      "compared": 3257,
+      "maxAbsoluteError": 3.4975801854741917e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "name": "probe-ac-discharge",
+      "kind": "time",
+      "compared": 3232,
+      "maxAbsoluteError": 3.140298310277956e-7,
+      "tolerance": 0.0002,
+      "unit": "V",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

@@ -156,6 +156,14 @@ Il browser può conservare una copia automatica, ma questa dipende dal browser e
 - Usa scansioni e Monte Carlo dopo aver capito il circuito nominale; dichiara distribuzioni e parametri scelti.
 - Conserva nel progetto i dati e le impostazioni che hanno prodotto il grafico esportato.
 
+## Strumenti reali e sorgenti LaTeX
+
+In **Modifica → Montaggio → Reale** puoi includere R del generatore, resistenza dei collegamenti, capacità dei cavi e due canali dell’oscilloscopio. Ogni canale consente collegamento diretto o sonda ×10 e accoppiamento DC/AC. I valori sono modificabili e gli elementi aggiunti compaiono nello schema e nel calcolo. La sonda ×10 usa un equivalente al puntale; in AC è modellata come divisore compensato, senza contare due volte il cavo.
+
+La freccia accanto a **Salva sessione**, oppure **Progetto e copie** nell’editor, offre **Scarica schema .tex** e **Solo figura TikZ**. Il documento completo affianca una tabella delle specifiche agli schemi compatti e usa pagine separate per i montaggi più grandi. I sorgenti LaTeX sono inclusi anche negli archivi della relazione e della sessione.
+
+Le grandezze principali hanno un’evidenziazione azzurra: τ, taglio, banda e CMRR. Nel montaggio reale il riferimento RC nominale resta distinto dai tagli della curva completa. Per le ipotesi, le condizioni iniziali e i limiti del modello consulta la [guida rapida](docs/USO_RAPIDO.md#montaggio-reale-e-schema-latex).
+
 ## Modelli, stato del progetto e problemi comuni
 
 Circuit Lab è in sviluppo e usa modelli didattici con limiti espliciti. Un operazionale ideale, un modello semplificato e un componente commerciale possono dare risultati diversi. I modelli D/BJT/MOS non riproducono automaticamente un particolare dispositivo reale. Leggi le ipotesi mostrate dall’interfaccia.
@@ -211,3 +219,5 @@ Il workflow GitHub verifica modelli, dati, pacchetto e percorso RC prima di pubb
 Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza artificiale. I controlli automatici accompagnano lo sviluppo; il collaudo nei browser e il riscontro di chi studia restano parte della verifica.
 
 </details>
+
+I modelli degli strumenti dispongono di otto ulteriori confronti locali con ngspice: collegamenti diretti e sonde ×10 in DC/AC, amplificatore delle differenze e scarica con accoppiamento AC. Per rigenerarli: `node app/scripts/benchmark-bench.cjs`. I risultati, con gli hash dei sorgenti verificati, sono in `app/benchmark/instruments/results.json`.

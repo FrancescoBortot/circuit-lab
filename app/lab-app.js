@@ -244,7 +244,7 @@
   let resizeStart;
   function resizeSchematic(height){
     const workbench=$('schematicStage').closest('.workbench'),available=workbench.getBoundingClientRect().height;
-    const maximum=window.matchMedia('(max-width:760px)').matches?440:Math.max(180,available-385);
+    const maximum=window.matchMedia('(max-width:760px)').matches?440:Math.max(120,available-450);
     document.documentElement.style.setProperty('--diagram-height',Math.max(120,Math.min(maximum,height))+'px');
   }
   $('paneDivider').addEventListener('pointerdown',e=>{resizeStart={y:e.clientY,height:$('schematicStage').getBoundingClientRect().height};$('paneDivider').setPointerCapture(e.pointerId);});

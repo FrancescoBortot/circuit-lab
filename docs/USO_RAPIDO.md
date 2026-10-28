@@ -101,3 +101,6 @@ Nell’editor libero **Riordina schema** prepara un’anteprima di allineamento 
 In **Montaggio** puoi salvare fino a 20 **profili di strumentazione**, con specifiche e modalità dei canali. Caricare un profilo compila i campi senza applicarlo: controlla i punti misurati e premi **Applica al circuito**. I profili appartengono al browser; i valori effettivamente applicati sono conservati nel JSON del circuito.
 
 Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento, riquadri e posizione della tabella. Il file completo include queste scelte; il blocco CircuitikZ conserva dimensioni e riquadri, mentre larghezza e orientamento dipendono dalla relazione che lo ospita.
+
+
+**Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono sopra il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.

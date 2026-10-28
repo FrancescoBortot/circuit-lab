@@ -38,11 +38,17 @@ Nelle esperienze guidate apri **Analisi → Che cosa vuoi studiare?**. La scelta
 
 In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e confrontarli con il modello. Il pulsante degli operazionali mostra **Misure operazionali** e **VTC · banda · CMRR** su due righe. In Analisi il riepilogo dei risultati scorre con il contenuto, lasciando più spazio ai controlli. Cambiare sezione riporta il pannello all’inizio; gli errori nei parametri restano visibili e vanno corretti prima di cambiare analisi.
 
+## Dare spazio al circuito o al grafico
+
+Sopra l’area centrale, **Circuito e grafico**, **Solo circuito** e **Solo grafico** cambiano la visualizzazione nelle esperienze guidate e nell’editor libero. I pulsanti restano disponibili per riaprire il riquadro nascosto. Con entrambi aperti, il circuito mantiene un’altezza leggibile e l’area centrale scorre; il separatore consente di variare l’altezza dello schema. **Nascondi circuito** e **Nascondi grafico** aprono direttamente la vista complementare. I passaggi **1 · Costruisci** e **2 · Simula** scelgono rispettivamente circuito e grafico.
+
+Le etichette di componenti, valori, nodi e sonde vengono distanziate automaticamente dai simboli, dai collegamenti e dalle altre etichette. Nome e valore restano insieme e cliccabili. Lo stesso controllo si applica agli esempi, ai componenti aggiunti e agli schemi con strumenti reali. **Centra schema** include gli ingombri dei testi; le linee sottili tratteggiate collegano eventuali etichette allontanate dal componente e non sono collegamenti elettrici. Gli schemi molto densi richiedono comunque lo zoom per leggere i dettagli.
+
 ## Leggere le curve con calma
 
 La legenda distingue **Ingresso · V₁** (tratteggio) e **Uscita · OUT** (linea continua); i campioni di linea hanno gli stessi colori e tratteggi del grafico. Un clic nasconde o mostra la curva; il nome barrato indica una curva nascosta. Deve restarne visibile almeno una. Nell’editor libero le etichette principali sono **Ingresso · IN** e **Uscita · OUT**.
 
-Nel **Transitorio guidato**, **Riproduci** sposta il cursore dell’1% dell’intervallo visibile per passo, lasciando i numeri fermi per **1 s**. **Ogni passo** permette di scegliere da 0,25 a 2 s. **Pausa** mantiene la lettura ferma anche passando il mouse sul grafico; un clic sul grafico riprende il posizionamento libero. **← Passo**, **Passo →** e **Inizio** consentono la lettura manuale. Dopo uno zoom, i passi seguono il tratto ingrandito. Il tempo fisico e i dati della simulazione restano invariati: questa è una lettura rallentata, non una simulazione in tempo reale. Cambiare analisi, intervenire sul grafico o lasciare la scheda ferma la riproduzione.
+Nel **Transitorio guidato**, il selettore **Lettura** sotto il grafico offre **A passi** e **Continua**. A passi sposta il cursore dell’1% dell’intervallo visibile e mantiene i numeri fermi per il tempo scelto (0,25–2 s). Continua sposta il cursore senza scatti, con velocità regolabile: **1% in** indica quanto impiega a percorrere l’1% del tratto visibile. Le letture numeriche si aggiornano fino a cinque volte al secondo. **Pausa** ferma il cursore e mostra subito i valori dell’istante esatto selezionato. **← Passo**, **Passo →**, **Inizio** e il cursore manuale restano disponibili in entrambe le modalità. Un clic sul grafico riprende il posizionamento libero. Il tempo fisico e i campioni calcolati non cambiano; zoom, cambio analisi e scheda nascosta fermano la riproduzione.
 
 ## Percorso consigliato per studiare
 

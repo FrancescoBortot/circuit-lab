@@ -77,12 +77,14 @@
       const symbols=Object.values(c).map(item=>this.symbol(item)).join('');
       const h=p.type==='difference'?350:300;this.height=h;this.svg.setAttribute('viewBox',`0 0 940 ${h}`);
       this.svg.innerHTML=`<g id="diagramScene"><g class="circuit-wires">${paths.join('')}</g><g class="circuit-dots">${dots.join('')}</g>${labels.join('')}${symbols}</g>`;
+      const scene=this.svg.querySelector('#diagramScene'),placed=window.SchematicLabels?.place(this.svg,{root:scene});
+      if(placed){const b=placed.bounds;this.bounds={x:b.x-28,y:b.y-28,width:b.width+56,height:b.height+56};this.svg.setAttribute('viewBox',`${this.bounds.x} ${this.bounds.y} ${this.bounds.width} ${this.bounds.height}`);}
       this.transform();
       if(focus)this.svg.querySelector(`[data-component="${focus}"]`)?.focus({preventScroll:true});
     }
     symbol(c){
       const selected=c.id===this.selected,rot=c.rotation;
-      const box=c.kind==='opamp'?[-66,-66,132,150]:c.kind==='probe'?[-67,-30,134,95]:c.id==='Rf'&&rot%180===0?[-64,-48,168,103]:[-64,-44,128,99];
+      const box=c.kind==='opamp'?[-66,-66,132,150]:c.kind==='probe'?[-67,-30,134,95]:[-64,-78,128,133];
       let symbol='';
       if(c.kind==='resistor')symbol='<path d="M-45,0H-30M30,0H45"/><rect x="-30" y="-10" width="60" height="20" rx="2"/>';
       if(c.kind==='capacitor')symbol='<path d="M-25,0H-7M7,0H25M-7,-20V20M7,-20V20"/>';
@@ -90,16 +92,14 @@
       if(c.kind==='opamp')symbol='<path d="M-50,-43V43L50,0ZM-50,-22H-60M-50,22H-60M50,0H60"/><text class="pin-label" x="-40" y="-17">−</text><text class="pin-label" x="-40" y="28">+</text>';
       if(c.kind==='probe')symbol='<rect x="-32" y="-20" width="64" height="40" rx="7" stroke-dasharray="3 3"/><path d="M-19,0h8l5,-8 10,16 5,-8h10"/>';
       const vertical=['resistor','capacitor'].includes(c.kind)&&rot%180===90;
-      // Keep the feedback value above its branch, clear of the op-amp below.
-      const feedback=c.id==='Rf'&&!vertical;
-      const labelX=feedback?-16:c.kind==='source'?-38:vertical?36:0,anchor=feedback||c.kind==='source'?'end':vertical?'start':'middle';
-      const valueX=feedback?0:labelX,valueAnchor=feedback?'start':anchor;
-      const nameY=c.kind==='opamp'?-55:c.kind==='source'?-3:vertical?-5:-26,valueY=feedback?-26:c.kind==='opamp'?68:c.kind==='source'?18:vertical?17:39;
-      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${valueX}" y="${valueY}" text-anchor="${valueAnchor}">${c.value}</text>`}</g>`;
+      const labelX=c.kind==='source'?-38:vertical?36:0,anchor=c.kind==='source'?'end':vertical?'start':'middle';
+      const valueX=labelX,valueAnchor=anchor;
+      const nameY=c.kind==='opamp'?68:c.kind==='source'?-3:vertical?-5:-55,valueY=c.kind==='opamp'?92:c.kind==='source'?18:vertical?17:-31;
+      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><g data-label-block="${c.id}"><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${valueX}" y="${valueY}" text-anchor="${valueAnchor}">${c.value}</text>`}</g></g>`;
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     transform(){const g=this.svg.querySelector('#diagramScene');if(g)g.setAttribute('transform',`translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);this.callbacks.zoom?.(Math.round(this.view.k*100));}
-    zoom(factor,point={x:470,y:this.height/2}){const next=bounded(this.view.k*factor,.5,3.5,1),ratio=next/this.view.k;this.view.x=point.x-(point.x-this.view.x)*ratio;this.view.y=point.y-(point.y-this.view.y)*ratio;this.view.k=next;this.transform();}
+    zoom(factor,point=this.bounds?{x:this.bounds.x+this.bounds.width/2,y:this.bounds.y+this.bounds.height/2}:{x:470,y:this.height/2}){const next=bounded(this.view.k*factor,.5,3.5,1),ratio=next/this.view.k;this.view.x=point.x-(point.x-this.view.x)*ratio;this.view.y=point.y-(point.y-this.view.y)*ratio;this.view.k=next;this.transform();}
     fit(){this.view={x:0,y:0,k:1};this.transform();}
     rotate(){const id=this.selected,c=this.components[id];if(!c||!['resistor','capacitor'].includes(c.kind))return;this.commit(id,{x:c.x,y:c.y,rotation:(c.rotation+90)%360});}
     commit(id,value){this.layout[id]=value;this.callbacks.move(id,value);this.render(this.p,this.layout,this.selected);}

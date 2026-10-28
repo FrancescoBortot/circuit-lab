@@ -14,7 +14,7 @@
       svg.addEventListener('pointermove',e=>{if(!this.geometry)return;const q=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,q.x);
         if(this.pointers.size===2&&this.pinch){const[a,b]=[...this.pointers.values()],distance=Math.abs(a-b);if(distance>5)this.zoom(distance/this.pinch,(this.view[0]+this.view[1])/2);this.pinch=distance;}
         else if(this.drag){const dx=q.x-this.drag.x;if(Math.abs(dx)>4)this.drag.moved=true;if(this.drag.moved){const span=this.drag.end-this.drag.start,start=clamp(this.drag.start-dx/this.geometry.pw*span,this.domain[0],this.domain[1]-span);this.view=[start,start+span];this.draw();}}
-        else if(!this.dual&&e.pointerType==='mouse'&&q.inside)this.inspectDomain(q.domain);
+        else if(!this.dual&&!this.playbackActive&&!this.lockHover&&e.pointerType==='mouse'&&q.inside)this.inspectDomain(q.domain);
       });
       for(const type of['pointerup','pointercancel'])svg.addEventListener(type,e=>{const moved=this.drag?.moved;this.pointers.delete(e.pointerId);this.drag=null;this.pinch=null;if(moved)this.onStateChange?.();});
       svg.addEventListener('keydown',e=>{if(!this.data.length)return;const step=(this.view[1]-this.view[0])/(e.shiftKey?10:100),d=this.toDomain(this.cursor.x);

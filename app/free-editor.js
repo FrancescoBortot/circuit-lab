@@ -229,14 +229,14 @@
       this.quantities[this.doc.settings.analysis]=quantity;
       if(time){
         const readers=traces.map(t=>[t.id,M.traceReader(this.doc,t)]);data=data.map(d=>{const row={...d};for(const[id,read]of readers)row[id]=read(d);return row;});
-        series=quantity==='current'?[]:[...(this.doc.probes.input?[{key:'vin',label:'IN',color:'#8b9bb2',dash:'5 4'}]:[]),{key:'out',label:'OUT',color:'#4264ef'}];
+        series=quantity==='current'?[]:[...(this.doc.probes.input?[{key:'vin',label:'Ingresso · IN',color:'#627d99',dash:'5 4'}]:[]),{key:'out',label:'Uscita · OUT',color:'#4264ef'}];
         series.push(...traces.filter(t=>(quantity==='current')===(t.kind==='current')).map(t=>({key:t.id,label:t.id+' · '+this.traceLabel(t),color:this.traceColor(traces.indexOf(t))})));
         series=series.map(t=>({...t,visible:this.visible[t.key]!==false}));
       }else series=[{key:quantity,label:quantity==='phase'?'Fase':'Modulo',color:'#4264ef'}];
       if(series.length&&!series.some(t=>t.visible!==false)){series[0].visible=true;this.visible[series[0].key]=true;}
       if(!series.length){this.plot.data=[];$('freePlot').replaceChildren();$('freePlotEmpty').hidden=false;$('freePlotMessage').textContent='Aggiungi una sonda di corrente nella scheda Sonde, oppure clicca un componente e scegli Misura I.';$('freeLegend').textContent='';$('freeReadout').textContent='';this.renderMeasures();return;}
       this.plot.set({data,series,logX:!time,xUnit:time?'s':'Hz',xLabel:time?'Tempo':'Frequenza',yUnit:time?(quantity==='current'?'A':'V'):quantity==='phase'?'°':this.result.unit==='Ω'?'dBΩ':'dB',plainY:!time,noZero:!time,guides:[]});this.lastPlotAnalysis=this.doc.settings.analysis;this.plot.restoreState(this.savedPlots[this.lastPlotAnalysis]);$('freePlotEmpty').hidden=true;
-      $('freeLegend').innerHTML=series.map(s=>`<button data-free-trace="${s.key}" aria-pressed="${s.visible!==false}"><i style="background:${s.color}"></i>${esc(s.label)}</button>`).join('')+'<button class="open-probes" data-open-probes>+ Sonde / misure</button>'+ (this.doc.components.some(c=>c.type==='C')?'<button class="rc-launch" data-open-rc>Misura τ</button>':'');
+      $('freeLegend').innerHTML=series.map(s=>`<button data-free-trace="${s.key}" aria-pressed="${s.visible!==false}" aria-label="${s.visible!==false?'Nascondi':'Mostra'} ${esc(s.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${s.color}" stroke-width="3" ${s.dash?'stroke-dasharray="'+s.dash+'"':''}/></svg><span>${esc(s.label)}</span></button>`).join('')+'<button class="open-probes" data-open-probes>+ Sonde / misure</button>'+ (this.doc.components.some(c=>c.type==='C')?'<button class="rc-launch" data-open-rc>Misura τ</button>':'');
       $('freeResultStatus').textContent=time?(this.result.data.some(d=>d.clipped)?'Uscita limitata · ':'')+this.result.count.toLocaleString('it-IT')+' punti · '+this.result.method:(this.result.reference==='input'?'OUT / IN':'OUT / riferimento '+(this.result.unit==='Ω'?'1 A':'1 V')+' ∠0')+' · piccolo segnale'+(this.result.unit==='Ω'?' · dB riferiti a 1 Ω':'');this.renderMeasures();
     }
     cursor(d,cursors){

@@ -38,6 +38,12 @@ Nelle esperienze guidate apri **Analisi → Che cosa vuoi studiare?**. La scelta
 
 In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e confrontarli con il modello. Il pulsante degli operazionali mostra **Misure operazionali** e **VTC · banda · CMRR** su due righe. In Analisi il riepilogo dei risultati scorre con il contenuto, lasciando più spazio ai controlli. Cambiare sezione riporta il pannello all’inizio; gli errori nei parametri restano visibili e vanno corretti prima di cambiare analisi.
 
+## Leggere le curve con calma
+
+La legenda distingue **Ingresso · V₁** (tratteggio) e **Uscita · OUT** (linea continua); i campioni di linea hanno gli stessi colori e tratteggi del grafico. Un clic nasconde o mostra la curva; il nome barrato indica una curva nascosta. Deve restarne visibile almeno una. Nell’editor libero le etichette principali sono **Ingresso · IN** e **Uscita · OUT**.
+
+Nel **Transitorio guidato**, **Riproduci** sposta il cursore dell’1% dell’intervallo visibile per passo, lasciando i numeri fermi per **1 s**. **Ogni passo** permette di scegliere da 0,25 a 2 s. **Pausa** mantiene la lettura ferma anche passando il mouse sul grafico; un clic sul grafico riprende il posizionamento libero. **← Passo**, **Passo →** e **Inizio** consentono la lettura manuale. Dopo uno zoom, i passi seguono il tratto ingrandito. Il tempo fisico e i dati della simulazione restano invariati: questa è una lettura rallentata, non una simulazione in tempo reale. Cambiare analisi, intervenire sul grafico o lasciare la scheda ferma la riproduzione.
+
 ## Percorso consigliato per studiare
 
 Apri un’esperienza guidata o un esempio, fai una prima simulazione e modifica un solo componente alla volta. Prima prevedi il cambiamento, poi confronta le curve e misura con i cursori. Conserva circuito e impostazioni nel JSON.

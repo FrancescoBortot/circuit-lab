@@ -6,7 +6,7 @@
   let storageState={ok:false},calculating=false,calculationReady=false,calculationRevision=0;const tasks=new window.CircuitTasks();
   const unitSets={slew:[[1,'V/s'],[1e6,'V/µs']],current:[[1e-6,'µA'],[1e-3,'mA'],[1,'A']],res:[[1,'Ω'],[1e3,'kΩ'],[1e6,'MΩ']],cap:[[1e-12,'pF'],[1e-9,'nF'],[1e-6,'µF'],[1e-3,'mF'],[1,'F']],time:[[1e-9,'ns'],[1e-6,'µs'],[1e-3,'ms'],[1,'s']],freq:[[1,'Hz'],[1e3,'kHz'],[1e6,'MHz']],voltage:[[.001,'mVpp'],[1,'Vpp']]};
   let project={name:'Il mio laboratorio',experiment:'rc',analysis:'time',circuits:{rc:M.defaults('rc')},layouts:{}};
-  let derivedMetrics=[];let panel='components',selected=null,quantity='voltage',data=[],valid=true,debounce,timer,animation,frame;
+  let derivedMetrics=[];let panel='components',selected=null,quantity='voltage',data=[],valid=true,debounce,timer;
   const units={},visible={vin:true,vin2:true,out:true,source:false,linear:true,current:true,db:true,phase:true};
   const current=()=>M.CATALOG.find(c=>c.id===project.experiment),params=()=>project.circuits[current().type];
   const get=(object,path)=>path.split('.').reduce((v,k)=>v[k],object);
@@ -136,21 +136,22 @@
   function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics];if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(p.type==='difference')rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
     rows.sort((a,b)=>Number(Boolean(primaryMetric(b)))-Number(Boolean(primaryMetric(a))));$('summary').innerHTML=rows.map(r=>`<div class="summary-item ${primaryMetric(r)?'metric':''}" ${r.note?'title="'+esc(r.note)+'"':''}><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong></div>`).join('')+(M.real(p)&&project.analysis==='bode'?'<p class="field-hint metric-note">I tagli a −3 dB sono riferiti al massimo della curva nell’intervallo visualizzato.</p>':'');
   }
-  const colors={vin:'#8b9bb2',vin2:'#159e89',out:'#4264ef',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
+  const colors={vin:'#627d99',vin2:'#159e89',out:'#4264ef',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
   function series(){const p=params();let s;
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
     else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:'Senza saturazione',dash:'5 5'}];
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
-    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'IN · sonda virtuale':'IN · lettura CH1'):'V₁',dash:'5 4'}];if(p.type==='difference')s.push({key:'vin2',label:M.real(p)?'V₂ · nodo fisico':'V₂',dash:'4 4'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'OUT · sonda virtuale':'OUT · lettura CH2'):'Uscita'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
+    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(p.type==='difference')s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
     return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]!==false}));
   }
-  function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}"><i class="legend-line" style="${d.dash?'border-top:2px dashed '+d.color+';height:0':'background:'+d.color}"></i>${d.label}</button>`).join('');}
+  function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}" aria-label="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${esc(d.label)}</span></button>`).join('');}
+
   function quantityControls(){const p=params(),select=$('plotQuantity');if(project.analysis==='bode')select.innerHTML='<option value="db">Modulo (dB)</option><option value="phase">Fase (°)</option>';else select.innerHTML='<option value="voltage">Tensioni</option><option value="current">Corrente in R</option>';
     if(project.analysis==='bode'&&!['db','phase'].includes(quantity))quantity='db';if(project.analysis==='time'&&!['voltage','current'].includes(quantity))quantity='voltage';
     select.value=quantity;select.hidden=project.analysis==='vtc'||(project.analysis==='time'&&p.type!=='rc');
   }
   async function calculate(){
-    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;stopPlayback();calculating=true;calculationReady=false;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
+    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
       const result=await tasks.run(analysis==='time'?'guidedTime':analysis==='bode'?'guidedBode':'guidedVtc',{params:p},fraction=>{if(revision===calculationRevision)$('calculationStatus').textContent='Calcolo locale · '+Math.round(fraction*100)+'%';});if(revision!==calculationRevision)return;data=result;calculating=false;calculationReady=true;derivedMetrics=M.metrics(p,analysis==='time'?null:p.bodeInput);if(M.real(p)&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
       quantityControls();renderLegend();
       plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
@@ -168,7 +169,7 @@
   }
   function cursor(d,fraction,cursors){
     $('timeCursor').value=Math.round(fraction*10000);const p=params();let rows;
-    if(project.analysis==='time'){rows=[['Tempo',format(d.x,'s',4)],[M.real(p)?'IN · CH1':'V₁',format(d.vin,'V',4)]];if(p.type==='difference')rows.push(['V₂',format(d.vin2,'V',4)]);rows.push([M.real(p)?'OUT · CH2':'OUT',format(d.out,'V',4),'primary-value']);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
+    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(p.type==='difference')rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
     else if(project.analysis==='bode')rows=[['Frequenza',format(d.x,'Hz',4)],['Guadagno',d.magnitude===0?'0 V/V':format(d.magnitude,'',4)+' V/V','primary-value'],['Modulo',d.magnitude===0?'−∞ dB':format(d.db,'dB',4)],['Fase',format(d.phase,'°',4)]];
     else rows=[['Ingresso',format(d.x,'V',4)+'pp'],['Uscita',format(d.out,'V',4)+'pp','primary-value'],['Risposta lineare',format(d.linear,'V',4)+'pp']];
     if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
@@ -197,10 +198,19 @@
     }
     p.autoTime=true;project.circuits[p.type]=M.normalizeTime(p);window.GuidedTrials.select(project,key,M.CATALOG);quantity='voltage';renderNavigation();renderInspector();calculate();persist();
   }
-  function stopPlayback(){if(frame)cancelAnimationFrame(frame);frame=null;animation=null;$('playButton').setAttribute('aria-pressed','false');$('playButton').setAttribute('aria-label','Anima la lettura del transitorio');$('playButton').innerHTML='<svg><use href="#i-play"/></svg>';}
-  function play(){if(animation){stopPlayback();return;}if(!valid||project.analysis!=='time')return;plot.fit();const start=plot.cursor?.x/params().duration||0;animation={time:performance.now(),fraction:start>.99?0:start};$('playButton').setAttribute('aria-pressed','true');$('playButton').setAttribute('aria-label','Metti in pausa la lettura');$('playButton').innerHTML='<svg><use href="#i-pause"/></svg>';
-    const tick=now=>{if(!animation)return;const f=animation.fraction+(now-animation.time)/8000;plot.setFraction(Math.min(f,1));if(f>=1)stopPlayback();else frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
+  function stopPlayback(){playback.pause();}
+  function readingRange(){return [...plot.view];}
+  function readingPosition(){return plot.toDomain(plot.cursor.x);}
+  function canRead(){return valid&&calculationReady&&!calculating&&project.analysis==='time'&&plot.data.length>0;}
+  function holdReading(){stopPlayback();plot.lockHover=true;plot.controls.querySelector('span').textContent='Lettura ferma · clicca il grafico per spostarla';}
+  function manualReading(direction){
+    if(!canRead())return;holdReading();const range=readingRange();plot.inspectDomain(direction===0?range[0]:window.ReadingPlayback.step(readingPosition(),range,direction));
   }
+  function play(){
+    if(playback.running){holdReading();return;}if(!canRead())return;
+    plot.lockHover=true;playback.start(readingPosition(),readingRange());
+  }
+
   function drawDiagram(p=params()){
     const real=M.real(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
     if(!real){diagram.render(p,project.layouts[p.type]||{},selected);return;}
@@ -216,6 +226,15 @@
   const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,deselect:clearSelection,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||window.circuitEditor?.active||e.target.closest('select,dialog')||document.querySelector('dialog[open]'))return;clearSelection();});
   const plot=new window.LabPlot($('plot'),cursor);
+  const playback=new window.ReadingPlayback({write:value=>plot.inspectDomain(value),onState:running=>{
+    plot.playbackActive=running;
+    $('playButton').setAttribute('aria-pressed',String(running));$('playButton').setAttribute('aria-label',running?'Metti in pausa la lettura':'Riproduci la lettura a passi');
+    $('playButton').innerHTML=`<svg><use href="#i-${running?'pause':'play'}"/></svg><span>${running?'Pausa':'Riproduci'}</span>`;
+    plot.controls.querySelector('span').textContent=running?'Lettura a passi · Pausa ferma i valori':plot.lockHover?'Lettura ferma · clicca il grafico per spostarla':plot.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';
+  }});
+  for(const type of ['pointerdown','wheel','keydown'])$('plot').addEventListener(type,()=>{stopPlayback();plot.lockHover=false;plot.syncControls();},{capture:true});
+  plot.controls.addEventListener('click',()=>{stopPlayback();plot.lockHover=false;plot.syncControls();},{capture:true});
+
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));
   function changeAnalysis(value){if(!['time','bode','vtc'].includes(value)||(value==='vtc'&&params().type==='rc'))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
@@ -237,10 +256,10 @@
   $('rotateComponent').addEventListener('click',()=>{if(!M.real(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>diagram.fit());
   $('resetLayout').addEventListener('click',()=>{delete project.layouts[params().type];fitDiagram();drawDiagram();persist();});
   $('toggleSchematic').addEventListener('click',()=>{const collapsed=$('appLayout').classList.toggle('schematic-collapsed');$('toggleSchematic').textContent=collapsed?'Espandi schema':'Riduci schema';});
-  $('plotIn').addEventListener('click',()=>plot.zoom(1.6));$('plotOut').addEventListener('click',()=>plot.zoom(1/1.6));$('plotFit').addEventListener('click',()=>plot.fit());
+  $('plotIn').addEventListener('click',()=>{stopPlayback();plot.zoom(1.6);});$('plotOut').addEventListener('click',()=>{stopPlayback();plot.zoom(1/1.6);});$('plotFit').addEventListener('click',()=>{stopPlayback();plot.fit();});
   $('plotQuantity').addEventListener('change',()=>{quantity=$('plotQuantity').value;calculate();});
-  $('plotLegend').addEventListener('click',e=>{const b=e.target.closest('[data-trace]');if(!b)return;const key=b.dataset.trace,s=series();if(visible[key]&&s.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}visible[key]=!visible[key];renderLegend();plot.updateSeries(series());});
-  $('timeCursor').addEventListener('input',()=>{stopPlayback();plot.setFraction(Number($('timeCursor').value)/10000);});$('playButton').addEventListener('click',play);document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
+  $('plotLegend').addEventListener('click',e=>{const b=e.target.closest('[data-trace]');if(!b)return;stopPlayback();const key=b.dataset.trace,s=series();if(visible[key]&&s.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}visible[key]=!visible[key];renderLegend();plot.updateSeries(series());});
+  $('timeCursor').addEventListener('input',()=>{holdReading();plot.setFraction(Number($('timeCursor').value)/10000);});$('playButton').addEventListener('click',play);$('readingStart').addEventListener('click',()=>manualReading(0));$('readingBack').addEventListener('click',()=>manualReading(-1));$('readingNext').addEventListener('click',()=>manualReading(1));$('readingDelay').addEventListener('change',()=>playback.setDelay(Number($('readingDelay').value)));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
   let resizeStart;
   function resizeSchematic(height){
     const workbench=$('schematicStage').closest('.workbench'),available=workbench.getBoundingClientRect().height;

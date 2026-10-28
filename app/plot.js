@@ -8,7 +8,7 @@
       this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><span>Clicca il grafico per posizionare</span>';
       svg.parentElement.before(this.controls);
       this.controls.addEventListener('click',e=>{const key=e.target.closest('[data-cursor]')?.dataset.cursor;if(!key)return;if(key==='toggle')this.dual=!this.dual;else this.activeCursor=key;this.syncControls();this.drawCursor();this.onStateChange?.();});
-      new ResizeObserver(()=>{cancelAnimationFrame(this.frame);this.frame=requestAnimationFrame(()=>this.draw());}).observe(svg.parentElement);
+      this.resizeObserver=new ResizeObserver(()=>{cancelAnimationFrame(this.frame);this.frame=requestAnimationFrame(()=>this.draw());});this.resizeObserver.observe(svg.parentElement);
       svg.addEventListener('wheel',e=>{const q=this.point(e);if(!q.inside)return;e.preventDefault();this.zoom(Math.exp(-clamp(e.deltaY,-100,100)*.008),q.domain);},{passive:false});
       svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const q=this.point(e);if(!q.inside)return;svg.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,q.x);if(this.pointers.size===2){this.pinch=Math.abs([...this.pointers.values()][0]-[...this.pointers.values()][1]);this.drag=null;}else{this.drag={x:q.x,start:this.view[0],end:this.view[1],moved:false};this.inspectDomain(q.domain);}});
       svg.addEventListener('pointermove',e=>{if(!this.geometry)return;const q=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,q.x);
@@ -24,6 +24,7 @@
         if(e.key==='+'||e.key==='=')this.zoom(1.5,d);if(e.key==='-')this.zoom(1/1.5,d);if(e.key==='0')this.fit();
       });
     }
+    destroy(){this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();}
     syncControls(){for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
     set(config){
       const old=this.config,same=old&&old.logX===config.logX&&old.xUnit===config.xUnit&&this.data[0]?.x===config.data[0]?.x&&this.data.at(-1)?.x===config.data.at(-1)?.x,ax=this.cursorA?.x,bx=this.cursorB?.x;

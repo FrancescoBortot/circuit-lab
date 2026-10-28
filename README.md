@@ -156,6 +156,12 @@ Il browser può conservare una copia automatica, ma questa dipende dal browser e
 - Usa scansioni e Monte Carlo dopo aver capito il circuito nominale; dichiara distribuzioni e parametri scelti.
 - Conserva nel progetto i dati e le impostazioni che hanno prodotto il grafico esportato.
 
+## Percorso di lavoro e confronti
+
+La barra **Costruisci → Simula → Misura → Esporta** collega editor, impostazioni, dati e file. **Confronta curve** conserva un riferimento A con campioni e progetto e lo sovrappone alla simulazione B; A si scarica e si riapre come JSON dedicato. **Versioni** conserva copie nominate e riapre lo ZIP completo della sessione come nuova copia. Le simulazioni vengono ricalcolate dai progetti importati.
+
+Nell’editor **Riordina schema** propone una disposizione con anteprima e Annulla. Le grandezze evidenziate nelle esperienze guidate aprono formula e ipotesi. **Montaggio** permette di riutilizzare profili degli strumenti; l’esportazione LaTeX offre dimensioni, caratteri, orientamento, riquadri e posizione della tabella. Per limiti e istruzioni consulta la [guida rapida](docs/USO_RAPIDO.md#percorso-di-laboratorio-e-confronti).
+
 ## Strumenti reali e sorgenti LaTeX
 
 In **Modifica → Montaggio → Reale** puoi includere R del generatore, resistenza dei collegamenti, capacità dei cavi e due canali dell’oscilloscopio. Ogni canale consente collegamento diretto o sonda ×10 e accoppiamento DC/AC. I valori sono modificabili e gli elementi aggiunti compaiono nello schema e nel calcolo. La sonda ×10 usa un equivalente al puntale; in AC è modellata come divisore compensato, senza contare due volte il cavo.

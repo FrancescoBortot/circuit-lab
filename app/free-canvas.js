@@ -20,7 +20,7 @@
     port(ref){const[id,pin]=ref.split(':'),c=this.doc.components.find(c=>c.id===id),p=local[c.type][pin],a=c.rotation*Math.PI/180;const x=c.x+p[0]*Math.cos(a)-p[1]*Math.sin(a),y=c.y+p[0]*Math.sin(a)+p[1]*Math.cos(a);let dx=0,dy=0;
       if(c.type==='Q'||c.type==='M'){if(['b','g'].includes(pin))dx=-1;else dy=['c','d'].includes(pin)?-1:1;}
       else if(c.type==='V'||c.type==='I'||c.type==='G'){dy=pin==='n'?1:-1;}
-      else if(c.type!=='J')dx=['a','plus','minus','b','g'].includes(pin)?-1:1;
+      else if(c.type!=='J')dx=['a','plus','minus','g'].includes(pin)?-1:1;
       return{x,y,dx:Math.round(dx*Math.cos(a)-dy*Math.sin(a)),dy:Math.round(dx*Math.sin(a)+dy*Math.cos(a))};
     }
     render(doc,selection,mode,pending,labels=false){this.doc=doc;this.selection=selection;this.mode=mode;this.pending=pending;this.labels=labels;this.draw();}

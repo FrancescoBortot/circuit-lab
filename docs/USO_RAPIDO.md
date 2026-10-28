@@ -20,7 +20,7 @@ Gli esempi si trovano in “Parti da un esempio”. Diodi/BJT/MOS hanno modelli 
 4. Premi **Salva sessione** per scaricare lo ZIP completo. Contiene una cartella della sessione, identificata anche da un codice breve, e sottocartelle dei circuiti. Ogni nome include **sessione + circuito + prova**. JSON, schema SVG e relazione HTML sono sempre inclusi; CSV e grafici corrispondono alle analisi già calcolate con quei parametri. Una modifica elettrica esclude i risultati precedenti finché non sono ricalcolati.
 5. Nei browser compatibili, **Scegli cartella…** collega una destinazione locale: poi **Salva sessione** crea le cartelle e scrive i file. La scelta non esporta nulla finché non premi Salva. Il collegamento vale per l’apertura corrente dell’app. Negli altri browser estrai lo ZIP per ottenere la stessa struttura. Rinominare la sessione genera un nuovo percorso; i vecchi file non vengono cancellati.
 
-Per riaprire una prova da file, estrai lo ZIP e scegli il suo **JSON** con **Apri**. Il manifesto `sessione.json` elenca le prove e non sostituisce i loro progetti. L’importazione dell’intero ZIP di sessione non è prevista. Il salvataggio dell’editor libero resta in **Progetto e copie**.
+Per riaprire una prova da file, estrai lo ZIP e scegli il suo **JSON** con **Apri**. Il manifesto `sessione.json` elenca le prove e non sostituisce i loro progetti. Per riaprire tutto lo ZIP usa **Versioni → Riapri ZIP di sessione**: viene creata una nuova copia, senza sovrascrivere la sessione precedente; le analisi vengono ricalcolate. Il salvataggio dell’editor libero resta in **Progetto e copie**.
 
 Lo schema usa più spazio verticale: titolo e nome della prova sono nella sua barra, giornata e descrizione sono nella colonna dei circuiti. La barra tra schema e grafico continua a regolarne l’altezza.
 
@@ -86,3 +86,18 @@ Le capacità degli strumenti partono dalla tensione iniziale nominale del nodo, 
 Per il LaTeX apri la **freccia accanto a Salva sessione** (oppure **Progetto e copie** nell’editor). **File completo per Overleaf** scarica il codice da copiare interamente in `main.tex`: preambolo e pacchetti sono già inclusi. **Solo blocco CircuitikZ** scarica `\resizebox{\textwidth}{!}{...}` con `\begin{circuitikz}[american,scale=0.8,transform shape]`, da incollare dopo `\begin{document}` nella tua relazione; aggiungi prima `\usepackage[american]{circuitikz}` e `\usepackage{graphicx}` nel preambolo. Puoi anche aprire **Visualizza e copia il codice completo** e premere **Copia per Overleaf**. La tabella è facoltativa nel file completo; negli schemi compatti è a fianco, altrimenti segue lo schema con tre colonne e parametri in linea. Masse, resistenze dei collegamenti e componenti degli strumenti vengono raggruppati soltanto quando hanno specifiche identiche. I valori diversi restano separati. I riquadri rossi delimitano il circuito, quelli grigi l’oscilloscopio e quelli blu sonde/cavi. Le sonde DC equivalenti restano dichiarate come tali. Gli ZIP includono `schema.tex` e `schema-circuitikz.tex`.
 
 Il montaggio reale è un modello concentrato di laboratorio: non include induttanze parassite, rumore o propagazione nei cavi. Tutti i calcoli e la generazione dei file restano sul dispositivo.
+
+
+## Percorso di laboratorio e confronti
+
+La barra **Costruisci → Simula → Misura → Esporta** porta ai controlli e alle analisi pertinenti, in entrambi gli ambienti. Le grandezze evidenziate nelle esperienze guidate si possono premere anche da tastiera per leggere formula, ipotesi e riferimenti.
+
+**Confronta curve** conserva A con tutti i campioni e il progetto. Modifica il circuito, ricalcola e premi **Confronta con la curva attuale B**: le curve condividono assi e unità; l’interpolazione riguarda solo il disegno e non estrapola fuori dagli intervalli originali. I parametri di A e B sono consultabili. A resta storica anche dopo modifiche; scarica il suo JSON e riaprilo con **Riapri curva A** per trasferirlo a un altro browser. Per cambiare analisi o unità conserva un riferimento compatibile.
+
+**Versioni** conserva copie nominate del progetto (massimo 24 per browser/origine) e le esporta come JSON. Riaprire una versione conserva prima il progetto corrente. Le copie browser non sostituiscono i file sul disco. **Riapri ZIP di sessione** valida tutte le prove prima dell’importazione e ricrea una nuova sessione; CSV e grafici del pacchetto originale restano nell’archivio sul disco, mentre l’app ricalcola i risultati dai progetti.
+
+Nell’editor libero **Riordina schema** prepara un’anteprima di allineamento e percorsi dei fili. **Applica disposizione** è annullabile con il normale Annulla. Il metodo riduce gli attraversamenti, ma non garantisce una disposizione ottimale di ogni circuito; controlla l’anteprima. I punti elettricamente connessi restano gli stessi.
+
+In **Montaggio** puoi salvare fino a 20 **profili di strumentazione**, con specifiche e modalità dei canali. Caricare un profilo compila i campi senza applicarlo: controlla i punti misurati e premi **Applica al circuito**. I profili appartengono al browser; i valori effettivamente applicati sono conservati nel JSON del circuito.
+
+Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento, riquadri e posizione della tabella. Il file completo include queste scelte; il blocco CircuitikZ conserva dimensioni e riquadri, mentre larghezza e orientamento dipendono dalla relazione che lo ospita.

@@ -3,6 +3,7 @@
  const L=window.LabModel,T=window.GuidedTrials,S=window.SessionFiles,F=window.LabFiles,$=id=>document.getElementById(id),esc=F.esc;
  class Repository{
   constructor(){this.ready=new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('Archivio browser non disponibile.'));return;}const request=indexedDB.open('circuit-lab-sessions-v1',1);request.onupgradeneeded=()=>request.result.createObjectStore('trials',{keyPath:'id'});request.onerror=()=>reject(request.error);request.onblocked=()=>reject(Error('Chiudi le altre schede per aggiornare l’archivio.'));request.onsuccess=()=>{this.db=request.result;this.db.onversionchange=()=>this.db.close();resolve(this.db);};});}
+  async putMany(records){const db=await this.ready;return new Promise((resolve,reject)=>{const tx=db.transaction('trials','readwrite');for(const r of records)tx.objectStore('trials').put(r);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Importazione interrotta.'));});}
   async all(){const db=await this.ready;return new Promise((resolve,reject)=>{const q=db.transaction('trials','readonly').objectStore('trials').getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}
   async put(record){const db=await this.ready;return new Promise((resolve,reject)=>{const tx=db.transaction('trials','readwrite');tx.objectStore('trials').put(record);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Salvataggio browser interrotto.'));});}
  }
@@ -40,6 +41,7 @@
    $('sessionDestination').textContent=this.folder?'Cartella collegata: '+this.folder.name+'. Salva sessione crea la cartella della sessione e le sottocartelle dei circuiti.':supported?'Scegli una cartella per salvare direttamente i file; altrimenti Salva sessione scarica uno ZIP con le stesse cartelle.':'Questo browser usa lo ZIP: estraendolo ottieni la cartella della sessione con le sottocartelle dei circuiti.';
    for(const id of ['sessionSaveNow','sessionSaveZIP','sessionNew'])$(id).disabled=this.busy;
   }
+  async importArchive(bytes){if(this.busy)throw Error('Attendi il salvataggio in corso.');if(!(window.circuitEditor.active?window.circuitEditor.snapshot():window.GuidedLab.snapshot()))throw Error('Correggi prima il valore attuale.');const records=S.readArchive(bytes,crypto.randomUUID());await this.serial;await this.repository.putMany(records);for(const r of records)this.records.set(r.id,r);window.ProjectPanel.importText(records[0].text);this.note('Sessione importata come nuova copia: '+records.length+' prove. Le simulazioni vengono ricalcolate.');}
   async chooseFolder(){
    if(typeof window.showDirectoryPicker!=='function')return;
    try{const handle=await window.showDirectoryPicker({id:'circuit-lab-sessions',mode:'readwrite'});this.folder=handle;this.render();this.note('Cartella collegata. Premi Salva sessione per creare i file.');}

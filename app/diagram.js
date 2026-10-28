@@ -82,7 +82,7 @@
     }
     symbol(c){
       const selected=c.id===this.selected,rot=c.rotation;
-      const box=c.kind==='opamp'?[-66,-66,132,150]:c.kind==='probe'?[-67,-30,134,95]:[-64,-44,128,99];
+      const box=c.kind==='opamp'?[-66,-66,132,150]:c.kind==='probe'?[-67,-30,134,95]:c.id==='Rf'&&rot%180===0?[-64,-48,168,103]:[-64,-44,128,99];
       let symbol='';
       if(c.kind==='resistor')symbol='<path d="M-45,0H-30M30,0H45"/><rect x="-30" y="-10" width="60" height="20" rx="2"/>';
       if(c.kind==='capacitor')symbol='<path d="M-25,0H-7M7,0H25M-7,-20V20M7,-20V20"/>';
@@ -90,9 +90,12 @@
       if(c.kind==='opamp')symbol='<path d="M-50,-43V43L50,0ZM-50,-22H-60M-50,22H-60M50,0H60"/><text class="pin-label" x="-40" y="-17">−</text><text class="pin-label" x="-40" y="28">+</text>';
       if(c.kind==='probe')symbol='<rect x="-32" y="-20" width="64" height="40" rx="7" stroke-dasharray="3 3"/><path d="M-19,0h8l5,-8 10,16 5,-8h10"/>';
       const vertical=['resistor','capacitor'].includes(c.kind)&&rot%180===90;
-      const labelX=c.kind==='source'?-38:vertical?36:0,anchor=c.kind==='source'?'end':vertical?'start':'middle';
-      const nameY=c.kind==='opamp'?-55:c.kind==='source'?-3:vertical?-5:-26,valueY=c.kind==='opamp'?68:c.kind==='source'?18:vertical?17:39;
-      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${labelX}" y="${valueY}" text-anchor="${anchor}">${c.value}</text>`}</g>`;
+      // Keep the feedback value above its branch, clear of the op-amp below.
+      const feedback=c.id==='Rf'&&!vertical;
+      const labelX=feedback?-16:c.kind==='source'?-38:vertical?36:0,anchor=feedback||c.kind==='source'?'end':vertical?'start':'middle';
+      const valueX=feedback?0:labelX,valueAnchor=feedback?'start':anchor;
+      const nameY=c.kind==='opamp'?-55:c.kind==='source'?-3:vertical?-5:-26,valueY=feedback?-26:c.kind==='opamp'?68:c.kind==='source'?18:vertical?17:39;
+      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${valueX}" y="${valueY}" text-anchor="${valueAnchor}">${c.value}</text>`}</g>`;
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     transform(){const g=this.svg.querySelector('#diagramScene');if(g)g.setAttribute('transform',`translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);this.callbacks.zoom?.(Math.round(this.view.k*100));}

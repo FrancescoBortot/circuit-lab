@@ -93,7 +93,7 @@ test('components guide shows only the circuit parts, at full opacity even when o
   const b=B.create(guided(type)),part=b.parts.find(p=>!p.auxiliary),terminal=B.terminals(b,part.id)[0],before=JSON.stringify(b),svg=R.board(b,{step:0,part:part.id,net:terminal.net,pins:true}),groups=visibleGroups(svg);
   assert.deepEqual(groups.filter(a=>a['data-bb-part']).map(a=>a['data-bb-part']).sort(),b.parts.filter(p=>!p.auxiliary).map(p=>p.id).sort());
   assert.equal(groups.filter(a=>a['data-bb-cable']||a['data-bb-instrument']).length,0);assert.doesNotMatch(svg,/<g opacity="(?:\.18|\.13)"/);
-  const frame=R.frame(b,0),g=R.geometry(b);assert.ok(frame.y>0);for(const c of b.parts.filter(c=>!c.auxiliary))for(const hole of Object.values(c.holes)){const at=g.point(hole);assert.ok(at.x>=frame.x&&at.x<=frame.x+frame.width);assert.ok(at.y>=frame.y&&at.y<=frame.y+frame.height);}
+  const frame=R.frame(b,0,'board'),g=R.geometry(b);assert.ok(frame.y>0);for(const c of b.parts.filter(c=>!c.auxiliary))for(const hole of Object.values(c.holes)){const at=g.point(hole);assert.ok(at.x>=frame.x&&at.x<=frame.x+frame.width);assert.ok(at.y>=frame.y&&at.y<=frame.y+frame.height);}
   assert.equal(JSON.stringify(b),before);
  }
 });
@@ -109,4 +109,16 @@ test('following a terminal needs only the guide phase containing its actual conn
  const b=B.create(guided('shaper'));
  const signal=B.trace(b,'Rsh2:a','Ubuf:out'),ground=B.trace(b,'Rsh1:b','Csh2:b'),power=B.trace(b,'Ubuf:8','PSU:Ubuf+');
  assert.ok(signal&&ground&&power);assert.equal(R.traceStage(b,signal),2);assert.equal(R.traceStage(b,ground),1);assert.equal(R.traceStage(b,power),1);
+});
+
+
+test('all guide phases keep the full bench framing until board close-up is selected explicitly',()=>{
+ const b=B.create(guided('shaper')),before=JSON.stringify(b),g=R.geometry(b),view=svg=>svg.match(/viewBox="([^"]+)"/)[1];
+ for(const step of [0,1,2,3]){
+  const whole=R.board(b,{step}),detail=R.board(b,{step,framing:'board'});assert.equal(view(whole),`0 0 ${g.width} ${g.height}`);
+  assert.equal(view(R.board(b,{step,framing:'bench'})),view(whole));assert.notEqual(view(detail),view(whole));
+  assert.equal(R.frame(b,step,'board').width,R.frame(b,0,'board').width);
+  assert.deepEqual(visibleGroups(whole).filter(a=>a['data-bb-part']).map(a=>a['data-bb-part']),visibleGroups(detail).filter(a=>a['data-bb-part']).map(a=>a['data-bb-part']));
+ }
+ assert.equal(JSON.stringify(b),before);
 });

@@ -4,7 +4,7 @@
  const instrumentPoint=(x,y)=>({x:x*.8,y:y*.8});
  const path=p=>p.map((v,i)=>(i?'L':'M')+v.x+' '+v.y).join(' '),p=(x,y)=>({x,y});
  function geometry(model){const count=model.modules.length,cols=Math.min(2,count),width=count===1?900:1100,height=210+Math.ceil(count/cols)*490+26,positions={};model.modules.forEach((m,i)=>positions[m.id]={x:count===1?265:140+(i%2)*460,y:190+Math.floor(i/2)*490});return{width,height,positions,point:hole=>{const at=positions[hole.split(':')[0]],q=B.localPoint(hole);return{x:at.x+q.x,y:at.y+q.y};}};}
- function frame(model,step=3){const g=geometry(model);if(step!==0||!model.modules.length)return{x:0,y:0,width:g.width,height:g.height};const positions=Object.values(g.positions),x=Math.min(...positions.map(p=>p.x))-40,y=Math.min(...positions.map(p=>p.y))-15;return{x,y,width:Math.max(...positions.map(p=>p.x))+410-x,height:Math.max(...positions.map(p=>p.y))+490-y};}
+ function frame(model,step=3,framing='bench'){const g=geometry(model);if(framing!=='board'||!model.modules.length)return{x:0,y:0,width:g.width,height:g.height};const positions=Object.values(g.positions),x=Math.min(...positions.map(p=>p.x))-40,y=Math.min(...positions.map(p=>p.y))-15;return{x,y,width:Math.max(...positions.map(p=>p.x))+410-x,height:Math.max(...positions.map(p=>p.y))+490-y};}
  const action=(kind,id,label,content,attrs='',classes='')=>`<g data-bb-${kind}="${esc(id)}" role="button" tabindex="0" aria-label="${esc(label)}" class="bb-hit${classes?' '+classes:''}" ${attrs}><title>${esc(label)}</title>${content}</g>`;
 
  function connections(model){
@@ -29,7 +29,7 @@
   return stage;
  }
  function board(model,state={}){
-  if(model.empty)return'';const g=geometry(model),point=g.point,phase=state.step??3,view=frame(model,phase),net=model.nets.find(n=>n.id===state.net),focused=net?.index,focus=phase!==0&&state.net!=null;
+  if(model.empty)return'';const g=geometry(model),point=g.point,phase=state.step??3,view=frame(model,phase,state.framing),net=model.nets.find(n=>n.id===state.net),focused=net?.index,focus=phase!==0&&state.net!=null;
   const stageAttrs=stage=>`data-bb-stage="${stage}"${stage>phase?' style="display:none" aria-hidden="true"':''}`;
   const alpha=n=>focus&&n!==focused?'.13':'1',nFor=ref=>model.topology.nodes[ref],netFor=n=>model.nets.find(v=>v.index===n),color=n=>netFor(n)?.color||'#6d7a88';
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${view.x} ${view.y} ${view.width} ${view.height}" font-family="Arial,sans-serif" class="bb-board" role="group" aria-label="Breadboard del circuito corrente"><rect width="${g.width}" height="${g.height}" fill="#f3f5f0"/>`;

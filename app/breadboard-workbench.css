@@ -111,7 +111,7 @@
 @media(max-width:1050px){.bb-guide-title>span{display:none}.bb-guide-steps button{gap:5px;padding:5px}.bb-guide-steps strong{font-size:11px}}
 @media(max-width:760px){.bb-guide{padding:7px 8px}.bb-guide .bb-guide-heading{gap:6px}.bb-guide h2{font-size:13px}.bb-guide-tools{gap:5px}.bb-guide-tools>[data-bb-command=help]{font-size:10px}.bb-framing-switch button{font-size:10px;padding:4px 6px}.bb-guide .bb-guide-steps{grid-template-columns:repeat(2,minmax(0,1fr)) auto;gap:5px;margin-top:6px}.bb-guide-steps button{min-height:34px}.bb-guide-steps [data-bb-command=next]{grid-column:3;grid-row:1/3}.bb-guide-steps strong{font-size:11px}.bb-step-number{width:20px;height:20px}.bb-properties,.bb-connection-strip{position:static}.bb-help-grid{grid-template-columns:1fr;gap:16px}.bb-help-dialog>header{padding:12px}.bb-help-dialog h2{font-size:18px}.bb-help-content{padding:14px}.bb-help-dialog button{font-size:11px}}
 
-/* The electrical reference is visible above the board, with its own zoom. */
+/* The electrical reference follows the entire assembly, with independent zoom. */
 .bb-schema-wrap{padding:10px 12px;background:#fffef9;border-bottom:1px solid #d7e2d0}
 .bb-schema-toolbar{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px}.bb-schema-toolbar strong{color:#294b35}.bb-schema-toolbar span{font-size:10px;color:#657b5b;margin-right:auto}.bb-schema-toolbar button{min-width:30px}
 .bb-schema-viewport{overflow:auto;max-height:340px;min-height:150px;border:1px solid #e0e7d9;border-radius:6px;background:#fffef9;overscroll-behavior:contain}
@@ -120,3 +120,10 @@
 @media(max-width:760px){.bb-schema-toolbar{flex-wrap:wrap}.bb-schema-toolbar span{display:none}.bb-schema-toolbar strong{margin-right:auto}.bb-schema-viewport{max-height:270px}.bb-guide .bb-build-panel{flex-wrap:wrap}.bb-build-panel>span{flex-basis:100%}.bb-build-panel button{flex:1}}
 
 .bb-schema text{paint-order:stroke;stroke:#fffef9;stroke-width:4px;stroke-linejoin:round}
+
+.bb-schema-wrap{clear:both;border-top:1px solid #d7e2d0}
+.bb-schema-viewport{height:380px;max-height:none;min-width:0;overflow:auto}
+.bb-schema-content{width:max-content;min-width:0}
+.bb-schema{width:auto;height:auto;min-height:0;max-height:none;max-width:none;flex:none}
+[data-bb-schema-scale]{min-width:44px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+@media(max-width:760px){.bb-schema-viewport{height:300px;max-height:none}}

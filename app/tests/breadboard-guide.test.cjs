@@ -52,3 +52,11 @@ test('construction advances one operation, goes back, completes and preserves re
  for(let i=1;i<scope.constructionPlan.length;i++){scope.constructionCommand('build-next');assert.equal(scope.construction.index,i);assert.equal(scope.state.step,scope.constructionPlan[i].phase);}
  scope.constructionCommand('build-next');assert.equal(scope.construction.active,false);assert.equal(scope.state.step,3);assert.equal(JSON.stringify(model),before);
 });
+test('reference schematic zoom changes both dimensions, zooms out and fits inside its viewport',()=>{
+ const svg={style:{},getAttribute:()=> '0 0 2000 600'},viewport={clientWidth:900,clientHeight:380,scrollLeft:300,scrollTop:50},output={textContent:''},settings={schemaZoom:1,zoom:1.55},scope={settings,root:{querySelector:s=>s==='.bb-schema'?svg:s==='.bb-schema-viewport'?viewport:output}};
+ vm.createContext(scope);vm.runInContext(source.slice(source.indexOf(' function applySchemaZoom('),source.indexOf(' function constructionCommand(')),scope);
+ scope.applySchemaZoom();assert.equal(svg.style.width,'2000px');assert.equal(svg.style.height,'600px');
+ scope.schemaZoomCommand('schema-in');assert.equal(svg.style.width,'2400px');assert.equal(svg.style.height,'720px');assert.equal(output.textContent,'120%');
+ scope.schemaZoomCommand('schema-out');scope.schemaZoomCommand('schema-out');assert.equal(svg.style.width,'1600px');assert.equal(svg.style.height,'480px');
+ scope.schemaZoomCommand('schema-fit');assert.ok(parseFloat(svg.style.width)<=viewport.clientWidth);assert.ok(parseFloat(svg.style.height)<=viewport.clientHeight);assert.equal(settings.zoom,1.55);
+});

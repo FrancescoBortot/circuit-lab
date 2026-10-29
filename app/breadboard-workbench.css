@@ -84,25 +84,29 @@
 @media(max-width:760px){.bb-properties{position:static;display:flex;flex-direction:column;gap:0}.bb-part-list{order:0}.bb-property{order:1}.bb-net-options{order:2}.bb-technical{order:3}.bb-board{min-width:640px}.bb-terminal-list{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.bb-view-options>div{right:0}.bb-toolbar{gap:7px}.bb-options{gap:5px}.bb-options>select{max-width:155px}.bb-wiring-switch button{font-size:10px;padding:5px}.bb-board-wrap{scrollbar-width:thin}}
 @media(max-width:760px){.bb-jump-details,.bb-jump-board{display:block}.bb-jump-details{white-space:nowrap;margin-left:auto!important}.bb-jump-details+button{margin-left:0!important}.bb-jump-board{float:right;margin-right:8px}.bb-property{scroll-margin-top:10px}.bb-connection-strip{position:sticky;top:0;z-index:2}}
 
-/* Keep the practical mounting guide visible while working on the bench. */
-.bb-guide{position:sticky;top:0;z-index:6;padding:15px 16px 12px;background:#f3f8ed;border-top:3px solid #28764e;border-bottom:1px solid #b9ceb0;box-shadow:0 5px 14px #1f482b14;color:#294b35}
-.bb-guide-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-.bb-guide-eyebrow{margin:0 0 3px;font-size:10px;font-weight:700;letter-spacing:1.2px;color:#55734e}
-.bb-guide h2{margin:0;font-size:20px;line-height:1.25;font-weight:700;color:#254b33}
-.bb-guide-framing{display:grid;gap:4px}.bb-guide-framing>span{font-size:10px;font-weight:600;color:#5d7256}
-.bb-framing-switch{display:flex;gap:3px;padding:3px;background:#e5eddf;border:1px solid #c2d3b8;border-radius:8px}
-.bb-framing-switch button{min-height:34px;border:0;background:transparent;padding:7px 11px;font-size:12px;font-weight:600;border-radius:5px}
-.bb-framing-switch button[aria-pressed=true]{background:#fff;color:#21613e;box-shadow:0 1px 4px #213c2720}
-.bb-guide .bb-guide-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:13px;padding:0}
-.bb-guide-steps button{display:flex;align-items:center;gap:10px;min-height:65px;padding:11px 12px;border:1px solid #c0d2b7;background:#fffef9;border-radius:8px;text-align:left}
-.bb-guide-steps button>span:last-child{min-width:0}.bb-guide-steps strong{display:block;font-size:14px;line-height:1.3;font-weight:700;color:#35543c}
-.bb-guide-steps small{display:block;font-size:10px;line-height:1.4;margin-top:3px;color:#6b7d60}
-.bb-step-number{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#e9f0e3;color:#44633d;font-size:14px;font-weight:700}
+/* A compact, always-open guide stays above the practical work area. */
+.bb-guide{position:sticky;top:0;z-index:6;padding:8px 12px;background:#f3f8ed;border-top:2px solid #28764e;border-bottom:1px solid #b9ceb0;box-shadow:0 3px 9px #1f482b12;color:#294b35}
+.bb-guide .bb-guide-heading{display:flex;justify-content:space-between;align-items:center;gap:7px 12px;flex-wrap:wrap;padding:0}
+.bb-guide-title{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}.bb-guide h2{margin:0;font-size:14px;line-height:1.3;font-weight:700;color:#254b33}
+.bb-guide-title>span{font-size:10px;color:#5b7252}
+.bb-guide-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bb-guide-tools>[data-bb-command=help]{font-size:11px;padding:5px 8px;background:#fffef9}
+.bb-framing-switch{display:flex;gap:2px;padding:2px;background:#e5eddf;border:1px solid #c2d3b8;border-radius:6px}
+.bb-framing-switch button{min-height:27px;border:0;background:transparent;padding:4px 8px;font-size:11px;font-weight:600;border-radius:4px}
+.bb-framing-switch button[aria-pressed=true]{background:#fff;color:#21613e;box-shadow:0 1px 3px #213c2720}
+.bb-guide .bb-guide-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:6px;margin-top:7px;padding:0}
+.bb-guide-steps button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:5px 9px;border:1px solid #c0d2b7;background:#fffef9;border-radius:6px;text-align:left}
+.bb-guide-steps strong{font-size:12px;line-height:1.3;font-weight:600;color:#35543c}
+.bb-step-number{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:#e9f0e3;color:#44633d;font-size:11px;font-weight:700}
 .bb-guide-steps button[aria-pressed=true]{border-color:#28764e;background:#e2efd7;box-shadow:inset 0 0 0 1px #28764e}
 .bb-guide-steps button[aria-pressed=true] .bb-step-number{background:#28764e;color:#fff}
 .bb-guide-steps button[aria-pressed=true] strong{color:#1c5031}
-.bb-guide .bb-guide-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0 0}
-.bb-guide-footer>span{font-size:11px;font-weight:600;color:#4b6843}.bb-guide-footer button{font-size:12px;padding:6px 12px;min-height:32px}
-.bb-properties{top:calc(var(--bb-guide-height,190px) + 8px)}
-@media(max-width:1050px){.bb-guide{padding:12px}.bb-guide-steps button{gap:7px;padding:9px 8px}.bb-guide-steps strong{font-size:12px}.bb-step-number{width:25px;height:25px;font-size:12px}}
-@media(max-width:760px){.bb-guide{padding:10px}.bb-guide h2{font-size:18px}.bb-guide-heading{gap:9px}.bb-guide-framing{width:100%}.bb-framing-switch button{flex:1}.bb-guide .bb-guide-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}.bb-guide-steps button{min-height:53px}.bb-guide-steps strong{font-size:13px}.bb-guide-steps small{font-size:10px}.bb-guide-footer>span{font-size:10px}.bb-guide .bb-guide-footer{padding-top:6px}.bb-connection-strip{position:static}}
+.bb-properties{top:calc(var(--bb-guide-height,95px) + 8px)}
+.bb-help-dialog{width:min(820px,calc(100vw - 28px));max-width:820px;max-height:88vh;max-height:88dvh;margin:auto;padding:0;border:1px solid #bdceb5;border-radius:12px;background:#fffef9;color:#294335;box-shadow:0 18px 70px #142a3655;overflow:auto}
+.bb-help-dialog::backdrop{background:#182b3559}
+.bb-help-dialog>header{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:#f3f8ed;border-bottom:1px solid #d4dfca}
+.bb-help-dialog header p{margin:0 0 3px;font-size:10px;font-weight:700;letter-spacing:1px;color:#647c59}.bb-help-dialog h2{margin:0;font-size:21px;line-height:1.3;color:#254b33}
+.bb-help-dialog button{flex:none;padding:7px 10px;border:1px solid #bdceb5;border-radius:6px;background:#fffef9;color:#31573c;font-size:12px;cursor:pointer}
+.bb-help-content{padding:16px 20px 22px;font-size:13px;line-height:1.6}.bb-help-intro{margin:0 0 16px}.bb-help-content figure{margin:0 0 18px}.bb-help-content svg{display:block;width:100%;height:auto}.bb-help-content figcaption{margin-top:6px;font-size:11px;color:#667b5b}
+.bb-help-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}.bb-help-grid h3{margin:0 0 5px;font-size:14px;color:#2d573a}.bb-help-grid p{margin:0}.bb-help-tip{margin:18px 0 0;padding:12px;border-radius:7px;background:#edf4e5}
+@media(max-width:1050px){.bb-guide-title>span{display:none}.bb-guide-steps button{gap:5px;padding:5px}.bb-guide-steps strong{font-size:11px}}
+@media(max-width:760px){.bb-guide{padding:7px 8px}.bb-guide .bb-guide-heading{gap:6px}.bb-guide h2{font-size:13px}.bb-guide-tools{gap:5px}.bb-guide-tools>[data-bb-command=help]{font-size:10px}.bb-framing-switch button{font-size:10px;padding:4px 6px}.bb-guide .bb-guide-steps{grid-template-columns:repeat(2,minmax(0,1fr)) auto;gap:5px;margin-top:6px}.bb-guide-steps button{min-height:34px}.bb-guide-steps [data-bb-command=next]{grid-column:3;grid-row:1/3}.bb-guide-steps strong{font-size:11px}.bb-step-number{width:20px;height:20px}.bb-properties,.bb-connection-strip{position:static}.bb-help-grid{grid-template-columns:1fr;gap:16px}.bb-help-dialog>header{padding:12px}.bb-help-dialog h2{font-size:18px}.bb-help-content{padding:14px}.bb-help-dialog button{font-size:11px}}

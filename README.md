@@ -32,6 +32,8 @@ La versione scaricata funziona senza Internet. Il sito e il file locale hanno me
 
 Con **Schema / Breadboard** scegli il disegno elettrico o il montaggio fisico per ogni esperienza. La breadboard mostra cavi colorati, i due canali del generatore, sonde e pin del TL082C; valori e segnali aggiornano lo stesso circuito. [Guida Breadboard](docs/BREADBOARD.md).
 
+Sulla breadboard clicca un componente, poi **A/B** o un **pin**: scegli una destinazione per seguirne il collegamento attraverso strisce interne e ponticelli. **Segnale / Banco completo** regola i dettagli visibili.
+
 | Dove | A cosa serve |
 | --- | --- |
 | **Elenco a sinistra** | Scegli RC, invertente, derivatore, differenze oppure l’editor libero. |

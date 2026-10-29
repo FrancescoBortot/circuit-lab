@@ -37,3 +37,31 @@ test('each active generator exposes its own editable values and inactive channel
 test('power supply ground occupies its own free hole and has an explicit cable',()=>{
  const b=B.create(guided()),contact=b.contacts.find(c=>c.id==='PSU:GND');assert.ok(contact);assert.ok(b.occupied.includes(contact.hole));assert.equal(contact.node,-1);const wire=R.connections(b).find(c=>c.id==='PSU:GND');assert.equal(wire.b.hole,contact.hole);assert.equal(wire.node,-1);assert.equal(B.verify(b).length,0);
 });
+test('inverter R1 inspection distinguishes the input and the summing junction, including the hidden strips',()=>{
+ const b=B.create(guided()),[a,z]=B.terminals(b,'R1');
+ assert.equal(a.hole,'M1:a4');assert.equal(z.hole,'M1:a9');
+ assert.deepEqual(a.targets.map(t=>t.ref),['V1:p']);assert.deepEqual(new Set(z.targets.map(t=>t.ref)),new Set(['U1:minus','Rf:a']));
+ const route=B.trace(b,'R1:b','U1:minus');assert.equal(route.from.hole,'M1:a9');assert.equal(route.to.hole,'M1:e13');
+ assert.deepEqual(route.segments.map(s=>[s.kind,s.a,s.b]),[['strip','M1:a9','M1:b9'],['wire','M1:b9','M1:a13'],['strip','M1:a13','M1:e13']]);
+ assert.equal(B.trace(b,'R1:a','R1:b'),null);assert.equal(B.trace(b,'U1:minus','U1:out'),null);
+});
+test('every inspectable destination has a continuous physical route made only of actual strips and jumpers',()=>{
+ for(const type of ['rc','inverting','derivative','difference']){
+  const b=B.create(guided(type)),before=JSON.stringify(b),known=new Set(b.groups.flat());
+  for(const part of [...b.parts,...b.sources])for(const t of B.terminals(b,part.id))for(const target of t.targets){
+   const route=B.trace(b,t.ref,target.ref);assert.ok(route,type+' '+t.ref+' → '+target.ref);let at=t.hole;
+   for(const segment of route.segments){assert.equal(segment.a,at);assert.ok(known.has(segment.a)&&known.has(segment.b));if(segment.kind==='strip')assert.equal(B.group(segment.a),B.group(segment.b));else assert.ok(b.wires.some(w=>w.id===segment.id&&[w.a,w.b].includes(segment.a)&&[w.a,w.b].includes(segment.b)));at=segment.b;}
+   assert.equal(at,target.hole);
+  }
+  assert.equal(JSON.stringify(b),before);
+ }
+});
+test('inspection cannot invent a connection when its physical jumper is missing',()=>{
+ const b=B.create(guided()),route=B.trace(b,'R1:b','U1:minus'),wire=route.segments.find(s=>s.kind==='wire');b.wires=b.wires.filter(w=>w.id!==wire.id);assert.equal(B.trace(b,'R1:b','U1:minus'),null);
+});
+test('auxiliary capacitors and all eight op-amp pins remain individually inspectable',()=>{
+ const b=B.create(guided()),pins=B.terminals(b,'U1');assert.deepEqual(pins.map(p=>p.number),[1,2,3,4,5,6,7,8]);
+ const positive=pins.find(p=>p.number===8);assert.ok(positive.targets.some(t=>t.ref==='PSU:U1+'));assert.ok(B.trace(b,positive.ref,'PSU:U1+'));
+ for(const part of b.parts.filter(p=>p.auxiliary)){const terminals=B.terminals(b,part.id);assert.equal(terminals.length,2);assert.notEqual(terminals[0].node,terminals[1].node);assert.ok(terminals.every(t=>t.targets.length));}
+ const geometry=R.geometry(b);for(const c of R.connections(b).filter(c=>c.kind==='wire'&&c.a.hole.split(':')[0]===c.b.hole.split(':')[0]))assert.ok(c.route.every(p=>p.y<geometry.positions.M1.y+465),'No unnecessary loop below the breadboard.');
+});

@@ -35,7 +35,7 @@
     setWorkspaceView(view,save=true){
       document.querySelector('.free-center').dataset.workbenchView=view;document.querySelector('.free-results').classList.toggle('collapsed',view==='circuit');
       for(const b of document.querySelectorAll('[data-free-view]'))b.setAttribute('aria-pressed',String(b.dataset.freeView===view));
-      $('freeExpandCanvas').setAttribute('aria-expanded',String(view==='circuit'));
+      $('freeExpandCanvas').setAttribute('aria-expanded',String(view==='circuit'));document.dispatchEvent(new Event('circuit-lab-view'));
       if(save){requestAnimationFrame(()=>{if(view!=='plot')this.canvas.fit();if(view!=='circuit')this.plot.draw();});this.queuePersist();}
     }
     captureWorkspace(){
@@ -186,7 +186,7 @@
       document.querySelectorAll('[data-free-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.freeTool===this.tool)));document.querySelectorAll('[data-free-analysis]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.freeAnalysis===this.doc.settings.analysis)));
       $('freeUndo').disabled=!this.history.length;$('freeRedo').disabled=!this.future.length;this.quantityControls();
       $('freeInstruction').textContent=this.tool==='wire'?(this.pending?'Da '+this.pending+' → scegli il secondo terminale. Esc annulla.':'Clicca il primo terminale, poi il secondo.') :this.tool==='output'?'Sonda OUT: clicca il terminale da osservare.':this.tool==='multi'?'Gruppo: clicca più componenti o trascina un rettangolo.':this.tool==='input'?'Sonda IN: clicca il terminale d’ingresso.':'Sfondo o Esc per deselezionare. Trascina i componenti; rotella per zoom.';
-      if(rebuild)this.renderInspector();else if(this.part){for(const key of ['x','y']){const input=$('free-part-'+key);if(input&&document.activeElement!==input)input.value=this.part[key];}}if($('freeDurationHint'))$('freeDurationHint').textContent=this.durationHint();this.renderChecks();
+      if(rebuild)this.renderInspector();else if(this.part){for(const key of ['x','y']){const input=$('free-part-'+key);if(input&&document.activeElement!==input)input.value=this.part[key];}}if($('freeDurationHint'))$('freeDurationHint').textContent=this.durationHint();this.renderChecks();document.dispatchEvent(new Event('circuit-lab-document'));
     }
     renderChecks(){
       const diagnostics=M.diagnostics(this.doc),errors=diagnostics.map(d=>d.message);$('freeFieldError').hidden=!this.fieldError;$('freeFieldError').textContent=this.fieldError||'';

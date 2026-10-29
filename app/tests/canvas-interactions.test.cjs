@@ -13,6 +13,9 @@ function surface(kind){
  const event=(x,y,extra={})=>({button:0,pointerId:1,clientX:x,clientY:y,target:blank,type:'pointerup',preventDefault(){this.prevented=true;},...extra});
  return{canvas,doc,svg,listeners,captures,selected,moves,event,target,blank,callbacks};
 }
+test('fitting a hidden schematic preserves a finite recoverable view in breadboard mode',()=>{
+ const h=surface('free'),before=copy(h.canvas.view);h.svg.getBoundingClientRect=()=>({width:0,height:0});h.canvas.fit();assert.deepEqual(copy(h.canvas.view),before);assert.ok(Object.values(h.canvas.view).every(Number.isFinite));
+});
 test('guided background tap deselects while panning and cancelled taps preserve selection',()=>{
  const h=surface('guided');h.canvas.down(h.event(50,50));h.canvas.up(h.event(50,50));assert.deepEqual(h.selected,[[null]]);
  h.selected.length=0;h.canvas.down(h.event(50,50));h.canvas.move(h.event(100,100));h.canvas.up(h.event(100,100));assert.equal(h.selected.length,0);

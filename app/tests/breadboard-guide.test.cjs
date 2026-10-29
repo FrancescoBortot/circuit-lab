@@ -60,3 +60,20 @@ test('reference schematic zoom changes both dimensions, zooms out and fits insid
  scope.schemaZoomCommand('schema-out');scope.schemaZoomCommand('schema-out');assert.equal(svg.style.width,'1600px');assert.equal(svg.style.height,'480px');
  scope.schemaZoomCommand('schema-fit');assert.ok(parseFloat(svg.style.width)<=viewport.clientWidth);assert.ok(parseFloat(svg.style.height)<=viewport.clientHeight);assert.equal(settings.zoom,1.55);
 });
+
+test('assembly instructions and markers use the actual holes and instrument endpoints for every circuit',()=>{
+ for(const circuit of L.CATALOG){const model=B.create(L.network(L.defaults(circuit.type))),before=JSON.stringify(model),g=R.geometry(model),connections=R.connections(model);
+ for(const step of R.assemblySteps(model)){
+  assert.ok(step.purpose.length>15);assert.equal(step.endpoints.length,step.kind==='part'&&model.parts.find(p=>p.id===step.id).type==='U'?8:2);
+  for(const e of step.endpoints){assert.ok(Number.isFinite(e.point.x)&&Number.isFinite(e.point.y));if(e.hole)assert.deepEqual(e.point,g.point(e.hole));}
+  if(step.kind!=='part'){const cable=connections.find(c=>c.key===step.kind+':'+step.id);assert.deepEqual(step.endpoints.map(e=>e.point),[cable.a.point,cable.b.point]);}
+  const markers=R.assemblyMarkers(model,step);assert.equal([...markers.matchAll(/data-bb-build-point=/g)].length,step.endpoints.length);for(const e of step.endpoints)if(e.hole)assert.ok(markers.includes('data-bb-hole="'+e.hole+'"'));
+ }
+ assert.equal(JSON.stringify(model),before);
+ }
+});
+test('grounded resistor, generator, supply and measurement actions explain their electrical purpose',()=>{
+ const model=B.create(L.network(L.defaults('shaper-buffer'))),steps=R.assemblySteps(model);
+ assert.ok(steps.some(s=>s.kind==='wire'&&/Collego Rsh1 a massa/.test(s.purpose)));
+ for(const pattern of [/ritorno del generatore a massa/,/segnale del generatore/,/V\+ all’operazionale/,/massa della sonda/,/Misuro la tensione/,/Chiudo la retroazione/])assert.ok(steps.some(s=>pattern.test(s.purpose)),String(pattern));
+});

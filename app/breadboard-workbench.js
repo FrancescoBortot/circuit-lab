@@ -70,18 +70,22 @@
   else if(name==='build-back')construction.index=Math.max(0,construction.index-1);
   else if(name==='build-next'){if(construction.index===constructionPlan.length-1)construction.active=false;else construction.index++;}
   state={part:null,net:null,cable:null,step:construction.active?constructionPlan[construction.index].phase:3};drawGeometry();updateControls();renderProperties();
-  if(construction.active)requestAnimationFrame(()=>{const step=constructionPlan[construction.index],el=[...root.querySelectorAll('.bb-board [data-bb-'+step.kind+']')].find(el=>el.getAttribute('data-bb-'+step.kind)===step.id);if(el){const area=scroller(),rect=el.getBoundingClientRect(),top=area.getBoundingClientRect().top+root.querySelector('.bb-guide').getBoundingClientRect().height+45;area.scrollTop+=rect.top-top;}});
+  if(construction.active)requestAnimationFrame(()=>{const step=constructionPlan[construction.index],el=[...root.querySelectorAll('.bb-board [data-bb-'+step.kind+']')].find(el=>el.getAttribute('data-bb-'+step.kind)===step.id);if(el){const area=scroller(),marker=root.querySelector('.bb-build-markers [data-bb-hole]:not([data-bb-hole=""])'),rect=(marker||el).getBoundingClientRect(),top=area.getBoundingClientRect().top+root.querySelector('.bb-guide').getBoundingClientRect().height+45;area.scrollTop+=rect.top-top;}});
  }
  function updateConstruction(){
   const active=construction.active,step=constructionPlan[construction.index],shown=new Set(constructionPlan.slice(0,construction.index+1).map(s=>s.kind+':'+s.id));
   root.querySelector('.bb-build-panel').hidden=!active;root.querySelector('[data-bb-command="build-start"]').setAttribute('aria-pressed',String(active));root.querySelector('[data-bb-command="next"]').hidden=active;
   for(const el of root.querySelectorAll('[data-bb-step]'))el.disabled=active;
+  root.classList.toggle('bb-building',active);
+  const markers=root.querySelector('.bb-build-markers');if(markers)markers.innerHTML=active?R.assemblyMarkers(model,step,settings.framing):'';
+  for(const el of root.querySelectorAll('.bb-build-dim,.bb-build-current')){el.classList.remove('bb-build-dim','bb-build-current');}
   if(!active)return;
-  root.querySelector('[data-bb-build-text]').textContent=(construction.index+1)+' / '+constructionPlan.length+' · '+step.text;
+  for(const el of root.querySelectorAll('.bb-board .bb-instruments,.bb-board [data-bb-board]'))el.classList.add('bb-build-dim');
+  root.querySelector('[data-bb-build-text]').textContent=(construction.index+1)+' / '+constructionPlan.length+' · '+step.purpose+' '+(step.kind==='part'&&step.endpoints.length===2?step.text+' ':'')+'Punti: '+step.endpoints.map((e,i)=>(i+1)+' = '+e.label).join(' → ');
   root.querySelector('[data-bb-command="build-back"]').disabled=construction.index===0;root.querySelector('[data-bb-command="build-next"]').textContent=construction.index===constructionPlan.length-1?'Completa ✓':'Avanti →';
   for(const el of root.querySelectorAll('.bb-board [data-bb-part],.bb-board [data-bb-cable],.bb-board [data-bb-cable-ref],.bb-board [data-bb-pin]')){
    const key=el.dataset.bbPart?'part:'+el.dataset.bbPart:el.dataset.bbPin?'part:'+el.dataset.bbPin.slice(0,el.dataset.bbPin.lastIndexOf(':')):el.dataset.bbCable||el.dataset.bbCableRef;
-   el.style.display=shown.has(key)?'':'none';el.classList.toggle('bb-build-current',key===step.kind+':'+step.id);
+   el.style.display=shown.has(key)?'':'none';el.classList.toggle('bb-build-current',key===step.kind+':'+step.id);el.classList.toggle('bb-build-dim',key!==step.kind+':'+step.id);
   }
   for(const el of root.querySelectorAll('.bb-part-list [data-bb-part]'))el.hidden=!shown.has('part:'+el.dataset.bbPart);
  }

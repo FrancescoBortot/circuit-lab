@@ -67,14 +67,35 @@
    }
   }
   s+='<g class="bb-endpoint-layer">'+connections(model).flatMap(c=>[c.route[0],c.route.at(-1)].map(point=>`<circle class="bb-cable-terminal" ${stageAttrs(c.stage)} data-bb-endpoint="${esc(c.kind+'|'+c.id)}" data-bb-node="${esc(c.node)}" data-bb-cable-ref="${esc(c.key)}" cx="${point.x}" cy="${point.y}" r="4" fill="${c.color}" stroke="#fffef6" stroke-width="1.5"><title>${esc(c.a.label+' → '+c.b.label)}</title></circle>`)).join('')+'</g>';
-  s+='<g class="bb-inspection-layer"></g>';
+  s+='<g class="bb-inspection-layer"></g><g class="bb-build-markers" pointer-events="none"></g>';
   s+=text(view.x+18,view.y+view.height-8,phase===3?'Clicca un componente per seguire i suoi collegamenti.':'Montaggio · '+['Solo componenti · senza cavi e strumenti','Alimentazioni e GND','Generatore','Sonde'][phase],11,'#65756b','data-bb-guide-caption=""');return s+'</svg>';
  }
  function assemblySteps(model){
-  if(model.empty)return[];
-  const parts=model.parts.map(c=>({phase:c.auxiliary?1:0,kind:'part',id:c.id,text:c.type==='U'?`Inserisci ${c.id} sul canale centrale, tacca in alto: pin 1 in ${c.physical[1].split(':')[1]}.`:`Inserisci ${c.id} (${fmt(c.component.value,{R:'Ω',C:'F',L:'H'}[c.type])}): ${Object.values(c.holes).map(h=>h.split(':')[1]).join(' → ')}.`}));
-  const cables=connections(model).map(c=>({phase:c.stage,kind:c.kind,id:c.id,text:`Collega ${c.a.label.replace(/M1:/g,'')} → ${c.b.label.replace(/M1:/g,'')}.`}));
+  if(model.empty)return[];const point=geometry(model).point,short=h=>h.split(':')[1];
+  const parts=model.parts.map(c=>({phase:c.auxiliary?1:0,kind:'part',id:c.id,
+   purpose:c.type==='U'?`Inserisco ${c.id} sul canale centrale, tacca in alto.`:c.auxiliary?'Filtro i disturbi dell’alimentazione con questo condensatore.':c.type==='R'?`Inserisco ${c.id}: la resistenza limita la corrente nel ramo.`:c.type==='C'?`Inserisco ${c.id}: il condensatore accumula carica.`:`Inserisco ${c.id}: l’induttore si oppone alle variazioni di corrente.`,
+   text:c.type==='U'?`Inserisci ${c.id} sul canale centrale, tacca in alto: pin 1 in ${short(c.physical[1])}.`:`Inserisci ${c.id} (${fmt(c.component.value,{R:'Ω',C:'F',L:'H'}[c.type])}): ${Object.values(c.holes).map(short).join(' → ')}.`,
+   endpoints:c.type==='U'?model.devicePins.filter(p=>p.component===c.id).map(p=>({hole:p.hole,point:point(p.hole),label:`pin ${p.number} · ${short(p.hole)}`})):Object.entries(c.holes).map(([pin,hole])=>({hole,point:point(hole),label:pin.toUpperCase()+' · '+short(hole)}))}));
+  const cables=connections(model).map(c=>{
+   const near=model.parts.filter(p=>!p.auxiliary&&Object.values(p.holes).some(h=>[c.a.hole,c.b.hole].filter(Boolean).some(end=>B.group(end)===B.group(h))));
+   const resistor=near.find(p=>p.type==='R'),capacitor=near.find(p=>p.type==='C'),net=model.nets.find(n=>n.index===c.node);
+   let purpose;
+   if(c.kind==='channel')purpose=c.node===-1?'Collego la massa della sonda al riferimento di 0 V.':`Misuro la tensione del nodo ${net.name} rispetto a massa.`;
+   else if(c.kind==='contact'&&c.id.startsWith('PSU:'))purpose=c.node===-1?'Collego il riferimento dell’alimentatore a massa (0 V).':`Porto ${net.name.endsWith('+')?'V+':'V−'} all’operazionale per alimentarlo.`;
+   else if(c.kind==='contact')purpose=c.node===-1?'Collego il ritorno del generatore a massa.':'Applico il segnale del generatore al circuito.';
+   else if(c.node===-1)purpose=resistor?`Collego ${resistor.id} a massa: questo terminale va a 0 V.`:capacitor?`Collego ${capacitor.id} a massa: questo terminale va a 0 V.`:'Collego questo ramo al riferimento comune di massa (0 V).';
+   else if(typeof c.node==='string')purpose=c.node.startsWith('spare:')?'Chiudo la retroazione della sezione B inutilizzata.':'Collego la linea di alimentazione all’operazionale.';
+   else if(net.refs.some(r=>r.endsWith(':out'))&&net.refs.some(r=>r.endsWith(':minus')))purpose='Chiudo la retroazione: riporto l’uscita all’ingresso −.';
+   else purpose=`Unisco due tratti del nodo ${net.name}: avranno la stessa tensione.`;
+   return{phase:c.stage,kind:c.kind,id:c.id,purpose,text:`Collega ${c.a.label.replace(/M1:/g,'')} → ${c.b.label.replace(/M1:/g,'')}.`,endpoints:[c.a,c.b].map(e=>({...e,label:e.hole?short(e.hole):e.label}))};
+  });
   return [...parts,...cables].sort((a,b)=>a.phase-b.phase);
+ }
+ function assemblyMarkers(model,step,framing='bench'){
+  if(!step)return'';const center=geometry(model).positions.M1.x+185,view=frame(model,3,framing);
+  return step.endpoints.map((e,i)=>{const{x,y}=e.point,left=step.endpoints.length>2?x<center:i%2===0,dx=left?-19:19,dy=step.endpoints.length>2?0:-17,label=(i+1)+' · '+e.label,width=label.length*6.5+12,lx=Math.max(view.x+4,Math.min(view.x+view.width-width-4,left?x+dx-width:x+dx)),ly=Math.max(view.y+4,y+dy-9);
+   return `<g data-bb-build-point="${i+1}" data-bb-hole="${esc(e.hole||'')}" aria-label="${esc(label)}"><title>${esc(label)}</title><path d="M${x-10} ${y}H${x+10}M${x} ${y-10}V${y+10}" stroke="#a85d00" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="7" fill="#fff9dd" stroke="#a85d00" stroke-width="2.5"/><circle cx="${x}" cy="${y}" r="2" fill="#a85d00"/><path d="M${x} ${y}L${x+dx} ${y+dy}" stroke="#a85d00" stroke-width="1.5"/><rect x="${lx}" y="${ly}" width="${width}" height="18" rx="4" fill="#fff9dd" stroke="#a85d00"/>${text(lx+6,ly+13,label,11,'#684000','font-weight="700"')}</g>`;
+  }).join('');
  }
  function schematic(model,state={}){
   if(model.empty)return'';const d=model.doc,t=model.topology,local={R:{a:[-44,0],b:[44,0]},C:{a:[-34,0],b:[34,0]},L:{a:[-44,0],b:[44,0]},V:{p:[0,-43],n:[0,43]},U:{plus:[-52,25],minus:[-52,-25],out:[60,0]},G:{g:[0,-22]},J:{j:[0,0]}},port=ref=>{const[id,pin]=ref.split(':'),c=d.components.find(c=>c.id===id),q=local[c.type][pin],a=c.rotation*Math.PI/180;return{x:c.x+q[0]*Math.cos(a)-q[1]*Math.sin(a),y:c.y+q[0]*Math.sin(a)+q[1]*Math.cos(a)};},net=ref=>model.nets.find(n=>n.index===t.nodes[ref]);
@@ -86,5 +107,5 @@
    for(const pin of M.PINS[c.type]){const ref=c.id+':'+pin,a=port(ref),n=net(ref);s+=action('ref',ref,c.id+' '+M.pinLabel(c.type,pin)+' · '+n.name,`<circle cx="${a.x}" cy="${a.y}" r="5" fill="${n.color}"/>${text(a.x+9,a.y-12,n.name,12,n.color)}`);}
   }return s+'</svg>';
  }
- return{board,schematic,geometry,frame,traceStage,connections,assemblySteps,esc,fmt};
+ return{board,schematic,geometry,frame,traceStage,connections,assemblySteps,assemblyMarkers,esc,fmt};
 });

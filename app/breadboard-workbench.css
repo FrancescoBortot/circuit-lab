@@ -127,3 +127,9 @@
 .bb-schema{width:auto;height:auto;min-height:0;max-height:none;max-width:none;flex:none}
 [data-bb-schema-scale]{min-width:44px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
 @media(max-width:760px){.bb-schema-viewport{height:300px;max-height:none}}
+
+/* Only the operation being assembled stays at full contrast. */
+.bb-building .bb-board .bb-build-dim{opacity:.18!important}
+.bb-building .bb-board [data-bb-board].bb-build-dim{opacity:.45!important}
+.bb-building .bb-board .bb-build-current{opacity:1!important;filter:drop-shadow(0 0 2px #d79512)}
+.bb-build-markers{pointer-events:none;opacity:1}.bb-build-markers text{paint-order:stroke;stroke:#fff9dd;stroke-width:2px;stroke-linejoin:round}

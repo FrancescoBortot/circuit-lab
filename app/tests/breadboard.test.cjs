@@ -135,3 +135,7 @@ test('all guide phases keep the full bench framing until board close-up is selec
  }
  assert.equal(JSON.stringify(b),before);
 });
+
+test('reference schematic includes feedback bends within its viewBox, including the last buffer',()=>{
+ const X=require('../latex-export');for(const type of ['shaper-buffer','detector-chain']){const b=B.create(guided(type,{outputBuffer:true})),svg=R.schematic(b),[x,y,w,h]=svg.match(/viewBox="([^"]+)"/)[1].split(' ').map(Number);for(const wire of b.doc.wires.filter(w=>w.route))for(const p of X.route(b.doc,wire)){assert.ok(p.x>=x+20&&p.x<=x+w-20);assert.ok(p.y>=y+20&&p.y<=y+h-20);}}
+});

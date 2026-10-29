@@ -8,6 +8,7 @@
   let project={name:'Il mio laboratorio',experiment:'rc',analysis:'time',circuits:{rc:M.defaults('rc')},layouts:{}};
   let derivedMetrics=[];let panel='components',selected=null,quantity='voltage',data=[],valid=true,debounce,timer;
   const units={},visible={vin:true,vin2:true,out:true,source:false,linear:true,current:true,db:true,phase:true};
+  const networkDiagram=p=>M.real(p)||M.isRadiation(p), chargeAnalysis=p=>M.isRadiation(p)&&M.radiation.hasPre(p);
   const current=()=>M.CATALOG.find(c=>c.id===project.experiment),params=()=>project.circuits[current().type];
   const get=(object,path)=>path.split('.').reduce((v,k)=>v[k],object);
   const set=(object,path,value)=>{const keys=path.split('.'),last=keys.pop();keys.reduce((v,k)=>v[k],object)[last]=value;};
@@ -28,9 +29,9 @@
     renderNavigation();renderInspector();fitDiagram();calculate();persist();
   }
   function renderNavigation(){
-    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[1,2].map(day=>`<section class="library-group"><h2>${day===1?'Prima':'Seconda'} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step} · pp. ${c.page}</small></span></button>`).join('')}</section>`).join('');
+    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[1,2,3,4].map(day=>`<section class="library-group"><h2>${['','Prima','Seconda','Terza','Quarta'][day]} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step}</small></span></button>`).join('')}</section>`).join('');
     const c=current();$('guidedRCAnalysis').hidden=c.type!=='rc';$('circuitKicker').textContent=`GIORNATA ${c.day} · ESPERIENZA ${c.step}`;$('circuitTitle').textContent=c.name;$('circuitDescription').textContent=c.description;
-    $$('[data-analysis]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.analysis===project.analysis));b.disabled=c.type==='rc'&&b.dataset.analysis==='vtc';b.title=b.disabled?'VTC prevista per gli amplificatori':({time:'Segnali nel tempo: carica, scarica e forma d’onda.',bode:'Risposta in frequenza: guadagno e fase.',vtc:'Ampiezza di uscita al variare dell’ampiezza in ingresso.'})[b.dataset.analysis];});
+    $$('[data-analysis]').forEach(b=>{if(['vtc','charge'].includes(b.dataset.analysis)){b.dataset.analysis=chargeAnalysis(params())?'charge':'vtc';b.textContent=chargeAnalysis(params())?'Linearità · Q':'VTC';}b.setAttribute('aria-pressed',String(b.dataset.analysis===project.analysis));b.disabled=(c.type==='rc'||M.isRadiation(c.type)&&!M.radiation.hasFinal(params())&&!chargeAnalysis(params()))&&b.dataset.analysis==='vtc';b.title=b.disabled?'VTC prevista per gli amplificatori':({time:'Segnali nel tempo: carica, scarica e forma d’onda.',bode:'Risposta in frequenza: guadagno e fase.',vtc:'Ampiezza di uscita al variare dell’ampiezza in ingresso.',charge:'Picco d’uscita rispetto alla carica iniettata.'})[b.dataset.analysis];});
   }
   function field(path,label,unit='',hint='',disabled=false){
     const value=get(params(),path)??M.physical(params())[path]??(path==='sweepPoints'?41:0),options=unitSets[unit];let factor=1;
@@ -41,9 +42,9 @@
   const select=(path,label,options,hint='')=>`<div class="field" data-key="${path}"><label for="select-${path}">${label}</label><select class="form-select" id="select-${path}" data-select="${path}">${options.map(([v,l])=>`<option value="${v}" ${get(params(),path)===v?'selected':''}>${l}</option>`).join('')}</select>${hint?`<p class="field-hint">${hint}</p>`:''}<p class="field-error"></p></div>`;
   function sourceFields(channel,label){
     const p=params(),w=p['wave'+channel],periodic=['sine','square','triangle'].includes(w.kind),k='wave'+channel;
-    const waves=[['sine','Sinusoidale'],['square','Quadra'],['triangle','Triangolare'],['dc','Continua'],['ground','A massa']];
+    const waves=[...(M.isRadiation(p)?[['pulse','Impulso rettangolare']]:[]),['sine','Sinusoidale'],['square','Quadra'],['triangle','Triangolare'],['dc','Continua'],['ground','A massa']];
     if(p.type==='rc'&&channel===1)waves.unshift(['cycle','Carica e scarica'],['charge','Carica'],['discharge','Scarica']);
-    return `<section class="signal-card"><h3><span class="channel-dot ${channel===2?'teal':''}"></span>${label}</h3>${select(k+'.kind','Forma del segnale',waves)}${periodic?field(k+'.vpp','Ampiezza picco-picco','voltage')+field(k+'.frequency','Frequenza','freq')+`<div class="form-grid">${field(k+'.offset','Offset','V')}${field(k+'.phase','Fase','°')}</div>`+(w.kind==='square'?field(k+'.duty','Duty cycle','%'):''):!['discharge','ground'].includes(w.kind)?field(k+'.level','Tensione della sorgente','V'):''}${p.type==='rc'?field('initial','Tensione iniziale su C','V','Condizione del condensatore a t = 0.'):''}</section>`;
+    return `<section class="signal-card"><h3><span class="channel-dot ${channel===2?'teal':''}"></span>${label}</h3>${select(k+'.kind','Forma del segnale',waves)}${w.kind==='pulse'?field(k+'.level','Livello durante l’impulso','V')+field(k+'.low','Livello di riposo','V')+field(k+'.width','Durata dell’impulso T','time')+field(k+'.delay','Ritardo iniziale','time')+field(k+'.period','Periodo di ripetizione','time')+field(k+'.rise','Tempo del fronte iniziale','time')+field(k+'.fall','Tempo del fronte finale','time'):periodic?field(k+'.vpp','Ampiezza picco-picco','voltage')+field(k+'.frequency','Frequenza','freq')+`<div class="form-grid">${field(k+'.offset','Offset','V')}${field(k+'.phase','Fase','°')}</div>`+(w.kind==='square'?field(k+'.duty','Duty cycle','%'):''):!['discharge','ground'].includes(w.kind)?field(k+'.level','Tensione della sorgente','V'):''}${p.type==='rc'?field('initial','Tensione iniziale su C','V','Condizione del condensatore a t = 0.'):''}</section>`;
   }
   const presets=window.GuidedTrials.PRESETS;
   function renderInspector(focus){
@@ -53,7 +54,14 @@
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';
-      html+=p.type==='rc'?field('R','Resistenza R','res')+field('C','Condensatore C','cap'):field('R1','Resistenza d’ingresso R₁','res')+field('Rf','Resistenza di feedback Rf','res');
+      html+=M.isRadiation(p)?M.radiation.fields(p).map(([key,label,unit])=>field(key,label,unit)).join(''):p.type==='rc'?field('R','Resistenza R','res')+field('C','Condensatore C','cap'):field('R1','Resistenza d’ingresso R₁','res')+field('Rf','Resistenza di feedback Rf','res');
+      if(M.isRadiation(p)){
+        const checkbox=(key,label)=>`<label class="field-checkbox">${label}<input data-check="${key}" type="checkbox" ${p[key]?'checked':''}></label>`;
+        if(['pz-shaper','detector-chain'].includes(p.type))html+=checkbox('pzEnabled','Inserisci la compensazione Rpz');
+        if(p.type==='shaper-buffer')html+=checkbox('outputBuffer','Buffer aggiuntivo in uscita');
+        if(M.radiation.hasFinal(p))html+=checkbox('biasEnabled','Bias DC nello stadio finale')+(p.biasEnabled?field('wave2.level','Riferimento DC del bias','V'): '');
+        html+='<p class="field-hint">Valori iniziali di esempio: inserisci i componenti assegnati al tuo gruppo. Misura i picchi rispetto alla baseline, con oscilloscopio in DC.</p>';
+      }
       if(p.type==='derivative')html+=field('C1','Condensatore in serie C₁','cap');
       if(p.type==='difference')html+=field('R3','Resistenza d’ingresso R₃','res')+field('R4','Resistenza verso massa R₄','res')+'<button class="text-button" id="balanceResistors">Bilancia: R₃ = R₁ e R₄ = Rf <svg><use href="#i-arrow"/></svg></button>';
       if(p.type==='rc'&&!M.real(p))html+=`<section class="form-section">${select('instrument','Generatore e oscilloscopio',[['ideal','Circuito ideale'],['generator','Solo generatore'],['direct','Oscilloscopio · senza sonde'],['probe','Oscilloscopio · sonde 10×'],['custom','Valori personalizzati']])}${p.instrument==='ideal'?'<p class="field-hint">Scegli una configurazione per aggiungere le impedenze degli strumenti allo schema.</p>':`<details class="details-settings" ${['Rg','CH1','CH2'].includes(selected)?'open':''}><summary>Modifica le impedenze degli strumenti</summary>${field('rg','R del generatore','res')}${p.instrument==='generator'?'':field('scopeR','R d’ingresso di ogni canale','res')+field('scopeC','C d’ingresso di ogni canale','cap','Cavi e sonde inclusi: i valori iniziali sono esempi modificabili.')}</details>`}</section>`;
@@ -64,8 +72,8 @@
       html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent')html+=sourceFields(2,'Ingresso V₂');
       if(M.real(p))html+='<p class="field-hint">Ampiezze delle sorgenti ideali, prima di R_G. IN/OUT sono le letture dei canali collegati; V₂ è il nodo fisico d’ingresso.</p>';else if(p.type!=='rc')html+='<p class="field-hint">Ampiezze impostate nel punto V₁/V₂ della scheda, non a vuoto sul generatore.</p>';
     }else{
-      const descriptions={time:p.type==='rc'?'Segui la carica e la scarica del condensatore e misura quanto tempo impiega l’uscita a cambiare.':p.type==='derivative'?'Confronta la forma dell’ingresso con l’uscita per verificare la derivazione del segnale.':'Confronta ingressi e uscita nel tempo: osserva guadagno, inversione e possibili limiti di uscita.',bode:'Scopri come cambiano guadagno e sfasamento al variare della frequenza. Utile per studiare filtri e banda passante.',vtc:'Aumenta l’ampiezza di una sinusoide a frequenza fissa e osserva dove l’uscita smette di crescere linearmente.'};
-      html=`<section class="guided-analysis-choice"><label for="guidedAnalysis">Che cosa vuoi studiare?</label><select class="form-select" id="guidedAnalysis" aria-describedby="guidedAnalysisPurpose">${[['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],...(p.type==='rc'?[]:[['vtc','Ampiezza · VTC']])].map(([value,label])=>`<option value="${value}" ${project.analysis===value?'selected':''}>${label}</option>`).join('')}</select><p id="guidedAnalysisPurpose">${descriptions[project.analysis]}</p></section>`;
+      const descriptions={time:p.type==='rc'?'Segui la carica e la scarica del condensatore e misura quanto tempo impiega l’uscita a cambiare.':p.type==='derivative'?'Confronta la forma dell’ingresso con l’uscita per verificare la derivazione del segnale.':'Confronta ingressi e uscita nel tempo: osserva guadagno, inversione e possibili limiti di uscita.',bode:'Scopri come cambiano guadagno e sfasamento al variare della frequenza. Utile per studiare filtri e banda passante.',charge:'Varia la durata di impulsi negativi, calcola Qin = |Vin|·T/Rin e confronta i massimi rispetto alla baseline con un fit lineare.',vtc:'Aumenta l’ampiezza di una sinusoide a frequenza fissa e osserva dove l’uscita smette di crescere linearmente.'};
+      html=`<section class="guided-analysis-choice"><label for="guidedAnalysis">Che cosa vuoi studiare?</label><select class="form-select" id="guidedAnalysis" aria-describedby="guidedAnalysisPurpose">${[['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],...(chargeAnalysis(p)?[['charge','Linearità · carica iniettata']]:p.type==='rc'||M.isRadiation(p)&&!M.radiation.hasFinal(p)?[]:[['vtc','Ampiezza · VTC']])].map(([value,label])=>`<option value="${value}" ${project.analysis===value?'selected':''}>${label}</option>`).join('')}</select><p id="guidedAnalysisPurpose">${descriptions[project.analysis]}</p></section>`;
       if(p.type==='difference'&&project.analysis!=='time')html+=select('bodeInput','Quale ingresso confrontare con OUT',[['differential','Differenza V₂ − V₁'],['v1','V₁ · V₂ a massa'],['v2','V₂ · V₁ a massa'],['common','Modo comune V₁ = V₂']],'Questa scelta vale per Bode e VTC. I segnali del Transitorio si impostano in Segnali.');
       let reading='';
       if(project.analysis==='time'){
@@ -75,6 +83,10 @@
       if(project.analysis==='bode'){
         html+=`<div class="guided-analysis-settings"><h3>Intervallo delle frequenze</h3>${field('fmin','Frequenza minima','freq')}${field('fmax','Frequenza massima','freq')}</div><p class="field-hint">Risposta a piccolo segnale, attorno al punto di lavoro: la curva descrive il comportamento lineare del modello.</p>`;
         reading='L’asse orizzontale è la frequenza in Hz, su scala logaritmica. Nel menu sopra il grafico scegli Modulo (dB) o Fase (°). 0 dB corrisponde a un rapporto di ampiezza pari a 1; 20 dB a 10.'+(p.type==='rc'?' Il rapporto è Vout/V₁, dopo la resistenza del generatore.':p.type==='difference'?' Il rapporto è riferito all’ingresso scelto qui sopra.':' Il rapporto è Vout/V₁.')+' La curva usa 601 frequenze.'+(p.type==='rc'?' Per vedere carica e scarica scegli Tempo · Transitorio.':' La saturazione si osserva nel Transitorio o nella VTC.');
+      }
+      if(project.analysis==='charge'){
+        html+=`<div class="guided-analysis-settings"><h3>Scansione della durata T</h3>${field('chargeMin','Durata minima','time')}${field('chargeMax','Durata massima','time')}${field('chargePoints','Impulsi da provare','punti','Da 3 a 25. Ogni punto usa un impulso negativo isolato, con riposo a 0 V e fronti istantanei. Il livello attivo è quello del segnale corrente in valore assoluto; il riferimento Qin assume massa virtuale.')}</div>`;
+        reading='Asse orizzontale: carica iniettata nominale in coulomb. Asse verticale: picco di uscita rispetto alla baseline. La linea tratteggiata è il fit lineare dei punti simulati. I residui sono inclusi nel CSV; non sono assegnate incertezze sperimentali ai dati simulati.';
       }
       if(project.analysis==='vtc'){
         html+=`<div class="guided-analysis-settings"><h3>Sinusoide della prova</h3>${field('sweepMax','Ampiezza massima in ingresso','voltage','La scansione parte da 0 Vpp.')}${field('wave1.frequency','Frequenza fissa','freq')}${field('wave1.offset','Offset','V')}</div><details class="details-settings" data-analysis-precision${precisionOpen?' open':''}><summary>Risoluzione e calcolo</summary>${field('sweepPoints','Ampiezze da provare','punti','Da 11 a 101. Per ogni ampiezza si calcola la risposta a regime.')}<p class="field-hint">Il regime è verificato confrontando due periodi; Vpp,OUT è misurata sull’ultimo. Puoi annullare il calcolo dal pulsante sopra il grafico.</p></details>`;
@@ -86,7 +98,7 @@
     html=panel==='analysis'?html+'<section class="guided-analysis-measures"><h3>Hai misure di laboratorio?</h3><p>Importa i dati e confrontali con il modello.</p>'+measureButton+'</section>':measureButton+html;
     if(p.type==='rc'&&panel==='components')html+='<details class="details-settings component-help" data-rc-help'+(helpOpen?' open':'')+'><summary>Come R e C cambiano la risposta</summary><p>R limita la corrente; C accumula carica. Nel circuito RC ideale, τ = R·C = <strong>'+format(p.R*p.C,'s',4)+'</strong>. Raddoppiare R oppure C raddoppia il tempo caratteristico.</p><p>Dopo una τ resta il 36,8% della differenza dal valore finale. Generatore, sonde e oscilloscopio possono modificare la risposta: nel pannello Misura τ trovi i riferimenti distinti.</p></details>';
     content.innerHTML=html;content.dataset.panel=panel;trialLabel();$('guidedBenchMode').textContent=M.real(p)?'Reale · strumenti e cavi':p.type==='rc'&&p.instrument!=='ideal'?'Strumenti · modello precedente':'Ideale · impostazioni';$('guidedBenchMode').classList.toggle('is-real',M.real(p));
-    if(panel==='analysis')content.after($('summary'));else $('resetCircuit').before($('summary'));
+    if(panel==='analysis'||M.isRadiation(p))content.after($('summary'));else $('resetCircuit').before($('summary'));
     if(panelChanged)content.parentElement.scrollTop=0;
     if(focus){const input=$('inspectorContent').querySelector(`[data-field="${focus}"], [data-select="${focus}"]`);if(input){input.focus({preventScroll:true});input.select?.();input.closest('.field').scrollIntoView({block:'nearest'});}}
   }
@@ -95,7 +107,7 @@
     diagram.cancelGesture();realDiagram.cancelGesture();selected=null;$('rotateComponent').disabled=true;
     $$('#inspectorContent .field.selected').forEach(field=>field.classList.remove('selected'));
     if(panel==='components')$('inspectorTitle').textContent='Componenti';
-    const svg=$(M.real(params())?'realSchematic':'schematic');if(svg.contains(document.activeElement))svg.focus({preventScroll:true});
+    const svg=$(networkDiagram(params())?'realSchematic':'schematic');if(svg.contains(document.activeElement))svg.focus({preventScroll:true});
     drawDiagram();
   }
   function selectComponent(id){
@@ -104,9 +116,9 @@
     const source=id==='V1'||id==='V2',wave=source&&id==='V2'&&params().drive==='independent'?'wave2':'wave1';
     const kind=source?params()[wave].kind:null;
     const inactive=params().type==='difference'&&((id==='V1'&&params().drive==='v2')||(id==='V2'&&params().drive==='v1'));
-    renderInspector(['R','C','R1','Rf','R3','R4','C1'].includes(id)?id:id==='U1'?'rail':id==='Rg'?'rg':id==='CH1'||id==='CH2'?'scopeR':inactive?'drive':source?(kind==='discharge'?'initial':kind==='ground'?wave+'.kind':wave+(['dc','charge','cycle'].includes(kind)?'.level':'.vpp')):undefined);
+    renderInspector((M.isRadiation(params())&&M.radiation.fields(params()).some(([k])=>k===id)||['R','C','R1','Rf','R3','R4','C1'].includes(id))?id:id==='Vbias'?'wave2.level':id.startsWith('U')?'rail':id==='Rg'?'rg':id==='CH1'||id==='CH2'?'scopeR':inactive?'drive':source?(kind==='discharge'?'initial':kind==='ground'?wave+'.kind':wave+(['dc','charge','cycle'].includes(kind)?'.level':'.vpp')):undefined);
     drawDiagram();
-    $('rotateComponent').disabled=!['R','C','R1','Rf','R3','R4','C1','Rg'].includes(id);
+    $('rotateComponent').disabled=!(M.isRadiation(params())?M.radiation.fields(params()).some(([k])=>k===id):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(id));
   }
   function showErrors(errors){
     valid=!Object.keys(errors).length;$('saveProject').disabled=!valid;$('exportCSV').disabled=!valid||calculating||!calculationReady;$('exportSVG').disabled=!valid||calculating||!calculationReady;$('guidedCancel').disabled=!valid;
@@ -126,43 +138,44 @@
       if(candidate.wave1.kind==='discharge'&&candidate.initial===0)candidate.initial=candidate.wave1.level;
       if(['charge','cycle'].includes(candidate.wave1.kind)&&params().wave1.kind==='discharge')candidate.initial=0;
     }
-    if(Number.isFinite(candidate.R)&&candidate.R>0&&Number.isFinite(candidate.C)&&candidate.C>0)candidate=M.normalizeTime(candidate);
+    if(M.isRadiation(candidate)||Number.isFinite(candidate.R)&&candidate.R>0&&Number.isFinite(candidate.C)&&candidate.C>0)candidate=M.normalizeTime(candidate);
     showErrors(M.validate(candidate));if(!valid)return false;
     const changedParameters=JSON.stringify(params())!==JSON.stringify(candidate);project.circuits[current().type]=candidate;
     if(changedParameters||!calculationReady&&!calculating)calculate();if(rebuild)renderInspector();else syncAutomaticFields();persist();return true;
   }
   function syncAutomaticFields(){for(const path of ['duration','switchTime']){const input=$('inspectorContent').querySelector(`[data-field="${path}"]`);if(input&&input.disabled){const factor=Number(input.parentElement.querySelector('[data-unit]').value);input.value=Number((get(params(),path)/factor).toPrecision(12));}}}
   const primaryMetric=r=>r.primary||/CMRR|taglio|Taglio|Banda|Costante di tempo|Guadagno/.test(r.label);
-  function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics];if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(p.type==='difference')rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
+  function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics];if(project.analysis==='charge'&&data.length)rows.push({label:'Pendenza fit simulato',value:format(data[0].slope*1e-12,'V/pC'),primary:true},{label:'Intercetta fit simulato',value:format(data[0].intercept,'V')});if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(p.type==='difference')rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
     rows.sort((a,b)=>Number(Boolean(primaryMetric(b)))-Number(Boolean(primaryMetric(a))));$('summary').innerHTML=rows.map(r=>`<div class="summary-item ${primaryMetric(r)?'metric':''}" ${r.note?'title="'+esc(r.note)+'"':''}><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong></div>`).join('')+(M.real(p)&&project.analysis==='bode'?'<p class="field-hint metric-note">I tagli a −3 dB sono riferiti al massimo della curva nell’intervallo visualizzato.</p>':'');
   }
-  const colors={vin:'#627d99',vin2:'#159e89',out:'#4264ef',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
+  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#627d99',vin2:'#159e89',out:'#4264ef',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
   function series(){const p=params();let s;
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
+    else if(project.analysis==='charge')s=[{key:'out',label:'Picco rispetto alla baseline',points:true},{key:'linear',label:'Fit lineare',dash:'5 5'}];
     else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:'Senza saturazione',dash:'5 5'}];
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
-    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(p.type==='difference')s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
+    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(p.type==='difference')s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
     return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]!==false}));
   }
   function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}" aria-label="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${esc(d.label)}</span></button>`).join('');}
 
   function quantityControls(){const p=params(),select=$('plotQuantity');if(project.analysis==='bode')select.innerHTML='<option value="db">Modulo (dB)</option><option value="phase">Fase (°)</option>';else select.innerHTML='<option value="voltage">Tensioni</option><option value="current">Corrente in R</option>';
     if(project.analysis==='bode'&&!['db','phase'].includes(quantity))quantity='db';if(project.analysis==='time'&&!['voltage','current'].includes(quantity))quantity='voltage';
-    select.value=quantity;select.hidden=project.analysis==='vtc'||(project.analysis==='time'&&p.type!=='rc');
+    select.value=quantity;select.hidden=['vtc','charge'].includes(project.analysis)||(project.analysis==='time'&&p.type!=='rc');
   }
   async function calculate(){
     const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
-      const result=await tasks.run(analysis==='time'?'guidedTime':analysis==='bode'?'guidedBode':'guidedVtc',{params:p},fraction=>{if(revision===calculationRevision)$('calculationStatus').textContent='Calcolo locale · '+Math.round(fraction*100)+'%';});if(revision!==calculationRevision)return;data=result;calculating=false;calculationReady=true;derivedMetrics=M.metrics(p,analysis==='time'?null:p.bodeInput);if(M.real(p)&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
+      const result=await tasks.run(analysis==='time'?'guidedTime':analysis==='bode'?'guidedBode':analysis==='charge'?'guidedCharge':'guidedVtc',{params:p},fraction=>{if(revision===calculationRevision)$('calculationStatus').textContent='Calcolo locale · '+Math.round(fraction*100)+'%';});if(revision!==calculationRevision)return;data=result;calculating=false;calculationReady=true;derivedMetrics=M.metrics(p,analysis==='time'?null:p.bodeInput);if((M.real(p)||M.isRadiation(p))&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
       quantityControls();renderLegend();
-      plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
+      plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
       drawDiagram(p);measurements();
       $('timeline').hidden=project.analysis!=='time';$('timelineDuration').textContent=format(p.duration,'s');
-      $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
+      $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='charge'?'Linearità in carica · '+data.length+' impulsi':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
       const clipped=project.analysis!=='bode'&&data.some(d=>d.clipped);
       const zeroCommon=!M.real(p)&&p.type==='difference'&&project.analysis!=='time'&&p.bodeInput==='common'&&!Number.isFinite(M.coefficients(p).cmrr);
       $('resultNotice').hidden=!clipped&&!zeroCommon;
       $('resultNotice').textContent=clipped?(p.opamp==='physical'?'Uno o più limiti fisici sono attivi (alimentazione, slew rate o corrente). I valori si modificano nell’operazionale.':'Saturazione nella retroazione: escursione ±'+format(p.rail-p.headroom,'V')+'.'):zeroCommon?'Rapporti resistivi bilanciati: il modo comune si annulla nel modello. Introduci una differenza tra R₄/R₃ e Rf/R₁ per misurare un CMRR finito.':'';
-      $('rotateComponent').disabled=!['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected);
+      $('rotateComponent').disabled=!(M.isRadiation(p)?M.radiation.fields(p).some(([k])=>k===selected):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected));
       showErrors({});emitState(true);
     }catch(error){if(revision!==calculationRevision)return;calculating=false;$('exportCSV').disabled=true;$('exportSVG').disabled=true;$('calculationStatus').textContent=error.name==='AbortError'?'Calcolo annullato':'Calcolo non disponibile';if(error.name!=='AbortError')toast('Calcolo non disponibile: '+error.message,true);}
     finally{if(revision===calculationRevision)$('guidedCancel').textContent='Ricalcola';}
@@ -171,14 +184,15 @@
     $('timeCursor').value=Math.round(fraction*10000);if(playback.running&&playback.mode==='continuous'&&performance.now()-lastContinuousReadout<200)return;lastContinuousReadout=performance.now();const p=params();let rows;
     if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(p.type==='difference')rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
     else if(project.analysis==='bode')rows=[['Frequenza',format(d.x,'Hz',4)],['Guadagno',d.magnitude===0?'0 V/V':format(d.magnitude,'',4)+' V/V','primary-value'],['Modulo',d.magnitude===0?'−∞ dB':format(d.db,'dB',4)],['Fase',format(d.phase,'°',4)]];
+    else if(project.analysis==='charge')rows=[['Qin nominale',format(d.x,'C',4)],['Durata impulso',format(d.width,'s',4)],['Picco / baseline',format(d.out,'V',4)],['Residuo dal fit',format(d.residual,'V',4)]];
     else rows=[['Ingresso',format(d.x,'V',4)+'pp'],['Uscita',format(d.out,'V',4)+'pp','primary-value'],['Risposta lineare',format(d.linear,'V',4)+'pp']];
-    if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
+    if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':project.analysis==='charge'?'Q':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
     $('readout').innerHTML=rows.map(([label,value,cls=''])=>`<div class="${cls}"><span>${label}</span><strong>${value}</strong></div>`).join('');
     $('timeCursor').setAttribute('aria-valuetext',project.analysis==='time'?format(d.x,'s',4):format(d.x,''));
   }
   function applyPreset(key){
     if(!applyFields())return;if(!key){window.GuidedTrials.select(project,'',M.CATALOG);renderInspector();persist();return;}let p=copy(params());const w=p.wave1;
-    if(p.type==='rc'){
+    if(M.isRadiation(p)){const trial=M.radiation.applyPreset(p,key);p=trial.parameters;project.analysis=trial.analysis;}else if(p.type==='rc'){
       if(['cycle','charge','discharge'].includes(key)){w.kind=key;p.initial=key==='discharge'?w.level:0;}
       if(['square','ideal','direct','probe'].includes(key)){Object.assign(w,{kind:'square',frequency:50,vpp:4,offset:2,phase:0});p.initial=0;}
       if(['ideal','direct','probe'].includes(key)){if(p.bench){p.bench=window.BenchModel.config(p.bench);p.bench.mode=key==='ideal'?'ideal':'real';for(const ch of p.bench.channels){ch.enabled=true;ch.kind=key==='probe'?'probe10':'direct';ch.coupling='dc';}}p.instrument=key;if(key==='direct'){p.scopeR=1e6;p.scopeC=120e-12;}if(key==='probe'){p.scopeR=10e6;p.scopeC=12e-12;}p.rg=50;}
@@ -212,17 +226,17 @@
   }
 
   function drawDiagram(p=params()){
-    const real=M.real(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
-    if(!real){diagram.render(p,project.layouts[p.type]||{},selected);return;}
+    const real=networkDiagram(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
+    if(!networkDiagram(p)){diagram.render(p,project.layouts[p.type]||{},selected);return;}
     const d=M.network(p,project.analysis==='time'?null:p.bodeInput);d.settings.analysis=project.analysis==='bode'?'bode':'time';
     for(const c of d.components)if(project.layouts[p.type]?.[c.id])Object.assign(c,project.layouts[p.type][c.id]);
     const id=p.type==='rc'&&selected==='R'?'R1':p.type==='rc'&&selected==='C'?'C1':selected;
     realDiagram.render(d,id?{kind:'component',id}:null,'select',null,false);if(wasHidden)requestAnimationFrame(()=>realDiagram.fit());
   }
-  const activeDiagram=()=>M.real(params())?realDiagram:diagram;
+  const activeDiagram=()=>networkDiagram(params())?realDiagram:diagram;
   function fitDiagram(){drawDiagram();activeDiagram().fit();}
   function selectReal(kind,id){if(kind!=='component'){clearSelection();return;}const c=realDiagram.doc.components.find(c=>c.id===id);if(c?.benchRole){selected=id;drawDiagram();document.dispatchEvent(new CustomEvent('open-bench',{detail:{part:id}}));return;}selectComponent(params().type==='rc'&&id==='R1'?'R':params().type==='rc'&&id==='C1'?'C':id);}
-  const realDiagram=new window.FreeCanvas($('realSchematic'),{select:selectReal,pin:ref=>selectReal('component',ref.split(':')[0]),move:(id,x,y)=>{const c=realDiagram.doc.components.find(c=>c.id===id);(project.layouts[params().type]??={})[id]={x,y,rotation:c.rotation};drawDiagram();persist();},moveWire:()=>drawDiagram(),moveGroup:()=>drawDiagram(),region:()=>clearSelection(),add:()=>toast('Aggiungi componenti dall’editor libero.'),zoom:value=>{if(M.real(params()))$('diagramZoom').textContent=value+'%';}});
+  const realDiagram=new window.FreeCanvas($('realSchematic'),{select:selectReal,pin:ref=>selectReal('component',ref.split(':')[0]),move:(id,x,y)=>{const c=realDiagram.doc.components.find(c=>c.id===id);(project.layouts[params().type]??={})[id]={x,y,rotation:c.rotation};drawDiagram();persist();},moveWire:()=>drawDiagram(),moveGroup:()=>drawDiagram(),region:()=>clearSelection(),add:()=>toast('Aggiungi componenti dall’editor libero.'),zoom:value=>{if(networkDiagram(params()))$('diagramZoom').textContent=value+'%';}});
   const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,deselect:clearSelection,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||window.circuitEditor?.active||e.target.closest('select,dialog')||document.querySelector('dialog[open]'))return;clearSelection();});
   let lastContinuousReadout=0;
@@ -239,7 +253,7 @@
 
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));
-  function changeAnalysis(value){if(!['time','bode','vtc'].includes(value)||(value==='vtc'&&params().type==='rc'))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
+  function changeAnalysis(value){if(!['time','bode','vtc','charge'].includes(value)||(value==='vtc'&&params().type==='rc')||(value==='charge'&&!chargeAnalysis(params())))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
   $$('[data-analysis]').forEach(b=>b.addEventListener('click',()=>changeAnalysis(b.dataset.analysis)));
   $('editButton').addEventListener('click',()=>{setInspector(true);panel='components';renderInspector();const input=$('inspectorContent').querySelector('input');if(input){input.focus({preventScroll:true});input.select();}});
   $('closeInspector').addEventListener('click',()=>setInspector(false));
@@ -254,8 +268,8 @@
   });
   $('inspectorContent').addEventListener('click',e=>{if(e.target.closest('#balanceResistors')){const p=params();p.R3=p.R1;p.R4=p.Rf;renderInspector();calculate();persist();}});
   $('sheetPreset').addEventListener('change',()=>applyPreset($('sheetPreset').value));
-  $('resetCircuit').addEventListener('click',()=>{project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori della scheda ripristinati.');});
-  $('rotateComponent').addEventListener('click',()=>{if(!M.real(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>activeDiagram().fit());
+  $('resetCircuit').addEventListener('click',()=>{project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori iniziali ripristinati.');});
+  $('rotateComponent').addEventListener('click',()=>{if(!networkDiagram(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>activeDiagram().fit());
   $('resetLayout').addEventListener('click',()=>{delete project.layouts[params().type];fitDiagram();drawDiagram();persist();});
   function setWorkspaceView(view){
     const main=$('appLayout').querySelector('.workbench');main.dataset.workbenchView=view;
@@ -291,7 +305,7 @@
   function loadProject(text){const next=M.parse(text);if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();fitDiagram();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}
   function editBreadboard(updates){
     if(!applyFields())return false;
-    try{const p=copy(params()),allowed=/^(R|C|R1|Rf|R3|R4|C1|positive|negative|rail|opamp|drive|wave[12]\.(kind|vpp|frequency|offset|phase|duty|level))$/;
+    try{const p=copy(params()),allowed=/^(R|C|R1|Rf|R3|R4|C1|positive|negative|rail|opamp|drive|Rin|Rfpre|Cfpre|Rsh1|Rsh2|Csh1|Csh2|Rpz|Ri|Rgain|Rbias|slew|rout|ilimit|a0|gbw|headroom|wave[12]\.(kind|vpp|frequency|offset|phase|duty|level|low|width|period|delay|rise|fall))$/;
       for(const[path,value]of Object.entries(updates)){if(!allowed.test(path))throw Error('Parametro non modificabile dalla breadboard.');set(p,path,value);}
       const next=M.normalizeTime(p),errors=M.validate(next);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(next))M.network(next);
       project.circuits[current().type]=next;renderInspector();calculate();persist();return true;

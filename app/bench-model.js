@@ -13,7 +13,7 @@
  }
  const real=p=>p?.bench?.mode==='real';
  function remove(input){const doc=copy(input),b=doc.benchSetup;if(!b)return doc;
-  if(b.version!==1||!Array.isArray(b.parts)||!Array.isArray(b.wires)||!Array.isArray(b.baseWires)||!Array.isArray(b.expected)||b.parts.length>40||b.wires.length>120||b.baseWires.length>120)throw Error('Origine del montaggio reale non valida. Conserva il JSON attuale.');
+  if(b.version!==1||!Array.isArray(b.parts)||!Array.isArray(b.wires)||!Array.isArray(b.baseWires)||!Array.isArray(b.expected)||b.parts.length>100||b.wires.length>240||b.baseWires.length>120)throw Error('Origine del montaggio reale non valida. Conserva il JSON attuale.');
   const added=new Set(b.parts),generatedWires=new Set(b.wires),expected=new Map(b.expected.map(w=>[w.id,w]));
   if(b.parts.some(id=>!doc.components.some(c=>c.id===id&&typeof c.benchRole==='string'))||b.expected.some(w=>!doc.wires.some(v=>v.id===w.id&&v.a===w.a&&v.b===w.b))||doc.wires.some(w=>!expected.has(w.id)&&[w.a,w.b].some(p=>added.has(p.split(':')[0]))))throw Error('I collegamenti del montaggio reale sono stati modificati. Usa Annulla o sposta i collegamenti aggiunti prima di riconfigurarlo.');
   for(const t of doc.traces||[])if([t.component,t.positive?.split(':')[0],t.negative?.split(':')[0]].some(id=>added.has(id)))throw Error('Rimuovi prima le sonde aggiuntive sui componenti degli strumenti.');
@@ -24,7 +24,7 @@
   if(b.labels){const inverse=Object.fromEntries(Object.entries(b.sourceMap).map(([a,z])=>[z,a]));const later=Object.fromEntries(Object.entries(doc.nodeLabels||{}).filter(([pin,label])=>b.appliedLabels?.[pin]!==label).map(([pin,label])=>[inverse[pin]||pin,label]));doc.nodeLabels={...b.labels,...later};}else if(doc.nodeLabels){for(const pin of Object.keys(doc.nodeLabels))if(added.has(pin.split(':')[0]))delete doc.nodeLabels[pin];}
   delete doc.benchSetup;return M.parse(M.serialize(doc));
  }
- function apply(input,value){const c=config(value),doc=remove(input);if(c.mode==='ideal')return doc;
+ function apply(input,value){const c=config(value),doc=remove(input),errors=M.validate(doc);if(errors.length)throw Error(errors[0]);if(c.mode==='ideal')return doc;
   const b={version:1,config:c,parts:[],wires:[],baseWires:copy(doc.wires),expected:[],probes:copy(doc.probes),appliedProbes:null,labels:doc.nodeLabels?copy(doc.nodeLabels):null,scales:{input:doc.settings.probeScaleInput??null,output:doc.settings.probeScaleOutput??null},sourceMap:{}};
   let initialValues={};try{initialValues=M.initialVoltages(doc);}catch(error){b.initializationNotice='Inizializzazione nominale non disponibile: '+error.message;}
   const used=new Set(doc.components.map(p=>p.id)),wireIDs=new Set(doc.wires.map(w=>w.id));

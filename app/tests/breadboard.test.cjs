@@ -81,3 +81,32 @@ test('Rf retains its output jumper and the shared input junction even at the com
  for(const route of [output,input])for(const segment of route.segments.filter(s=>s.kind==='wire'))assert.ok(svg.includes('data-bb-cable="wire:'+segment.id+'"'));
  assert.equal(output.to.hole,'M1:e12');assert.equal(junction.to.hole,'M1:e13');
 });
+
+function visibleGroups(svg){
+ const visible=[],stack=[false];for(const tag of svg.matchAll(/<g\b([^>]*)>|<\/g>/g)){
+  if(tag[0]==='</g>'){assert.ok(stack.length>1,'balanced SVG groups');stack.pop();continue;}
+  const attrs=Object.fromEntries([...tag[1].matchAll(/([\w-]+)="([^"]*)"/g)].map(m=>[m[1],m[2]])),hidden=stack.at(-1)||/display\s*:\s*none/.test(attrs.style||'');stack.push(hidden);if(!hidden)visible.push(attrs);
+ }assert.equal(stack.length,1);return visible;
+}
+test('components guide shows only the circuit parts, at full opacity even when one is selected',()=>{
+ for(const type of ['rc','shaper','shaper-buffer','detector-chain']){
+  const b=B.create(guided(type)),part=b.parts.find(p=>!p.auxiliary),terminal=B.terminals(b,part.id)[0],before=JSON.stringify(b),svg=R.board(b,{step:0,part:part.id,net:terminal.net,pins:true}),groups=visibleGroups(svg);
+  assert.deepEqual(groups.filter(a=>a['data-bb-part']).map(a=>a['data-bb-part']).sort(),b.parts.filter(p=>!p.auxiliary).map(p=>p.id).sort());
+  assert.equal(groups.filter(a=>a['data-bb-cable']||a['data-bb-instrument']).length,0);assert.doesNotMatch(svg,/<g opacity="(?:\.18|\.13)"/);
+  const frame=R.frame(b,0),g=R.geometry(b);assert.ok(frame.y>0);for(const c of b.parts.filter(c=>!c.auxiliary))for(const hole of Object.values(c.holes)){const at=g.point(hole);assert.ok(at.x>=frame.x&&at.x<=frame.x+frame.width);assert.ok(at.y>=frame.y&&at.y<=frame.y+frame.height);}
+  assert.equal(JSON.stringify(b),before);
+ }
+});
+test('guide phases reveal power, generator and probes progressively and reversibly',()=>{
+ const b=B.create(guided('shaper')),before=JSON.stringify(b),cables=R.connections(b);
+ for(const step of [0,1,2,3,0,3]){
+  const groups=visibleGroups(R.board(b,{step})),actual=groups.filter(a=>a['data-bb-cable']).map(a=>a['data-bb-cable']).sort(),expected=cables.filter(c=>c.stage<=step).map(c=>c.key).sort();assert.deepEqual(actual,expected);
+  assert.deepEqual(groups.filter(a=>a['data-bb-instrument']).map(a=>a['data-bb-instrument']),['power','generator','scope'].slice(0,step));
+  assert.equal(groups.filter(a=>a['data-bb-part']).length,b.parts.filter(p=>!p.auxiliary||step>=1).length);assert.equal(JSON.stringify(b),before);
+ }
+});
+test('following a terminal needs only the guide phase containing its actual connections',()=>{
+ const b=B.create(guided('shaper'));
+ const signal=B.trace(b,'Rsh2:a','Ubuf:out'),ground=B.trace(b,'Rsh1:b','Csh2:b'),power=B.trace(b,'Ubuf:8','PSU:Ubuf+');
+ assert.ok(signal&&ground&&power);assert.equal(R.traceStage(b,signal),2);assert.equal(R.traceStage(b,ground),1);assert.equal(R.traceStage(b,power),1);
+});

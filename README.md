@@ -36,7 +36,7 @@ Sulla breadboard clicca un componente, poi **A/B** o un **pin**: scegli una dest
 
 | Dove | A cosa serve |
 | --- | --- |
-| **Elenco a sinistra** | Scegli RC, invertente, derivatore, differenze oppure l’editor libero. |
+| **Elenco a sinistra** | Scegli i circuiti delle quattro giornate oppure l’editor libero. |
 | **Schema al centro** | Clicca i valori sottolineati per modificarli; trascina i componenti per disporli. |
 | **Pannello a destra** | Imposta componenti, segnali e analisi. **Prova guidata** propone configurazioni già pronte. |
 | **Grafico** | Cambia analisi, usa zoom e cursori, leggi le grandezze ed esporta i risultati. |
@@ -48,6 +48,10 @@ Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nel
 Per deselezionare un componente, **clicca sullo sfondo dello schema o premi Esc**. Nell’editor libero Esc interrompe anche un collegamento iniziato. I valori validi modificati restano conservati.
 
 In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Frequenza · Bode** oppure **Ampiezza · VTC** (per gli amplificatori). Il pannello spiega lo scopo della prova e mostra i relativi controlli. **Come leggere il grafico** chiarisce assi e curve; risoluzione e dettagli del calcolo si aprono su richiesta. In fondo trovi gli strumenti per confrontare il modello con misure raccolte in laboratorio.
+
+## Giornate 3 e 4 · catena elettronica
+
+Il menu delle esperienze è diviso nelle quattro giornate. I sette nuovi circuiti coprono preamplificatore di carica, shaper CR–RC, buffer finale facoltativo, undershoot, compensazione polo-zero, amplificatore non invertente e catena completa. Ogni voce offre situazioni selezionabili da **Prova guidata**, parametri modificabili, schema e breadboard. Preamplificatore e catena includono la linearità rispetto alla carica iniettata, con fit e residui nel CSV. I valori iniziali sono esempi da sostituire con i componenti del proprio gruppo. [Guida alle giornate 3 e 4](docs/GIORNATE_3_4.md).
 
 ## Prima prova: carica e scarica di una RC
 

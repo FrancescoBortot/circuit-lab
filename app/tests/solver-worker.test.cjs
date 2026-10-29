@@ -19,6 +19,11 @@ test('worker handles Bode, guided simulation and independent measurement context
 test('worker errors remain explicit and unsupported actions cannot invoke model properties',async()=>{
   await assert.rejects(execute('time',{doc:M.blank()}),/Aggiungi/);await assert.rejects(execute('constructor',{}),/non supportata/);
 });
+test('worker includes days 3–4 and computes the same charge linearity as the direct model',async()=>{
+ const L=require('../lab-model.js'),p=L.defaults('preamp');p.chargePoints=3;
+ const run=await execute('guidedCharge',{params:p});assert.deepEqual(run.result,L.charge(p));assert.ok(run.progress.includes(1));
+ const q=L.defaults('pz-shaper');assert.deepEqual((await execute('guidedBode',{params:q})).result,L.bode(q));
+});
 test('worker DC analyses preserve static powers and the declared sweep axis',async()=>{
  const doc=M.example('inverting');doc.components[0].wave.dc=1;
  assert.deepEqual((await execute('op',{doc})).result,M.operatingPoint(doc));

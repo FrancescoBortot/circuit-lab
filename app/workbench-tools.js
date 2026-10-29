@@ -3,7 +3,7 @@
  'use strict';const clone=x=>JSON.parse(JSON.stringify(x));
  function measurements(doc,allAnalyses=false){
   const free=doc.mode==='free',analysis=free?doc.settings.analysis:doc.analysis,parts=free?doc.components:[],type=free?null:Object.keys(doc.circuits||{}).find(k=>k===(doc.experiment==='bandwidth'?'inverting':doc.experiment));
-  const ready=!free||!M.issues(doc).length,rc=free?parts.some(c=>c.type==='R')&&parts.some(c=>c.type==='C')&&!parts.some(c=>['L','U','D','Q','M'].includes(c.type))&&ready:type==='rc',opamp=free?parts.some(c=>c.type==='U')&&ready:['inverting','derivative','difference'].includes(type),items=[];
+  const ready=!free||!M.issues(doc).length,rc=free?parts.some(c=>c.type==='R')&&parts.some(c=>c.type==='C')&&!parts.some(c=>['L','U','D','Q','M'].includes(c.type))&&ready:type==='rc',opamp=free?parts.some(c=>c.type==='U')&&ready:Boolean(type&&type!=='rc'),items=[];
   if(rc&&(allAnalyses||analysis==='time'))items.push({id:'rc',label:'Tempo · costante τ e fit RC'});
   if(rc&&(allAnalyses||analysis==='bode'))items.push({id:'ac',label:'Frequenza · taglio e fase RC'});
   if(opamp&&(allAnalyses||['time','bode','vtc'].includes(analysis)))items.push({id:'opamp',label:analysis==='bode'?'Operazionali · banda e fase':type==='difference'?'Operazionali · ampiezze, guadagni e CMRR':'Operazionali · ampiezze e VTC',plot:analysis==='bode'?'bandwidth':'vtc'});

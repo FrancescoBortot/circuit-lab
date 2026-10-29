@@ -9,6 +9,15 @@ Non servono account, Internet, installazioni di Python o Node.js, né LTspice.
 Il file HTML contiene il programma, gli stili e il motore di calcolo.
 Il pacchetto non contiene slide o schede delle giornate di laboratorio.
 
+GIORNATE DI LABORATORIO
+Il menu a sinistra raccoglie le quattro giornate. Nella terza trovi
+preamplificatore di carica e shaper CR-RC, anche con buffer finale.
+Nella quarta trovi undershoot, compensazione polo-zero, amplificatore
+non invertente e catena completa. Prova guidata prepara le situazioni
+particolari di ciascun circuito. I valori iniziali sono esempi modificabili.
+Preamplificatore e catena offrono anche Linearità in carica, con fit e
+residui nel CSV.
+
 CONSERVA IL TUO LAVORO
 Nelle esperienze guidate, assegna il nome alla sessione in alto e scegli
 una Prova guidata. Salva sessione prepara uno ZIP con sottocartelle per

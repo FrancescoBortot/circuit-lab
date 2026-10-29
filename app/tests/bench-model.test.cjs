@@ -10,7 +10,7 @@ test('real setup is reversible, reconfiguration does not accumulate components, 
  const d=M.example('rc'),before=M.serialize(d),a=B.apply(d,real());assert.equal(M.serialize(d),before);assert.equal(M.serialize(B.remove(a)),before);const b=B.apply(a,real({rg:75}));assert.equal(b.components.length,a.components.length);b.components.find(c=>c.id==='R1').value=15000;assert.equal(B.remove(b).components.find(c=>c.id==='R1').value,15000);assert.equal(B.apply(b,{mode:'ideal'}).benchSetup,undefined);
 });
 test('rewired instrument branches are not silently discarded and failed changes are atomic',()=>{
- const d=B.apply(M.example('rc'),real());d.wires.find(w=>d.benchSetup.wires.includes(w.id)).b='G2:g';const before=M.serialize(d);assert.throws(()=>B.remove(d),/modificati/);assert.equal(M.serialize(d),before);const crowded=M.example('rc');for(let i=0;i<34;i++)crowded.components.push(M.component('J','J'+i));assert.throws(()=>B.apply(crowded,real()),/componenti/);assert.equal(crowded.benchSetup,undefined);
+ const d=B.apply(M.example('rc'),real());d.wires.find(w=>d.benchSetup.wires.includes(w.id)).b='G2:g';const before=M.serialize(d);assert.throws(()=>B.remove(d),/modificati/);assert.equal(M.serialize(d),before);const crowded=M.example('rc');for(let i=0;i<36;i++)crowded.components.push(M.component('J','J'+i));assert.throws(()=>B.apply(crowded,real()),/componenti/);assert.equal(crowded.benchSetup,undefined);
 });
 test('real setup rejects invalid numerical parameters and impossible AC probe compensation',()=>{
  for(const extra of [{rg:NaN},{wireR:-1},{scopeC:-1},{acC:0},{wireR:.001},{channels:[]}])assert.throws(()=>B.config(real(extra)));

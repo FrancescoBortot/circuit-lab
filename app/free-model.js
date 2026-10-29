@@ -26,7 +26,7 @@
     if(!doc||doc.application!=='Circuit Lab'||doc.version!==3||doc.mode!=='free')return['Il file non è un circuito libero di Circuit Lab.'];
     if(doc.name!==undefined&&(typeof doc.name!=='string'||doc.name.length>80))return['Il nome del progetto ammette fino a 80 caratteri.'];
     try{Files.checkWorkspace(doc.workspace);Files.checkRCStudy(doc.rcStudy);Files.checkACStudy(doc.acStudy);Files.checkOpampStudy(doc.opampStudy);Files.checkMetrologyStudy(doc.metrologyStudy);Files.checkParameterStudy(doc.parameterStudy);}catch(e){return[e.message];}
-    if(!Array.isArray(doc.components)||!Array.isArray(doc.wires)||doc.components.length>40||doc.wires.length>120)return['Il progetto ammette fino a 40 componenti e 120 fili.'];
+    if(!Array.isArray(doc.components)||!Array.isArray(doc.wires)||doc.components.length>(doc.benchSetup?120:40)||doc.wires.length>(doc.benchSetup?240:120))return['Il progetto ammette fino a 40 componenti e 120 fili.'];
     const ids=new Set();
     for(const c of doc.components){
       if(!c||!Object.hasOwn(PINS,c.type)||typeof c.id!=='string'||!(/^[A-Z][A-Za-z0-9_]{0,15}$/).test(c.id)||ids.has(c.id)){errors.push('Tipo o identificativo del componente non valido o duplicato.');continue;}ids.add(c.id);

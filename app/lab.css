@@ -16,3 +16,6 @@
 @media(max-width:760px){.guided-analysis-choice>label{font-size:12px}.guided-analysis-choice>p{font-size:12px}.guided-analysis-settings h3,.guided-analysis-measures h3{font-size:12px}.guided-analysis-reading p,.guided-analysis-measures>p{font-size:11px}.guided-analysis-auto{font-size:10px}}
 .inspector-scroll>.inspector-summary{margin:18px 0 0;padding:13px 0;background:transparent}
 .schematic-component:not(.selected):not(:focus-visible):hover .component-selection{fill:transparent;stroke:transparent}.schematic-component:not(.selected):hover .component-name{fill:var(--blue)}
+
+/* Keep the day visible when the library becomes a horizontal strip. */
+@media(max-width:760px){.library-group{display:flex;flex-direction:column;gap:5px;flex-shrink:0;margin:0 8px 0 0}.library-group h2{display:flex;font-size:10px;margin:0 0 3px}.library-group .circuit-option{width:100%}.library-editor{align-self:flex-start}}

@@ -6,7 +6,7 @@
  function capture(previous,text,result=null,now=new Date().toISOString()){
   const doc=L.parse(text);if(!doc.session)throw Error('Assegna un nome alla sessione prima di salvarla.');const stamp=C.stamp(doc),trial=T.current(doc,L.CATALOG),same=previous?.stamp===stamp;
   const record={id:key(doc),sessionId:doc.session.id,sessionName:doc.name,updatedAt:now,experiment:doc.experiment,trial,stamp,text:L.serialize(doc),analyses:same?{...previous.analyses}:{}};
-  if(result){if(result.analysis!==doc.analysis||!['time','bode','vtc'].includes(result.analysis)||typeof result.csv!=='string'||typeof result.svg!=='string'||enc.encode(result.csv).length>6000000||enc.encode(result.svg).length>6000000)throw Error('Risultati della prova non validi o troppo grandi.');
+  if(result){if(result.analysis!==doc.analysis||!['time','bode','vtc','charge'].includes(result.analysis)||typeof result.csv!=='string'||typeof result.svg!=='string'||enc.encode(result.csv).length>6000000||enc.encode(result.svg).length>6000000)throw Error('Risultati della prova non validi o troppo grandi.');
    const old=record.analyses[result.analysis];record.analyses[result.analysis]={csv:result.csv,count:result.count,lastQuantity:result.quantity,points:result.points?clone(result.points):null,plots:{...old?.plots,[result.quantity]:result.svg}};
   }
   return record;
@@ -24,7 +24,7 @@
    const current=record.analyses[doc.analysis],plot=current&&(current.plots?.[current.lastQuantity]||Object.values(current.plots||{})[0]),options={rcContext:context(doc,record),plot:plot?dataURL(plot):null,simulation:current?{method:'Analisi guidata '+doc.analysis,count:current.count}:null};
    const individual=F.unzip(F.archive(JSON.parse(L.serialize(doc)),options));
    for(const [entry,bytes]of Object.entries(individual)){if(entry==='LEGGIMI.txt')continue;const destination=entry==='progetto.json'?prefix+'.json':prefix+'-'+entry;if(!F.archivePath(destination,true))throw Error('Percorso della sessione non valido.');files[destination]=bytes;}
-   for(const [analysis,cache]of Object.entries(record.analyses)){if(!['time','bode','vtc'].includes(analysis))throw Error('Analisi della sessione non valida.');files[prefix+'-'+analysis+'.csv']=cache.csv;for(const[quantity,svg]of Object.entries(cache.plots||{})){if(!['voltage','current','db','phase'].includes(quantity))throw Error('Grafico della sessione non valido.');files[prefix+'-'+analysis+'-'+quantity+'.svg']=svg;}}
+   for(const [analysis,cache]of Object.entries(record.analyses)){if(!['time','bode','vtc','charge'].includes(analysis))throw Error('Analisi della sessione non valida.');files[prefix+'-'+analysis+'.csv']=cache.csv;for(const[quantity,svg]of Object.entries(cache.plots||{})){if(!['voltage','current','db','phase'].includes(quantity))throw Error('Grafico della sessione non valido.');files[prefix+'-'+analysis+'-'+quantity+'.svg']=svg;}}
    manifest.trials.push({experiment:trial.experience,preset:trial.preset,label:trial.label,modified:trial.modified,project:prefix+'.json',updatedAt:record.updatedAt,analyses:Object.keys(record.analyses)});
   }
   files[root+'/sessione.json']=JSON.stringify(manifest,null,2);files[root+'/LEGGIMI.txt']='Sessione: '+name+'\nOgni sottocartella contiene un circuito. I nomi includono sessione, circuito e prova. Per riaprire una prova in Circuit Lab usa Apri e scegli il suo JSON. CSV e grafici rappresentano le analisi eseguite con i parametri salvati. Una modifica elettrica elimina dai salvataggi i risultati precedenti non più attuali. La relazione può essere aperta e stampata offline.\n';

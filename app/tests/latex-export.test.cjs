@@ -20,3 +20,18 @@ test('passive terminal normals point outward and DC generator polarity agrees wi
 
  test('compact tables group only identical auxiliary values and retain all component identities',()=>{const d=B.apply(M.example('rc'),{...B.defaults(),mode:'real'}),rows=X.tableRows(d),ids=rows.flatMap(r=>r.ids);assert.deepEqual(ids.slice().sort(),d.components.map(c=>c.id).sort());const leads=rows.filter(r=>r.description.startsWith('Resistenze dei collegamenti'));assert.equal(leads.length,1);assert.ok(leads[0].ids.length>1);const lead=d.components.find(c=>c.benchRole?.startsWith('Collegamento'));lead.value=.05000000001;assert.equal(X.tableRows(d).filter(r=>r.description.startsWith('Resistenze dei collegamenti')).length,2);const cap=d.components.find(c=>c.id==='CO2');cap.initial=2;assert.ok(X.tableRows(d).some(r=>r.ids.length===1&&r.ids[0]==='CO2'));});
  test('printed lead resistors split continuous paths at their real terminals without reversing through a symbol',()=>{for(const example of ['rc','rlc','inverting']){const d=B.apply(M.example(example),{...B.defaults(),mode:'real'}),p=X.parts(d);for(const w of p.drawDoc.wires){if([w.a,w.b].some(ref=>p.drawDoc.components.find(c=>c.id===ref.split(':')[0]).type==='G'))continue;const points=X.route(p.drawDoc,w);assert.deepEqual(points[0],X.port(p.drawDoc,w.a));assert.deepEqual(points.at(-1),X.port(p.drawDoc,w.b));}for(const c of p.drawDoc.components.filter(c=>c.benchRole?.startsWith('Collegamento'))){for(const pin of ['a','b']){const w=p.drawDoc.wires.find(w=>w[pin==='a'?'b':'a']===c.id+':'+pin),path=X.route(p.drawDoc,w),at=X.port(p.drawDoc,c.id+':'+pin),other=pin==='a'?path.at(-2):path[1];assert.ok((other.x-at.x)*at.dx+(other.y-at.y)*at.dy>=-1e-8,c.id+' '+example);}}}});
+
+test('shaper followers keep visible feedback outside the opamp in the editor and exported schematics',()=>{
+ const scope={window:{FreeModel:M,LabModel:L}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../free-canvas.js'),'utf8'),scope);
+ const BB=require('../breadboard-model'),BR=require('../breadboard-render');
+ for(const c of L.radiation.CATALOG.filter(c=>L.radiation.hasSh({type:c.type}))){
+  const p=L.defaults(c.type),project={experiment:c.id,circuits:{[c.type]:p},analysis:'time',layouts:{}},d=L.circuit(project),canvas=Object.create(scope.window.FreeCanvas.prototype);canvas.doc=d;
+  const before=M.simulate(d).data.map(r=>r.out),plain=M.clone(d);for(const w of plain.wires){delete w.route;delete w.offset;}assert.deepEqual(M.simulate(plain).data.map(r=>r.out),before);
+  for(const id of ['Ubuf',...(p.outputBuffer?['Uout']:[])]){
+   const w=d.wires.find(w=>w.a===id+':minus'&&w.b===id+':out'),u=d.components.find(c=>c.id===id),points=X.route(d,w),topology=M.topology(d);
+   assert.equal(topology.nodes[w.a],topology.nodes[w.b]);assert.ok(Math.min(...points.map(p=>p.y))<u.y-60);
+   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];if(a.y===b.y&&a.y>u.y-43&&a.y<u.y+43)assert.ok(Math.max(a.x,b.x)<=u.x-44||Math.min(a.x,b.x)>=u.x+50,'horizontal feedback crosses '+id);if(a.x===b.x&&a.x>u.x-44&&a.x<u.x+50)assert.ok(Math.max(a.y,b.y)<=u.y-43||Math.min(a.y,b.y)>=u.y+43,'vertical feedback crosses '+id);}
+   const expected=points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join('');assert.equal(canvas.route(w).replaceAll(',',' '),expected);assert.ok(F.schematic(project).includes('d="'+expected+'"'));assert.ok(BR.schematic(BB.create(d)).includes('d="'+points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')+'"'));
+  }
+ }
+});

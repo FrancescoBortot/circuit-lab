@@ -65,3 +65,19 @@ test('auxiliary capacitors and all eight op-amp pins remain individually inspect
  for(const part of b.parts.filter(p=>p.auxiliary)){const terminals=B.terminals(b,part.id);assert.equal(terminals.length,2);assert.notEqual(terminals[0].node,terminals[1].node);assert.ok(terminals.every(t=>t.targets.length));}
  const geometry=R.geometry(b);for(const c of R.connections(b).filter(c=>c.kind==='wire'&&c.a.hole.split(':')[0]===c.b.hole.split(':')[0]))assert.ok(c.route.every(p=>p.y<geometry.positions.M1.y+465),'No unnecessary loop below the breadboard.');
 });
+test('every guide step retains every cable and both endpoints in the rendered assembly',()=>{
+ for(const type of ['rc','inverting','derivative','difference']){
+  const b=B.create(guided(type)),keys=R.connections(b).map(c=>c.key).sort(),before=JSON.stringify(b);
+  for(let step=0;step<=3;step++){
+   const svg=R.board(b,{step}),rendered=[...svg.matchAll(/data-bb-cable="([^"]+)"/g)].map(m=>m[1]).sort(),ends=[...svg.matchAll(/data-bb-cable-ref="([^"]+)"/g)].map(m=>m[1]);
+   assert.deepEqual(rendered,keys,type+' step '+step);for(const key of keys)assert.equal(ends.filter(v=>v===key).length,2,key+' step '+step);
+   assert.equal(JSON.stringify(b),before);
+  }
+ }
+});
+test('Rf retains its output jumper and the shared input junction even at the components step',()=>{
+ const b=B.create(guided()),svg=R.board(b,{step:0}),output=B.trace(b,'Rf:b','U1:out'),junction=B.trace(b,'Rf:a','U1:minus'),input=B.trace(b,'Rf:a','R1:b');
+ assert.deepEqual(junction.segments.map(s=>s.kind),['strip']);assert.deepEqual(output.segments.map(s=>s.kind),['strip','wire','strip']);
+ for(const route of [output,input])for(const segment of route.segments.filter(s=>s.kind==='wire'))assert.ok(svg.includes('data-bb-cable="wire:'+segment.id+'"'));
+ assert.equal(output.to.hole,'M1:e12');assert.equal(junction.to.hole,'M1:e13');
+});

@@ -3,9 +3,9 @@
 Scegli un circuito e premi **Breadboard**, accanto a **Schema**. La vista usa gli stessi valori e collegamenti del circuito attivo.
 
 - **Prova:** richiama i preset dell'esperienza.
-- **Segnale / Banco completo:** mette in primo piano il percorso del segnale oppure mostra con la stessa evidenza anche alimentazioni, bypass e cablaggio della sezione B. L'attenuazione è soltanto visiva: il circuito rimane completo.
+- **Segnale / Banco completo:** mette in primo piano il percorso del segnale oppure mostra con la stessa evidenza anche alimentazioni, bypass e cablaggio della sezione B. Tutti i cavi rimangono visibili e selezionabili; quelli non evidenziati mantengono almeno il 35% di opacità.
 - **Vista:** raccoglie contatti interni, numeri dei pin e schema a colori.
-- **Guida al montaggio:** apri i passi 1-4 per componenti, alimentazioni, generatore e sonde. I passi non cambiano il circuito completo usato dal calcolo.
+- **Guida al montaggio:** apri i passi 1-4 per componenti, alimentazioni, generatore e sonde. I passi regolano l'evidenza dei cavi senza rimuoverli dal disegno. Selezionando un componente, i collegamenti delle sue reti sono in evidenza anche nei primi passi. Il circuito usato dal calcolo e l'esportazione SVG rimangono completi.
 - **Valori sul generatore:** clicca ampiezza o frequenza del canale da modificare. Il pannello si apre sul campo scelto; Invio applica, Annulla o Esc chiudono senza modificare. Lo stesso vale per le tensioni dell'alimentatore.
 - **Componente → A/B o pin:** mostra i terminali, i fori e le destinazioni elettricamente collegate. Clicca una destinazione per isolare il percorso fisico; le tratte interne sono tratteggiate e i ponticelli sono continui. Alimentazioni e condensatori di bypass sono ispezionabili nello stesso modo.
 - **Valore → Applica:** modifica il valore. Un valore non valido rimane visibile e correggibile prima di cambiare componente o circuito. «Ripristina valore» annulla la modifica ancora da applicare.
@@ -39,7 +39,7 @@ La visualizzazione non aggiunge di nuovo R/C degli strumenti: i carichi e i risu
 
 `breadboard-model.js` alloca contatti senza sovrapposizioni e verifica la partizione elettrica delle reti. `breadboard-render.js` produce banco e schema dagli stessi identificativi. `breadboard-workbench.js` collega selezioni e modifiche alle API esistenti. Preferenze della vista separate dai parametri scientifici.
 
-Su desktop il contenitore centrale gestisce lo scorrimento verticale; il banco scorre solo in orizzontale quando lo zoom lo richiede. Su schermo piccolo scorre la pagina. Selezione, evidenziazione, piste e zoom non ricostruiscono l'SVG; il montaggio viene rigenerato soltanto quando cambiano i dati necessari al modello fisico. Il pannello dei generatori applica soltanto i campi modificati, conservando la precisione degli altri parametri.
+Su desktop il contenitore centrale gestisce lo scorrimento verticale; il banco scorre solo in orizzontale quando lo zoom lo richiede. Su schermo piccolo scorre la pagina. Selezione, evidenziazione, passi della guida, piste e zoom non ricostruiscono l'SVG. Il pannello dei generatori applica soltanto i campi modificati, conservando la precisione degli altri parametri.
 
 Le tracce di ispezione sono ricavate dal grafo dei contatti fisici, non da scorciatoie disegnate fra componenti. Non attraversano resistenze, condensatori o l'operazionale. La selezione conserva il fuoco da tastiera e non aggiunge operazioni alla cronologia del circuito. Su telefono «Collegamenti ↓» e «↑ Banco» permettono di passare tra basetta e dettagli; il ripristino dello zoom centra la basetta.
 

@@ -44,8 +44,8 @@
 .bb-board text,.bb-schema text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .bb-cable-halo,.bb-cable-ink,.bb-cable-end{pointer-events:none}
 .bb-cable-ink{vector-effect:non-scaling-stroke}.bb-cable-hit{pointer-events:stroke;vector-effect:non-scaling-stroke}
-.bb-muted{opacity:.075!important}.bb-context-muted{opacity:.12}.bb-related{opacity:.38!important}.bb-cable-selected{opacity:1!important}.bb-part-context{opacity:.6}
-.bb-cable-selected .bb-cable-ink{stroke-width:5}.bb-cable-selected .bb-cable-end{r:6;stroke-width:2}
+.bb-muted{opacity:.35!important}.bb-context-muted{opacity:.4}.bb-later-step{opacity:.45}.bb-related{opacity:.65!important}.bb-cable-selected{opacity:1!important}.bb-part-context{opacity:.75}
+.bb-cable-emphasis{opacity:1!important}.bb-cable-emphasis:not(.bb-cable-selected) .bb-cable-ink{stroke-width:4.5}.bb-cable-selected .bb-cable-ink{stroke-width:5}.bb-cable-selected .bb-cable-end{r:6;stroke-width:2}
 [data-bb-cable]:hover .bb-cable-ink{stroke-width:5}
 .bb-part-selected{filter:none}.bb-part-selected>g>g:first-of-type>rect,.bb-part-selected>g>circle:first-of-type{stroke:#a46a1b;stroke-width:2}
 .bb-track{pointer-events:none}.bb-show-tracks .bb-track,.bb-net-focus .bb-track{opacity:.32!important}

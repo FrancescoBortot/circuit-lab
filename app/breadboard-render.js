@@ -70,15 +70,21 @@
   s+='<g class="bb-inspection-layer"></g>';
   s+=text(view.x+18,view.y+view.height-8,phase===3?'Clicca un componente per seguire i suoi collegamenti.':'Montaggio · '+['Solo componenti · senza cavi e strumenti','Alimentazioni e GND','Generatore','Sonde'][phase],11,'#65756b','data-bb-guide-caption=""');return s+'</svg>';
  }
+ function assemblySteps(model){
+  if(model.empty)return[];
+  const parts=model.parts.map(c=>({phase:c.auxiliary?1:0,kind:'part',id:c.id,text:c.type==='U'?`Inserisci ${c.id} sul canale centrale, tacca in alto: pin 1 in ${c.physical[1].split(':')[1]}.`:`Inserisci ${c.id} (${fmt(c.component.value,{R:'Ω',C:'F',L:'H'}[c.type])}): ${Object.values(c.holes).map(h=>h.split(':')[1]).join(' → ')}.`}));
+  const cables=connections(model).map(c=>({phase:c.stage,kind:c.kind,id:c.id,text:`Collega ${c.a.label.replace(/M1:/g,'')} → ${c.b.label.replace(/M1:/g,'')}.`}));
+  return [...parts,...cables].sort((a,b)=>a.phase-b.phase);
+ }
  function schematic(model,state={}){
   if(model.empty)return'';const d=model.doc,t=model.topology,local={R:{a:[-44,0],b:[44,0]},C:{a:[-34,0],b:[34,0]},L:{a:[-44,0],b:[44,0]},V:{p:[0,-43],n:[0,43]},U:{plus:[-52,25],minus:[-52,-25],out:[60,0]},G:{g:[0,-22]},J:{j:[0,0]}},port=ref=>{const[id,pin]=ref.split(':'),c=d.components.find(c=>c.id===id),q=local[c.type][pin],a=c.rotation*Math.PI/180;return{x:c.x+q[0]*Math.cos(a)-q[1]*Math.sin(a),y:c.y+q[0]*Math.sin(a)+q[1]*Math.cos(a)};},net=ref=>model.nets.find(n=>n.index===t.nodes[ref]);
-  const x=Math.min(...d.components.map(c=>c.x))-100,y=Math.min(...d.components.map(c=>c.y))-100,w=Math.max(...d.components.map(c=>c.x))-x+150,h=Math.max(...d.components.map(c=>c.y))-y+100;
+  const x=Math.min(...d.components.map(c=>c.x))-100,y=Math.min(...d.components.map(c=>c.y))-100,w=Math.max(...d.components.map(c=>c.x))-x+240,h=Math.max(...d.components.map(c=>c.y))-y+100;
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" role="group" aria-label="Schema con gli stessi nodi della breadboard" class="bb-schema"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fffef9"/>`;
   for(const wire of d.wires){const a=port(wire.a),b=port(wire.b),n=net(wire.a),dim=state.net&&state.net!==n.id,points=wire.route?X.route(d,wire):[a,p((a.x+b.x)/2,a.y),p((a.x+b.x)/2,b.y),b];s+=action('net',n.id,n.name+' · '+wire.a+' → '+wire.b,`<path d="${path(points)}" fill="none" stroke="${n.color}" stroke-width="3" opacity="${dim ? .12 : 1}"/>`);}
   const shapes={R:'M-44 0H-25V-9H25V9H-25V0M25 0H44',C:'M-34 0H-6M-6-18V18M6-18V18M6 0H34',L:'M-44 0H-25C-25-20-12-20-12 0C-12-20 0-20 0 0C0-20 12-20 12 0C12-20 25-20 25 0H44',U:'M-44-42V42L50 0ZM-52-25H-44M-52 25H-44M50 0H60M-36-25H-27M-36 25H-27M-31 20V30',V:'M0-43V-22M0 22V43M-6-7H6M0-13V-1M-6 9H6',G:'M0-22V0M-18 0H18M-12 6H12M-6 12H6',J:''};
-  for(const c of d.components){const value=['R','C','L'].includes(c.type)?fmt(c.value,{R:'Ω',C:'F',L:'H'}[c.type]):c.type==='U'?'TL082C · A':'';s+=action('part',c.id,c.id+' '+value,`<g transform="translate(${c.x} ${c.y}) rotate(${c.rotation})"><path d="${shapes[c.type]}" fill="${c.type==='U'?'#fffef9':'none'}" stroke="${state.part===c.id?'#d28d14':'#34483d'}" stroke-width="${state.part===c.id?4:2}"/>${c.type==='V'?'<circle r="22" fill="none" stroke="#34483d" stroke-width="2"/>':''}</g>${text(c.x+9,c.y-53,c.id,13,'#32473c','font-weight="700"')}${text(c.x+9,c.y-36,value,11)}`);
-   for(const pin of M.PINS[c.type]){const ref=c.id+':'+pin,a=port(ref),n=net(ref);s+=action('ref',ref,c.id+' '+M.pinLabel(c.type,pin)+' · '+n.name,`<circle cx="${a.x}" cy="${a.y}" r="5" fill="${n.color}"/>${text(a.x+8,a.y-8,n.name,10,n.color)}`);}
+  for(const c of d.components){const upright=['R','C','L'].includes(c.type)&&c.rotation%180!==0,labelX=c.x+(upright?60:c.type==='U'?78:14),labelY=c.y+(upright?-5:c.type==='U'?-35:-66);const value=['R','C','L'].includes(c.type)?fmt(c.value,{R:'Ω',C:'F',L:'H'}[c.type]):c.type==='U'?'TL082C · A':'';s+=action('part',c.id,c.id+' '+value,`<g transform="translate(${c.x} ${c.y}) rotate(${c.rotation})"><path d="${shapes[c.type]}" fill="${c.type==='U'?'#fffef9':'none'}" stroke="${state.part===c.id?'#d28d14':'#34483d'}" stroke-width="${state.part===c.id?4:2}"/>${c.type==='V'?'<circle r="22" fill="none" stroke="#34483d" stroke-width="2"/>':''}</g>${text(labelX,labelY,c.id,19,'#32473c','font-weight="700"')}${text(labelX,labelY+23,value,16)}`);
+   for(const pin of M.PINS[c.type]){const ref=c.id+':'+pin,a=port(ref),n=net(ref);s+=action('ref',ref,c.id+' '+M.pinLabel(c.type,pin)+' · '+n.name,`<circle cx="${a.x}" cy="${a.y}" r="5" fill="${n.color}"/>${text(a.x+9,a.y-12,n.name,12,n.color)}`);}
   }return s+'</svg>';
  }
- return{board,schematic,geometry,frame,traceStage,connections,esc,fmt};
+ return{board,schematic,geometry,frame,traceStage,connections,assemblySteps,esc,fmt};
 });

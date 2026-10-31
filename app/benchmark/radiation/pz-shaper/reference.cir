@@ -1,0 +1,34 @@
+Circuit Lab · Shaper compensato · polo-zero
+* ngspice subset: generated from explicit connections; no hidden ground or leakage.
+* Transient initial conditions require UIC. DC bias is separate from the waveform.
+* CLAB_OUT N6
+* CLAB_IN N1
+* N1 = IN
+* N3 = PRE
+* N6 = OUT
+V_V1 N1 0 DC 0.000000000000000e+0 AC 1.000000000000000e+0 0.000000000000000e+0 PULSE(0.000000000000000e+0 -1.000000000000000e+0 2.000000000000000e-5 1.000000000000000e-7 1.000000000000000e-7 1.000000000000000e-5 5.000000000000000e-3)
+R_Rin N1 N2 1.000000000000000e+5
+C_Uprestate Z_Upre 0 7.957747154594767e-3 IC=0.000000000000000e+0
+B_Uprestate Z_Upre 0 I=-(v(Z_Upre)>=1.350000000000000e+1 ? min(0,max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(0)-v(N2))-v(Z_Upre)))))-(v(Z_Upre)-1.350000000000000e+1) : (v(Z_Upre)<=-1.350000000000000e+1 ? max(0,max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(0)-v(N2))-v(Z_Upre)))))-(v(Z_Upre)--1.350000000000000e+1) : max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(0)-v(N2))-v(Z_Upre))))))
+B_Upreout N3 0 I=max(-2.000000000000000e-2,min(2.000000000000000e-2,(v(N3)-v(Z_Upre))/5.000000000000000e+1))
+R_Rfpre N2 N3 1.000000000000000e+6
+C_Cfpre N2 N3 2.000000000000000e-10 IC=0.000000000000000e+0
+C_Csh1 N3 N4 2.200000000000000e-9 IC=0.000000000000000e+0
+R_Rsh1 N4 0 1.000000000000000e+4
+C_Ubufstate Z_Ubuf 0 7.957747154594767e-3 IC=0.000000000000000e+0
+B_Ubufstate Z_Ubuf 0 I=-(v(Z_Ubuf)>=1.350000000000000e+1 ? min(0,max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(N4)-v(N5))-v(Z_Ubuf)))))-(v(Z_Ubuf)-1.350000000000000e+1) : (v(Z_Ubuf)<=-1.350000000000000e+1 ? max(0,max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(N4)-v(N5))-v(Z_Ubuf)))))-(v(Z_Ubuf)--1.350000000000000e+1) : max(-1.273239544735163e+5,min(1.273239544735163e+5,(2.000000000000000e+5*(v(N4)-v(N5))-v(Z_Ubuf))))))
+B_Ubufout N5 0 I=max(-2.000000000000000e-2,min(2.000000000000000e-2,(v(N5)-v(Z_Ubuf))/5.000000000000000e+1))
+R_Rsh2 N5 N6 1.000000000000000e+4
+C_Csh2 N6 0 2.200000000000000e-9 IC=0.000000000000000e+0
+R_Rpz N3 N4 9.090909090909093e+4
+* Model definitions are generic; original JSON is needed for full editing and measurement data.
+.options reltol=1e-9 abstol=1e-13 vntol=1e-11
+.control
+set wr_singlescale
+set wr_vecnames
+set numdgt=15
+tran 9.999999999999999e-9 0.0006 0 9.999999999999999e-9 uic
+wrdata reference.dat v(N6)
+quit
+.endc
+.end

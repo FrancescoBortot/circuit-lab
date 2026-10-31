@@ -1,5 +1,5 @@
 {
-  "engineSha256": "b2d9b7a72a4ec55b18cf11884f23005492c9622ede7cce8a6d0d4e088b99b9cd",
+  "engineSha256": "222b7a89233ead14ce58bdd1290a4ca75e722ce492ad311fdd7eeb2d6d55134e",
   "reference": "ngspice, compiled locally from official verified source",
   "version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n******",
   "externalConnectionDuringSimulation": false,

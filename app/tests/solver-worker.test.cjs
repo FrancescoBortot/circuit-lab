@@ -49,3 +49,7 @@ test('task cancellation terminates the running worker and ignores late results',
 });
 
 test('worker real instrument models match direct transient and calibrated AC probe calculations',async()=>{const L=require('../lab-model.js'),B=require('../bench-model.js'),p=L.defaults('rc');p.bench={...B.defaults(),mode:'real'};assert.deepEqual((await execute('guidedTime',{params:p})).result,L.simulate(p));for(const ch of p.bench.channels){ch.kind='probe10';ch.coupling='ac';}assert.deepEqual((await execute('guidedBode',{params:p})).result,L.bode(p));});
+
+test('worker preserves guided diagnostics and compares personal data on the same numerical models',async()=>{
+ const L=require('../lab-model'),Q=require('../lab-quality'),D=require('../comparison-data'),E=require('../experiment-comparison'),p=L.defaults('shaper');assert.deepEqual((await execute('guidedResult',{params:p,analysis:'time'})).result,Q.analyze(p));const doc={experiment:'shaper',analysis:'time',circuits:{shaper:p}},dataset=D.parse('t,y\n0,0\n0.01,0',{xUnit:'ms'});assert.deepEqual((await execute('compareObservations',{doc,dataset})).result,E.compare(doc,dataset));
+});

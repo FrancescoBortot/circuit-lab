@@ -2,9 +2,9 @@
   "application": "Circuit Lab",
   "format": "offline-single-html",
   "file": "Circuit Lab.html",
-  "bytes": 1131524,
-  "sha256": "30db409a5eccb4cdfb76df59ac396afb3ae4ccf7bf099d55149cb55c6a8d6d95",
-  "scripts": 44,
+  "bytes": 1200694,
+  "sha256": "f6cf52b5bf33933b895fc402ef1b251b65e08b5f5a041f3a9324cbb1dc4f2606",
+  "scripts": 51,
   "network": "connect-src none",
   "course_materials": false,
   "license": "MIT"

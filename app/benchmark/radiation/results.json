@@ -1,0 +1,75 @@
+{
+  "reference": "ngspice · native R/C, matched generic behavioral opamp equations",
+  "version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n******",
+  "hashes": {
+    "free-model.js": "222b7a89233ead14ce58bdd1290a4ca75e722ce492ad311fdd7eeb2d6d55134e",
+    "radiation-model.js": "af24f1a46b3d4b90449ede8df83b793cf2a4a118d8b5c5361303b107f6235bf8",
+    "lab-model.js": "f648d40ddae863d05c2cd38b05bb589aec5e4bc7d4ce22acfeb4c845322efa7a",
+    "bench-model.js": "60d1b624c2028b623a21c566fae6043b5a2bdd813e1e2fb1dcdb4eb211d78814",
+    "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
+  },
+  "cases": [
+    {
+      "name": "preamp",
+      "maxAbsoluteError": 0.0000017625079518635012,
+      "tolerance": 0.001,
+      "unit": "V",
+      "compared": 1646,
+      "appPoints": 1647,
+      "skipped": [
+        0
+      ],
+      "pass": true
+    },
+    {
+      "name": "shaper",
+      "maxAbsoluteError": 0.0000017090293759070008,
+      "tolerance": 0.001,
+      "unit": "V",
+      "compared": 1924,
+      "appPoints": 1925,
+      "skipped": [
+        0
+      ],
+      "pass": true
+    },
+    {
+      "name": "preamp-shaper",
+      "maxAbsoluteError": 0.0000012803479244732907,
+      "tolerance": 0.001,
+      "unit": "V",
+      "compared": 1660,
+      "appPoints": 1661,
+      "skipped": [
+        0
+      ],
+      "pass": true
+    },
+    {
+      "name": "pz-shaper",
+      "maxAbsoluteError": 0.0000012554038269635415,
+      "tolerance": 0.001,
+      "unit": "V",
+      "compared": 1660,
+      "appPoints": 1661,
+      "skipped": [
+        0
+      ],
+      "pass": true
+    },
+    {
+      "name": "detector-chain",
+      "maxAbsoluteError": 0.000008604414326374155,
+      "tolerance": 0.001,
+      "unit": "V",
+      "compared": 1834,
+      "appPoints": 1835,
+      "skipped": [
+        0
+      ],
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "notice": "Independent integration of equivalent equations; no claim of measured TL082 accuracy. Finite 100 ns edges, UIC, 1 mV sample tolerance; no extrapolation."
+}

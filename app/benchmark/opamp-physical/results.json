@@ -1,5 +1,5 @@
 {
-  "engineSha256": "b2d9b7a72a4ec55b18cf11884f23005492c9622ede7cce8a6d0d4e088b99b9cd",
+  "engineSha256": "222b7a89233ead14ce58bdd1290a4ca75e722ce492ad311fdd7eeb2d6d55134e",
   "reference": "ngspice 47 behavioral ODE and output transconductance; official local build",
   "externalConnectionDuringSimulation": false,
   "cases": [

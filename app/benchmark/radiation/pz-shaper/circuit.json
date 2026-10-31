@@ -1,0 +1,273 @@
+{
+  "application": "Circuit Lab",
+  "version": 3,
+  "mode": "free",
+  "name": "Shaper compensato · polo-zero",
+  "components": [
+    {
+      "id": "V1",
+      "type": "V",
+      "x": 110,
+      "y": 300,
+      "rotation": 0,
+      "wave": {
+        "kind": "pulse",
+        "level": -1,
+        "vpp": 1,
+        "frequency": 200,
+        "offset": 0,
+        "phase": 0,
+        "duty": 50,
+        "delay": 0.00002,
+        "width": 0.00001,
+        "low": 0,
+        "rise": 1e-7,
+        "fall": 1e-7,
+        "period": 0.005
+      }
+    },
+    {
+      "id": "G1",
+      "type": "G",
+      "x": 110,
+      "y": 440,
+      "rotation": 0
+    },
+    {
+      "id": "Rin",
+      "type": "R",
+      "x": 330,
+      "y": 200,
+      "rotation": 0,
+      "value": 100000
+    },
+    {
+      "id": "Upre",
+      "type": "U",
+      "x": 650,
+      "y": 300,
+      "rotation": 0,
+      "model": "physical",
+      "a0": 200000,
+      "gbw": 4000000,
+      "rail": 15,
+      "headroom": 1.5,
+      "positive": 15,
+      "negative": -15,
+      "slew": 16000000,
+      "rout": 50,
+      "ilimit": 0.02
+    },
+    {
+      "id": "Rfpre",
+      "type": "R",
+      "x": 650,
+      "y": 100,
+      "rotation": 0,
+      "value": 1000000
+    },
+    {
+      "id": "Cfpre",
+      "type": "C",
+      "x": 650,
+      "y": -15,
+      "rotation": 0,
+      "value": 2e-10,
+      "initial": 0
+    },
+    {
+      "id": "G2",
+      "type": "G",
+      "x": 540,
+      "y": 440,
+      "rotation": 0
+    },
+    {
+      "id": "Csh1",
+      "type": "C",
+      "x": 960,
+      "y": 300,
+      "rotation": 0,
+      "value": 2.2e-9,
+      "initial": 0
+    },
+    {
+      "id": "Rsh1",
+      "type": "R",
+      "x": 1130,
+      "y": 420,
+      "rotation": 90,
+      "value": 10000
+    },
+    {
+      "id": "Ubuf",
+      "type": "U",
+      "x": 1330,
+      "y": 275,
+      "rotation": 0,
+      "model": "physical",
+      "a0": 200000,
+      "gbw": 4000000,
+      "rail": 15,
+      "headroom": 1.5,
+      "positive": 15,
+      "negative": -15,
+      "slew": 16000000,
+      "rout": 50,
+      "ilimit": 0.02
+    },
+    {
+      "id": "Rsh2",
+      "type": "R",
+      "x": 1560,
+      "y": 275,
+      "rotation": 0,
+      "value": 10000
+    },
+    {
+      "id": "Csh2",
+      "type": "C",
+      "x": 1730,
+      "y": 420,
+      "rotation": 90,
+      "value": 2.2e-9,
+      "initial": 0
+    },
+    {
+      "id": "G3",
+      "type": "G",
+      "x": 1130,
+      "y": 540,
+      "rotation": 0
+    },
+    {
+      "id": "G4",
+      "type": "G",
+      "x": 1730,
+      "y": 540,
+      "rotation": 0
+    },
+    {
+      "id": "Rpz",
+      "type": "R",
+      "x": 960,
+      "y": 160,
+      "rotation": 0,
+      "value": 90909.09090909093
+    }
+  ],
+  "wires": [
+    {
+      "id": "W1",
+      "a": "V1:n",
+      "b": "G1:g"
+    },
+    {
+      "id": "W2",
+      "a": "Upre:plus",
+      "b": "G2:g"
+    },
+    {
+      "id": "W3",
+      "a": "V1:p",
+      "b": "Rin:a"
+    },
+    {
+      "id": "W4",
+      "a": "Rin:b",
+      "b": "Upre:minus"
+    },
+    {
+      "id": "W5",
+      "a": "Upre:minus",
+      "b": "Rfpre:a"
+    },
+    {
+      "id": "W6",
+      "a": "Rfpre:b",
+      "b": "Upre:out"
+    },
+    {
+      "id": "W7",
+      "a": "Rfpre:a",
+      "b": "Cfpre:a"
+    },
+    {
+      "id": "W8",
+      "a": "Cfpre:b",
+      "b": "Rfpre:b"
+    },
+    {
+      "id": "W9",
+      "a": "Upre:out",
+      "b": "Csh1:a"
+    },
+    {
+      "id": "W10",
+      "a": "Csh1:b",
+      "b": "Rsh1:a"
+    },
+    {
+      "id": "W11",
+      "a": "Rsh1:a",
+      "b": "Ubuf:plus"
+    },
+    {
+      "id": "W12",
+      "a": "Ubuf:minus",
+      "b": "Ubuf:out",
+      "route": "vertical",
+      "offset": -90
+    },
+    {
+      "id": "W13",
+      "a": "Ubuf:out",
+      "b": "Rsh2:a"
+    },
+    {
+      "id": "W14",
+      "a": "Rsh2:b",
+      "b": "Csh2:a"
+    },
+    {
+      "id": "W15",
+      "a": "Rsh1:b",
+      "b": "G3:g"
+    },
+    {
+      "id": "W16",
+      "a": "Csh2:b",
+      "b": "G4:g"
+    },
+    {
+      "id": "W17",
+      "a": "Csh1:a",
+      "b": "Rpz:a"
+    },
+    {
+      "id": "W18",
+      "a": "Rpz:b",
+      "b": "Csh1:b"
+    }
+  ],
+  "probes": {
+    "input": "V1:p",
+    "output": "Csh2:a"
+  },
+  "settings": {
+    "duration": 0.0006,
+    "samples": 800,
+    "fmin": 10,
+    "fmax": 1000000,
+    "acSource": "V1",
+    "analysis": "time",
+    "acReference": "source",
+    "integration": "adaptive",
+    "rtol": 1e-7
+  },
+  "nodeLabels": {
+    "V1:p": "IN",
+    "Csh2:a": "OUT",
+    "Upre:out": "PRE"
+  }
+}

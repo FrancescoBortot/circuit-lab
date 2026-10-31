@@ -20,7 +20,9 @@
    if(index<0){name='GND';indexColor=palette.ground;}else if(doc.probes.output&&nodes[doc.probes.output]===index){name='OUT';indexColor=palette.output;}else if(doc.probes.input&&nodes[doc.probes.input]===index){name='IN';indexColor=palette.input;}else if(nodes[input2]===index){name='IN2';indexColor=palette.input2;}else if(refs.some(r=>r.endsWith(':minus'))){name='Σ−';indexColor=palette.feedback;}else if(refs.some(r=>r.endsWith(':plus'))){name='Σ+';indexColor='#008c94';}else{name='N'+(index+1);indexColor=extraColors[nets.length%extraColors.length];}
    const net={id:'net:'+index,index,name,color:indexColor,refs,groups:[]};nets.push(net);byNode.set(index,net);
   }
-  const amps=doc.components.filter(c=>c.type==='U'),passives=doc.components.filter(c=>['R','C','L'].includes(c.type)),rows=amps.length>1||passives.length>10?63:30;
+  const sectionsPerChip=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??1;if(![1,2].includes(sectionsPerChip))throw Error('Scegli una o due sezioni per integrato.');
+  const amps=doc.components.filter(c=>c.type==='U'),passives=doc.components.filter(c=>['R','C','L'].includes(c.type)),rows=Math.ceil(amps.length/sectionsPerChip)>1||passives.length>10?63:30;
+  if(amps.length){const supply=M.physical(amps[0]);for(const c of amps.slice(1)){const q=M.physical(c);if(q.positive!==supply.positive||q.negative!==supply.negative)throw Error('Il banco usa una sola alimentazione condivisa: '+c.id+' richiede tensioni diverse da '+amps[0].id+'. Allinea V+ e V− oppure usa Schema con alimentazioni distinte.');}}
   // One physical board. Larger assemblies use a full-size board, never a second module.
   modules.push({id:'M1',rows,groups:groups('M1',rows)});
   const knownHoles=new Set(modules[0].groups.flat());
@@ -31,12 +33,13 @@
    for(const[pin,hole]of Object.entries(locations)){owner.set(group(hole),netMap[pin]);occupied.set(hole,id+':'+pin);pinHoles[id+':'+pin]=hole;}
    parts.push({id,type,holes:locations,...extra});return true;
   }
-  for(const[i,c]of amps.entries()){const base=amps.length===1?12:8+i*12;let success=false;{const id='M1',locations={plus:`${id}:e${base+2}`,minus:`${id}:e${base+1}`,out:`${id}:e${base}`},vplus='supply:'+c.id+':+',vminus='supply:'+c.id+':−',spare='spare:'+c.id;
-    const physical={1:locations.out,2:locations.minus,3:locations.plus,4:`${id}:e${base+3}`,5:`${id}:f${base+3}`,6:`${id}:f${base+2}`,7:`${id}:f${base+1}`,8:`${id}:f${base}`};
-    const targets={out:nodes[c.id+':out'],minus:nodes[c.id+':minus'],plus:nodes[c.id+':plus'],4:vminus,5:-1,6:spare,7:spare,8:vplus};
-    success=tryPlace(c.id,'U',{...locations,4:physical[4],5:physical[5],6:physical[6],7:physical[7],8:physical[8]},targets,{component:c,physical});
-    if(success){const q=M.physical(c);nets.push({id:vplus,index:vplus,name:c.id+' V+',color:palette.positive,refs:[],groups:[],voltage:q.positive},{id:vminus,index:vminus,name:c.id+' V−',color:palette.negative,refs:[],groups:[],voltage:q.negative},{id:spare,index:spare,name:c.id+' B',color:'#6b7a8c',refs:[],groups:[]});for(const[n,h]of Object.entries(physical))devicePins.push({component:c.id,number:Number(n),name:pinNames[n],hole:h,node:n==='1'?targets.out:n==='2'?targets.minus:n==='3'?targets.plus:targets[n]});}
-   }if(!success)throw Error('Spazio insufficiente sulla singola breadboard per '+c.id+'. Riduci il circuito oppure usa Schema.');
+  for(let i=0;i<amps.length;i+=sectionsPerChip){const c=amps[i],second=sectionsPerChip===2?amps[i+1]:null,packageIndex=i/sectionsPerChip,base=Math.ceil(amps.length/sectionsPerChip)===1?12:8+packageIndex*12,id='M1',packageId=sectionsPerChip===2?'IC'+(packageIndex+1):c.id;
+   const locations={out:`${id}:e${base}`,minus:`${id}:e${base+1}`,plus:`${id}:e${base+2}`},physical={1:locations.out,2:locations.minus,3:locations.plus,4:`${id}:e${base+3}`,5:`${id}:f${base+3}`,6:`${id}:f${base+2}`,7:`${id}:f${base+1}`,8:`${id}:f${base}`},vplus='supply:'+c.id+':+',vminus='supply:'+c.id+':−',spare='spare:'+c.id;
+   const targets={out:nodes[c.id+':out'],minus:nodes[c.id+':minus'],plus:nodes[c.id+':plus'],4:vminus,5:second?nodes[second.id+':plus']:-1,6:second?nodes[second.id+':minus']:spare,7:second?nodes[second.id+':out']:spare,8:vplus};
+   if(!tryPlace(c.id,'U',{...locations,4:physical[4],5:physical[5],6:physical[6],7:physical[7],8:physical[8]},targets,{component:c,physical,section:'A',packageId}))throw Error('Spazio insufficiente sulla singola breadboard per '+c.id+'. Riduci il circuito oppure usa Schema.');
+   const q=M.physical(c);nets.push({id:vplus,index:vplus,name:packageId+' V+',color:palette.positive,refs:[],groups:[],voltage:q.positive},{id:vminus,index:vminus,name:packageId+' V−',color:palette.negative,refs:[],groups:[],voltage:q.negative});if(!second)nets.push({id:spare,index:spare,name:c.id+' B',color:'#6b7a8c',refs:[],groups:[]});
+   if(second){const first=parts.at(-1);for(const n of [5,6,7]){delete first.holes[n];delete pinHoles[c.id+':'+n];}const holes={plus:physical[5],minus:physical[6],out:physical[7]};for(const[pin,hole]of Object.entries(holes)){pinHoles[second.id+':'+pin]=hole;occupied.set(hole,second.id+':'+pin);}parts.push({id:second.id,type:'U',holes,component:second,physical,section:'B',packageId});}
+   for(const[n,hole]of Object.entries(physical)){const number=Number(n),owner=second&&number>=5&&number<=7?second.id:c.id;devicePins.push({component:owner,packageId,number,name:pinNames[number],hole,node:number===1?targets.out:number===2?targets.minus:number===3?targets.plus:targets[n]});}
   }
   const hints={R1:['a4','a9'],Rf:['b13','b6'],C1:['c9','c20'],R3:['h4','h9'],R4:['i9','i22']};
   const candidateRows=[...new Set([4,8,20,24,28,2,6,10,18,22,26,...Array.from({length:Math.floor(rows/2)},(_,i)=>2+i*2),...Array.from({length:Math.ceil(rows/2)},(_,i)=>1+i*2)])];
@@ -57,7 +60,7 @@
   for(const c of doc.components.filter(c=>['V','G','J'].includes(c.type)))for(const pin of M.PINS[c.type]){const ref=c.id+':'+pin,n=netOf(ref),sourceIndex=sources.findIndex(s=>s.id===c.id),preferred=c.type==='V'&&pin==='p'?`M1:${sourceIndex===0?'d':'g'}2`:n===-1?`M1:L2.${contacts.filter(c=>c.node===-1).length+1}`:null,hole=anchor(n,ref,preferred);pinHoles[ref]=hole;contacts.push({id:ref,ref,hole,node:n,kind:c.type==='V'?'source':'reference',component:c.id});}
   const supplied=options.channels||[{enabled:true,target:doc.probes.input,label:'CH1'},{enabled:true,target:doc.probes.output,label:'CH2'}],channels=[];
   supplied.forEach((ch,i)=>{let target=ch.target==='input'?doc.probes.input:ch.target==='output'?doc.probes.output:ch.target==='input2'?(doc.components.some(c=>c.id==='R3')?'R3:a':sources[1]?.id+':p'):ch.target;if(!ch.enabled||!M.validPin(doc,target))return;const n=netOf(target),hole=anchor(n,'OSC:CH'+(i+1)+':tip'),ground=topology.ground?anchor(-1,'OSC:CH'+(i+1)+':ground','M1:L2.'+(15+i)):null;channels.push({id:'CH'+(i+1),target,hole,ground,node:n,color:i?palette.channel2:palette.channel1,kind:ch.kind||'ideal',coupling:ch.coupling||'dc'});});
-  for(const part of parts.filter(p=>p.type==='U')){
+  for(const part of parts.filter(p=>p.type==='U'&&p.section!=='B')){
    for(const polarity of ['+','−']){const n='supply:'+part.id+':'+polarity,hole=anchor(n,'PSU:'+part.id+polarity,part.physical[polarity==='+'?8:4].split(':')[0]+(polarity==='+'?':R1.1':':L1.1'));contacts.push({id:'PSU:'+part.id+polarity,hole,node:n,kind:'supply',component:part.id});}
    const m='M1',base=Number(part.physical[1].match(/\d+$/)[0]);for(const[id,pole,row]of [['Cd+',8,amps.length===1?6:base-2],['Cd−',4,amps.length===1?23:base+5]]){const n='supply:'+part.id+':'+(pole===8?'+':'−'),ref=part.physical[pole],col=pole===8?'h':'c',pin=col+ref.match(/\d+$/)[0],groundHole=anchor(-1,part.id+id+':b',`${m}:${col}${row}`),hot=anchor(n,part.id+id+':a',`${m}:${pin}`);parts.push({id:part.id+'.'+id,type:'C',holes:{a:hot,b:groundHole},auxiliary:true,component:{value:1e-7}});}
   }
@@ -68,7 +71,7 @@
   for(const n of nets){n.groups=[...owner].filter(([,v])=>v===n.index).map(([k])=>k);if(!n.groups.length)continue;const connected=[n.groups[0]],remaining=n.groups.slice(1);
    while(remaining.length){let best=null;for(const a of connected)for(const b of remaining){const ah=freeHole(a),bh=freeHole(b);if(!ah||!bh)continue;const ap=localPoint(ah),bp=localPoint(bh),cost=Math.abs(ap.x-bp.x)+Math.abs(ap.y-bp.y)+(a.split(':')[0]===b.split(':')[0]?0:1000);if(!best||cost<best.cost)best={a,b,ah,bh,cost};}if(!best)throw Error('Contatti insufficienti sulla rete '+n.name+'.');const id='W'+(jumpers.length+1);occupy(best.ah,n.index,id+':a');occupy(best.bh,n.index,id+':b');jumpers.push({id,a:best.ah,b:best.bh,node:n.index,net:n.id,color:n.color});connected.push(best.b);remaining.splice(remaining.indexOf(best.b),1);}
   }
-  const result={doc,original,topology,modules,parts,wires:jumpers,nets,sources:clone(sources),channels,contacts,pinHoles,devicePins,groups:modules.flatMap(m=>m.groups),occupied:[...occupied.keys()],instrumentConfig:options.instrumentConfig||original.benchSetup?.config||null,modelMode:options.modelMode||'ideal'};
+  const result={sectionsPerChip,packages:[...new Set(parts.filter(p=>p.type==='U').map(p=>p.packageId))],doc,original,topology,modules,parts,wires:jumpers,nets,sources:clone(sources),channels,contacts,pinHoles,devicePins,groups:modules.flatMap(m=>m.groups),occupied:[...occupied.keys()],instrumentConfig:options.instrumentConfig||original.benchSetup?.config||null,modelMode:options.modelMode||'ideal'};
   const mismatches=verify(result);if(mismatches.length)throw Error('Montaggio non equivalente: '+mismatches[0]);return result;
  }
  function verify(model){if(model.empty)return[];const parent=new Map(),find=h=>{if(!parent.has(h))parent.set(h,h);if(parent.get(h)!==h)parent.set(h,find(parent.get(h)));return parent.get(h)},join=(a,b)=>parent.set(find(a),find(b));for(const g of model.groups)for(const h of g)join(g[0],h);for(const w of model.wires)join(w.a,w.b);const refs=Object.keys(model.topology.nodes),errors=[];for(let i=0;i<refs.length;i++)for(let j=i+1;j<refs.length;j++){const a=refs[i],b=refs[j];if((model.topology.nodes[a]===model.topology.nodes[b])!==(find(model.pinHoles[a])===find(model.pinHoles[b])))errors.push(a+' / '+b);}return errors;}
@@ -77,7 +80,7 @@
   const netAt=hole=>model.nets.find(n=>n.groups.includes(group(hole))),result=[];
   function add(part,pin,hole,label,extra={}){const net=netAt(hole);if(net)result.push({ref:part+':'+pin,part,pin,hole,label,node:net.index,net:net.id,color:net.color,network:net.name,...extra});}
   for(const c of model.parts){
-   if(c.type==='U')for(const p of model.devicePins.filter(p=>p.component===c.id)){const pin={1:'out',2:'minus',3:'plus'}[p.number]||String(p.number);add(c.id,pin,p.hole,c.id+' · pin '+p.number+' ('+p.name+')',{number:p.number,name:p.name,auxiliary:p.number>=5&&p.number<=7});}
+   if(c.type==='U')for(const p of model.devicePins.filter(p=>p.component===c.id)){const pin=(c.section==='B'?{5:'plus',6:'minus',7:'out'}:{1:'out',2:'minus',3:'plus'})[p.number]||String(p.number);add(c.id,pin,p.hole,c.id+' · pin '+p.number+' ('+p.name+')',{number:p.number,name:p.name,auxiliary:c.section!=='B'&&p.number>=5&&p.number<=7});}
    else for(const[pin,hole]of Object.entries(c.holes))add(c.id,pin,hole,(c.auxiliary?(c.id.endsWith('+')?'C+':'C−'):c.id)+' · '+pin.toUpperCase(),{name:pin.toUpperCase(),auxiliary:Boolean(c.auxiliary)});
   }
   for(const[i,c]of model.sources.entries())for(const pin of ['p','n'])add(c.id,pin,model.pinHoles[c.id+':'+pin],'AFG CH'+(i+1)+' · '+(pin==='p'?'segnale':'ritorno'),{name:pin==='p'?'Segnale':'GND',instrument:true});

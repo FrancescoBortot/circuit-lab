@@ -45,6 +45,8 @@ Sulla breadboard clicca un componente, poi **A/B** o un **pin**: scegli una dest
 
 Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nell’editor libero usa **Simula**; **Auto** permette di ricalcolare dopo le modifiche. Se l’app mostra un errore, leggilo e correggi la causa prima di interpretare il grafico.
 
+**I miei dati ↔ modello** importa CSV o tabelle incollate, conserva gli originali nel progetto e li confronta con il circuito attuale. Mostra previsione, misure, residui e scarti; esporta CSV e relazione HTML. Il confronto non adatta i parametri né estrapola. **Modello attivo** esplicita ipotesi e limiti; **Verifica del calcolo** permette di controllare lo scarto fra due risoluzioni. [Procedura e significato delle incertezze](docs/USO_RAPIDO.md#confrontare-i-propri-dati-con-qualsiasi-esperienza).
+
 Per deselezionare un componente, **clicca sullo sfondo dello schema o premi Esc**. Nell’editor libero Esc interrompe anche un collegamento iniziato. I valori validi modificati restano conservati.
 
 In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Frequenza · Bode** oppure **Ampiezza · VTC** (per gli amplificatori). Il pannello spiega lo scopo della prova e mostra i relativi controlli. **Come leggere il grafico** chiarisce assi e curve; risoluzione e dettagli del calcolo si aprono su richiesta. In fondo trovi gli strumenti per confrontare il modello con misure raccolte in laboratorio.
@@ -228,10 +230,12 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory app
 
 Apri `http://127.0.0.1:8765`. Per preparare il sito esegui `python3 app/scripts/build-site.py`: `_site/` conterrà soltanto l’app e lo ZIP offline.
 
-Il workflow GitHub verifica modelli, dati, pacchetto e percorso RC prima di pubblicare su Pages. Per rigenerare i confronti esterni serve ngspice, indicato con `CIRCUIT_NGSPICE_BIN`; l’applicazione non lo richiede per funzionare. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
+Il workflow GitHub riesegue i confronti numerici con ngspice e verifica modelli, dati, pacchetto e percorso RC prima di pubblicare su Pages. Per rigenerare localmente tutti i confronti: `CIRCUIT_NGSPICE_BIN=/percorso/ngspice node app/scripts/verify-numerics.cjs`. L’applicazione non richiede ngspice per funzionare. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
 
 Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza artificiale. I controlli automatici accompagnano lo sviluppo; il collaudo nei browser e il riscontro di chi studia restano parte della verifica.
 
 </details>
 
 I modelli degli strumenti dispongono di otto ulteriori confronti locali con ngspice: collegamenti diretti e sonde ×10 in DC/AC, amplificatore delle differenze e scarica con accoppiamento AC. Per rigenerarli: `node app/scripts/benchmark-bench.cjs`. I risultati, con gli hash dei sorgenti verificati, sono in `app/benchmark/instruments/results.json`.
+
+Cinque confronti dedicati verificano preamplificatore, shaper, cascata, compensazione polo-zero e catena completa: `node app/scripts/benchmark-radiation.cjs`. Usano reti e operazionali generici equivalenti con integrazione ngspice indipendente; non validano il TL082 reale né sostituiscono misure di laboratorio. Risultati e provenienza sono in `app/benchmark/radiation/results.json`.

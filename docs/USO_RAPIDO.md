@@ -52,6 +52,8 @@ Nel **Transitorio guidato**, il selettore **Lettura** sotto il grafico offre **A
 
 ## Percorso consigliato per studiare
 
+**Modello attivo** dichiara fenomeni inclusi ed esclusi. Il pulsante **Usa valori tipici ST TL082** applica un profilo parziale: GBW e slew rate sono riferimenti tipici ST, mentre resistenza e limite di corrente d’uscita restano ipotesi generiche modificabili. Non è un macromodello del costruttore. **Verifica del calcolo** conserva le diagnostiche; per Transitorio e Bode guidati confronta anche due risoluzioni, mostrando scarti su picchi, baseline e taglio. Nell’editor libero il confronto riguarda il Transitorio. Questo scarto non è un’incertezza sperimentale.
+
 Apri un’esperienza guidata o un esempio, fai una prima simulazione e modifica un solo componente alla volta. Prima prevedi il cambiamento, poi confronta le curve e misura con i cursori. Conserva circuito e impostazioni nel JSON.
 
 Nel raddrizzatore con filtro RC: scegli **Transitorio**, IN sul positivo di V1 e OUT sul nodo comune a catodo di D1, R1 e C1. A 50 Hz un periodo dura 20 ms: 80 ms mostrano quattro periodi. Premi **Simula**; confronta la sinusoide IN con OUT e osserva la scarica tra due picchi. Prova poi un altro valore di C1, mantenendo gli altri parametri.
@@ -67,6 +69,17 @@ Il pannello **Simulazione** mostra prima i segnali e l’intervallo di osservazi
 “Aggiorna da solo” ricalcola dopo le modifiche. “Dati parziali · dettagli” spiega eventuali campioni di corrente non disponibili; gli errori che impediscono il calcolo restano visibili. La guida in basso spiega anche i quattro tipi di analisi.
 
 ## Dalla RC alla relazione
+
+### Confrontare i propri dati con qualsiasi esperienza
+
+1. Apri **I miei dati ↔ modello**, nella barra principale o in Breadboard. Importa un CSV o incolla la tabella; seleziona tipo di prova, separatore, decimali, colonne e unità. La colonna delle incertezze standard è facoltativa; per Bode puoi indicare anche la fase in gradi.
+2. Annota le condizioni della misura e premi **Controlla e salva i miei dati**. Testo originale, unità e tabella normalizzata rimangono nel JSON del progetto. Le righe devono essere ordinate per X: non vengono riordinate silenziosamente.
+3. Premi **Confronta col modello attuale**. Trovi misure e previsione, grafico dei residui, RMS e scarto massimo. Non vengono adattati parametri, traslati tempi o estrapolati punti fuori intervallo. Il chi-quadro è mostrato solo con incertezze standard positive e indipendenza esplicitamente dichiarata.
+4. Esporta **CSV confronto**, **CSV originale** o **Relazione HTML** con dati e parametri usati. Dopo una modifica elettrica ricalcola; l’originale resta conservato. Il salvataggio del progetto conserva i dati, non un risultato superato.
+
+Sono disponibili transitorio, Bode, linearità in carica dei preamplificatori e VTC delle esperienze guidate; la scansione DC usa l’editor libero. VTC confronta ampiezze picco-picco alla frequenza impostata, la carica confronta il picco rispetto alla baseline. Verifica che strumenti, segnali e riferimento coincidano con quelli della misura. Per studiare la dispersione dei componenti usa **Parametri e tolleranze**; per carico delle sonde e generatore usa **Montaggio**. Questi effetti sono distinti dall’errore numerico e dall’incertezza della misura.
+
+### Fit e bilancio specifici della RC
 
 1. Scegli RC nelle esperienze guidate oppure nell’editor libero. Seleziona R o C e apri la spiegazione per prevedere come cambierà la risposta. La formula R·C viene distinta dagli effetti degli strumenti.
 2. Premi **Misura τ**. Scegli **Simulazione** oppure **Dati sperimentali**; gli esempi sintetici sono identificati come tali. Seleziona un tratto di sola carica o scarica e premi **Calcola il fit**.

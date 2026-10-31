@@ -184,10 +184,10 @@
       for(let n=-2;n<=Math.ceil(p.duration*w.frequency)+2;n++)for(const phase of phases){const t=(n+phase-w.phase/360)/w.frequency;if(t>0&&t<p.duration)e.set(t,w.kind==='square'||e.get(t)===true);}
     }return e;
   }
-  function simulateLinear(p){
+  function simulateLinear(p,options={}){
     assert(p);const s=system(p),ev=events(p),freq=Math.max(...activeWaves(p).filter(w=>['sine','square','triangle'].includes(w.kind)).map(w=>w.frequency),0);
-    const count=Math.min(50000,Math.max(p.samples,Math.ceil(p.duration*freq*100)));
-    const ts=new Set([0,p.duration,...ev.keys()]);for(let i=1;i<count-1;i++)ts.add(p.duration*i/(count-1));
+    const count=Math.min(100000,Math.max(p.samples,Math.ceil(p.duration*freq*100)))*(options.refinement===2?2:1);
+    if((options.sampleTimes||[]).length>4000||(options.sampleTimes||[]).some(t=>!Number.isFinite(t)||t<0||t>p.duration))throw Error('Tempi di confronto fuori intervallo.');const ts=new Set([0,p.duration,...ev.keys(),...(options.sampleTimes||[])]);for(let i=1;i<count-1;i++)ts.add(p.duration*i/(count-1));
     const grid=[...ts].sort((a,b)=>a-b),data=[],cache=new Map();let state=[...s.initial];
     function record(t,u){
       const raw=s.out.reduce((sum,c,i)=>sum+c*state[i],s.direct[0]*u[0]+s.direct[1]*u[1]);
@@ -205,12 +205,12 @@
     }
     return data;
   }
-  function simulate(p){
+  function simulate(p,options={}){
     assert(p);
-    if(Radiation.is(p))return Radiation.simulate(p);
-    if(Bench.real(p)){const d=network(p),result=Free.simulate(d),t=Free.topology(d),node=t.nodes['R3:a'];return result.data.map((row,i)=>({...row,source:inputs(p,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right')[0],vin2:node>=0?row.values['N'+(node+1)]:0,linear:p.type==='rc'||p.opamp==='ideal'?row.out:NaN,current:row.currents.R1}));}
-    if(p.type==='rc'||p.opamp==='ideal')return simulateLinear(p);
-    const result=Free.simulate(Free.example(p.type,p)),linear=simulateLinear(p);let i=0;
+    if(Radiation.is(p))return Radiation.simulate(p,options);
+    if(Bench.real(p)){const d=network(p),result=Free.simulate(d,options),t=Free.topology(d),node=t.nodes['R3:a'];options.capture?.(result);return result.data.map((row,i)=>({...row,source:inputs(p,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right')[0],vin2:node>=0?row.values['N'+(node+1)]:0,linear:p.type==='rc'||p.opamp==='ideal'?row.out:NaN,current:row.currents.R1}));}
+    if(p.type==='rc'||p.opamp==='ideal')return simulateLinear(p,options);
+    const result=Free.simulate(Free.example(p.type,p),options),linear=simulateLinear(p);options.capture?.(result);let i=0;
     return result.data.map((d,j)=>{
       while(i+1<linear.length&&linear[i+1].x<=d.x)i++;
       const a=linear[i],b=linear[Math.min(i+1,linear.length-1)],f=b.x===a.x?0:(d.x-a.x)/(b.x-a.x),u=inputs(p,d.x,j+1<result.data.length&&result.data[j+1].x===d.x?'left':'right');
@@ -236,7 +236,7 @@
     const magnitude=Math.hypot(H.r,H.i);
     return{real:H.r,imag:H.i,magnitude,db:magnitude===0?-Infinity:20*Math.log10(magnitude),phase:magnitude===0?NaN:Math.atan2(H.i,H.r)*180/Math.PI};
   }
-  function bode(p){assert(p);if(Radiation.is(p))return Free.bode(network(p),{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:601},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/600))}).data;}const data=[];let previous;for(let i=0;i<601;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/600),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
+  function bode(p,options={}){const n=options.points||601;assert(p);if(Radiation.is(p))return Free.bode(network(p),{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}const data=[];let previous;for(let i=0;i<n;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/(n-1)),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
   const drives=mode=>({v1:{V1:1,V2:0},v2:{V1:0,V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}})[mode]||{V1:1};
   function vtc(p,options={}){
     assert(p);if(p.type==='rc')throw new Error('La VTC in ampiezza richiede un amplificatore.');
@@ -247,7 +247,7 @@
       for(cycles=8;cycles<=128;cycles+=8){
         const d=Bench.real(q)||Radiation.is(q)?network(q,q.drive):Free.example(p.type,q);d.settings.duration=8*period;if(d.settings.duration>100)throw new Error('Per la VTC scegli una frequenza di almeno 0,08 Hz.');d.settings.samples=1024;d.settings.integration='fixed';
         const sampleTimes=[];for(let n=0;n<=128;n++)sampleTimes.push((6+n/64)*period);
-        result=Free.simulate(d,{sampleTimes,steps:4096,initialState:state});state=result.finalState;delta=0;let scale=1;
+        result=Free.simulate(d,{sampleTimes,steps:4096,initialState:state});options.capture?.(result);state=result.finalState;delta=0;let scale=1;
         for(let n=0;n<=64;n++){const a=interpolate(result.data,(6+n/64)*period),b=interpolate(result.data,(7+n/64)*period);for(const k of Object.keys(a)){delta=Math.max(delta,Math.abs(a[k]-b[k]));scale=Math.max(scale,Math.abs(a[k]),Math.abs(b[k]));}}
         if(delta<=1e-5*scale){settled=true;break;}
       }
@@ -276,7 +276,7 @@
     for(const [key,p]of Object.entries(d.circuits)){if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(key)||!p||p.type!==key)throw new Error('Circuito non valido nel progetto.');assert(p);}
     if(!d.circuits[CATALOG.find(c=>c.id===d.experiment).type])throw new Error('Il circuito attivo manca nel progetto.');
     if(!['time','bode','vtc','charge'].includes(d.analysis)||d.analysis==='charge'&&!Radiation.hasPre(d.circuits[CATALOG.find(c=>c.id===d.experiment).type]))throw new Error('Analisi non valida.');
-    const layouts=d.layouts??{};
+    Files.checkComparison(d.comparisonStudy);Files.checkAssembly(d.assemblyStudy);const layouts=d.layouts??{};
     if(!layouts||typeof layouts!=='object'||Array.isArray(layouts))throw new Error('Disposizione dei componenti non valida.');
     for(const [type,items]of Object.entries(layouts)){
       if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>40)throw new Error('Disposizione dei componenti non valida.');
@@ -284,13 +284,13 @@
     }
     Files.checkRCStudy(d.rcStudy);Files.checkACStudy(d.acStudy);Files.checkOpampStudy(d.opampStudy);Files.checkMetrologyStudy(d.metrologyStudy);Files.checkParameterStudy(d.parameterStudy);
     Trials.validate(d,CATALOG);
-    const normalized={...(d.session===undefined?{}:{session:d.session}),...(d.guidedTrials===undefined?{}:{guidedTrials:d.guidedTrials}),experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
+    const normalized={...(d.comparisonStudy===undefined?{}:{comparisonStudy:d.comparisonStudy}),...(d.assemblyStudy===undefined?{}:{assemblyStudy:d.assemblyStudy}),...(d.session===undefined?{}:{session:d.session}),...(d.guidedTrials===undefined?{}:{guidedTrials:d.guidedTrials}),experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
   }
   function circuit(project){
     const p=project.circuits[CATALOG.find(c=>c.id===project.experiment)?.type];if(!p)throw new Error('Esperienza non disponibile.');assert(p);
     const d=Bench.real(p)||Radiation.is(p)?network(p,p.type==='difference'&&project.analysis!=='time'?p.bodeInput:null):Free.example(p.type,p);if(Bench.real(p)||Radiation.is(p))for(const part of d.components)Object.assign(part,project.layouts?.[p.type]?.[part.id]||{});d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':'time';
     if(p.type==='rc'){if(!Bench.real(p)){d.probes.input='R1:a';d.settings.acReference='input';}for(const key of ['rcStudy','acStudy'])if(project[key])d[key]=clone(project[key]);if(d.acStudy?.reference==='after-generator')d.acStudy.reference='input';}
-    if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);
+    if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);if(project.assemblyStudy)d.assemblyStudy=clone(project.assemblyStudy);if(project.comparisonStudy)d.comparisonStudy=clone(project.comparisonStudy);
     if(p.type!=='rc'&&project.opampStudy)d.opampStudy=clone(project.opampStudy);
     if(p.type==='difference'){d.settings.acWeights=drives(p.bodeInput||'differential');}
     return Free.parse(Free.serialize(d));

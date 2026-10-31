@@ -206,7 +206,7 @@
       $('freePlotMessage').textContent='Calcolo locale in corso…';
       try{
         const result=await this.tasks.run(this.doc.settings.analysis,{doc:M.clone(this.doc)},fraction=>{$('freeResultStatus').textContent='Calcolo · '+Math.floor(fraction*100)+'%';});
-        if(revision!==this.revision)return;this.result=result;this.drawResult();this.renderChecks();
+        if(revision!==this.revision)return;this.result=result;this.drawResult();this.renderChecks();document.dispatchEvent(new Event('circuit-lab-result'));
       }catch(error){if(revision!==this.revision)return;if(error.name==='AbortError'){$('freeResultStatus').textContent='Calcolo annullato';return;}this.clearResult();$('freePlotMessage').textContent=error.message;$('freeCircuitStatus').textContent='Controlla il circuito';$('freeIssues').innerHTML='<p class="free-solve-error">'+esc(error.message)+'</p>';this.note(error.message,true);}
       finally{if(revision===this.revision){this.busy=false;$('freeCancel').hidden=true;this.renderChecks();}}
     }

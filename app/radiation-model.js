@@ -90,11 +90,11 @@
   Object.assign(d.settings,{duration:p.duration,samples:p.samples,fmin:p.fmin,fmax:p.fmax,acSource:'V1',acReference:'source',integration:'adaptive',rtol:1e-5});
   const b=B.config(p.bench);b.sourceIds=['V1'];return B.apply(d,b);
  }
- function simulate(p){const d=network(p),result=F.simulate(d),t=F.topology(d),read=(row,pin)=>{const n=t.nodes[pin];return n<0?0:row.values[t.groups.find(g=>g.index===n)?.name];};return result.data.map((row,i)=>({...row,vin2:0,source:F.source(d.components.find(c=>c.id==='V1').wave,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right'),pre:hasPre(p)?read(row,'Upre:out'):undefined,shaper:hasSh(p)?read(row,'Csh2:a'):undefined,linear:NaN,current:row.currents.Rin??NaN}));}
+ function simulate(p,options={}){const d=network(p),result=F.simulate(d,options);options.capture?.(result);const t=F.topology(d),read=(row,pin)=>{const n=t.nodes[pin];return n<0?0:row.values[t.groups.find(g=>g.index===n)?.name];};return result.data.map((row,i)=>({...row,vin2:0,source:F.source(d.components.find(c=>c.id==='V1').wave,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right'),pre:hasPre(p)?read(row,'Upre:out'):undefined,shaper:hasSh(p)?read(row,'Csh2:a'):undefined,linear:NaN,current:row.currents.Rin??NaN}));}
  function charge(p,options={}){
   const rows=[];if(!hasPre(p))throw Error('La prova in carica richiede il preamplificatore.');
   for(let i=0;i<p.chargePoints;i++){
-   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low:0,level:-Math.abs(q.wave1.level||1),width,rise:0,fall:0,delay:20e-6});q.autoTime=true;const d=simulate(normalizeTime(q)),before=d.filter(r=>r.x<q.wave1.delay).at(-1)?.out??0,peak=Math.max(...d.map(r=>r.out))-before;
+   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low:0,level:-Math.abs(q.wave1.level||1),width,rise:0,fall:0,delay:20e-6});q.autoTime=true;const d=simulate(normalizeTime(q),{...options,onProgress:undefined}),before=d.filter(r=>r.x<q.wave1.delay).at(-1)?.out??0,peak=Math.max(...d.map(r=>r.out))-before;
    rows.push({x:Math.abs(q.wave1.level)*width/q.Rin,out:peak,width,baseline:before,clipped:d.some(r=>r.clipped)});options.onProgress?.((i+1)/p.chargePoints);
   }
   const n=rows.length,mx=rows.reduce((s,r)=>s+r.x,0)/n,my=rows.reduce((s,r)=>s+r.out,0)/n,slope=rows.reduce((s,r)=>s+(r.x-mx)*(r.out-my),0)/rows.reduce((s,r)=>s+(r.x-mx)**2,0),intercept=my-slope*mx;

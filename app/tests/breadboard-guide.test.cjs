@@ -45,9 +45,9 @@ test('construction covers each physical part and cable once in increasing phases
  }
 });
 test('construction advances one operation, goes back, completes and preserves rejected edits',()=>{
- const model=B.create(L.network(L.defaults('shaper'))),before=JSON.stringify(model),scope={requestAnimationFrame(){},model,R,construction:{active:false,index:0},constructionPlan:[],state:{step:3},valid:true,finishDraft:()=>scope.valid,drawGeometry(){},updateControls(){},renderProperties(){}};
+ const model=B.create(L.network(L.defaults('shaper'))),before=JSON.stringify(model),scope={requestAnimationFrame(){},A:require('../assembly-guide'),message(){},saveConstruction(){},model,R,construction:{active:false,index:0},constructionPlan:[],state:{step:3},valid:true,finishDraft:()=>scope.valid,drawGeometry(){},updateControls(){},renderProperties(){}};
  vm.createContext(scope);vm.runInContext(source.slice(source.indexOf(' function constructionCommand('),source.indexOf(' function updateConstruction(')),scope);
- scope.constructionCommand('build-start');assert.equal(scope.construction.active,true);assert.equal(scope.construction.index,0);assert.equal(scope.state.step,0);
+ scope.constructionCommand('build-start');scope.construction.checks={continuity:true,power:true,baseline:true,probes:true};assert.equal(scope.construction.active,true);assert.equal(scope.construction.index,0);assert.equal(scope.state.step,0);
  scope.valid=false;scope.constructionCommand('build-next');assert.equal(scope.construction.index,0);scope.valid=true;scope.constructionCommand('build-next');assert.equal(scope.construction.index,1);scope.constructionCommand('build-back');assert.equal(scope.construction.index,0);
  for(let i=1;i<scope.constructionPlan.length;i++){scope.constructionCommand('build-next');assert.equal(scope.construction.index,i);assert.equal(scope.state.step,scope.constructionPlan[i].phase);}
  scope.constructionCommand('build-next');assert.equal(scope.construction.active,false);assert.equal(scope.state.step,3);assert.equal(JSON.stringify(model),before);

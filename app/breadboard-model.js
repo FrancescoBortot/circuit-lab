@@ -20,8 +20,8 @@
    if(index<0){name='GND';indexColor=palette.ground;}else if(doc.probes.output&&nodes[doc.probes.output]===index){name='OUT';indexColor=palette.output;}else if(doc.probes.input&&nodes[doc.probes.input]===index){name='IN';indexColor=palette.input;}else if(nodes[input2]===index){name='IN2';indexColor=palette.input2;}else if(refs.some(r=>r.endsWith(':minus'))){name='Σ−';indexColor=palette.feedback;}else if(refs.some(r=>r.endsWith(':plus'))){name='Σ+';indexColor='#008c94';}else{name='N'+(index+1);indexColor=extraColors[nets.length%extraColors.length];}
    const net={id:'net:'+index,index,name,color:indexColor,refs,groups:[]};nets.push(net);byNode.set(index,net);
   }
-  const sectionsPerChip=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??1;if(![1,2].includes(sectionsPerChip))throw Error('Scegli una o due sezioni per integrato.');
-  const amps=doc.components.filter(c=>c.type==='U'),passives=doc.components.filter(c=>['R','C','L'].includes(c.type)),rows=Math.ceil(amps.length/sectionsPerChip)>1||passives.length>10?63:30;
+  const requestedSections=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??1;if(![1,2].includes(requestedSections))throw Error('Scegli una o due sezioni per integrato.');
+  const amps=doc.components.filter(c=>c.type==='U'),sectionsPerChip=amps.length>1?requestedSections:1,passives=doc.components.filter(c=>['R','C','L'].includes(c.type)),rows=Math.ceil(amps.length/sectionsPerChip)>1||passives.length>10?63:30;
   if(amps.length){const supply=M.physical(amps[0]);for(const c of amps.slice(1)){const q=M.physical(c);if(q.positive!==supply.positive||q.negative!==supply.negative)throw Error('Il banco usa una sola alimentazione condivisa: '+c.id+' richiede tensioni diverse da '+amps[0].id+'. Allinea V+ e V− oppure usa Schema con alimentazioni distinte.');}}
   // One physical board. Larger assemblies use a full-size board, never a second module.
   modules.push({id:'M1',rows,groups:groups('M1',rows)});
@@ -74,6 +74,8 @@
   const result={sectionsPerChip,packages:[...new Set(parts.filter(p=>p.type==='U').map(p=>p.packageId))],doc,original,topology,modules,parts,wires:jumpers,nets,sources:clone(sources),channels,contacts,pinHoles,devicePins,groups:modules.flatMap(m=>m.groups),occupied:[...occupied.keys()],instrumentConfig:options.instrumentConfig||original.benchSetup?.config||null,modelMode:options.modelMode||'ideal'};
   const mismatches=verify(result);if(mismatches.length)throw Error('Montaggio non equivalente: '+mismatches[0]);return result;
  }
+ // Offer only distinct, constructible alternatives on the same single board.
+ function packagingOptions(model,options={}){if(model.empty||model.parts.filter(p=>p.type==='U').length<2)return[];const choices=[];for(const sectionsPerChip of [1,2])try{const candidate=sectionsPerChip===model.sectionsPerChip?model:create(model.original,{...options,sectionsPerChip});choices.push({sectionsPerChip,packages:candidate.packages.length});}catch{}return choices;}
  function verify(model){if(model.empty)return[];const parent=new Map(),find=h=>{if(!parent.has(h))parent.set(h,h);if(parent.get(h)!==h)parent.set(h,find(parent.get(h)));return parent.get(h)},join=(a,b)=>parent.set(find(a),find(b));for(const g of model.groups)for(const h of g)join(g[0],h);for(const w of model.wires)join(w.a,w.b);const refs=Object.keys(model.topology.nodes),errors=[];for(let i=0;i<refs.length;i++)for(let j=i+1;j<refs.length;j++){const a=refs[i],b=refs[j];if((model.topology.nodes[a]===model.topology.nodes[b])!==(find(model.pinHoles[a])===find(model.pinHoles[b])))errors.push(a+' / '+b);}return errors;}
  function terminalList(model){
   if(model.empty)return[];
@@ -98,5 +100,5 @@
   for(let i=1;i<walk.length;i++){if(walk[i].startsWith('@')){segments.push({kind:'strip',a:walk[i-1],b:walk[i+1],group:walk[i].slice(1)});i++;}else segments.push({kind:'wire',a:walk[i-1],b:walk[i],id:seen.get(walk[i]).wire});}
   return{from,to,segments};
  }
- return{create,verify,palette,pinNames,localPoint,group,clone,terminals,trace};
+ return{create,packagingOptions,verify,palette,pinNames,localPoint,group,clone,terminals,trace};
 });

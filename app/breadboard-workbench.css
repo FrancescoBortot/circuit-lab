@@ -6,6 +6,7 @@
 .bb-toolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#fbfdf7;border-bottom:1px solid #e1e6da}
 .bb-options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px}
 .bb-options label{display:flex;align-items:center;gap:4px}
+.bb-package-control[hidden]{display:none!important}.bb-package-control{display:grid;gap:4px;max-width:470px}.bb-package-control select{max-width:260px;padding:6px;border:1px solid #cdd9c8;border-radius:5px;background:#fffef7;color:#36573d;font-size:11px}.bb-package-control small{font-size:10px;color:#61775a}
 .bb-workbench input[type=checkbox]{accent-color:#287c50}
 .bb-workbench button,.bb-source-dialog button{border:1px solid #cdd9c8;border-radius:5px;background:#fffef7;color:#2c5438;padding:6px 9px;font-size:11px;line-height:1.4}
 .bb-workbench button:hover,.bb-source-dialog button:hover{background:#e7f0df}

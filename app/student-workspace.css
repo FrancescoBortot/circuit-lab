@@ -43,3 +43,14 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .bb-build-panel [data-bb-build-text]>span{margin:0;min-width:0;overflow-wrap:anywhere}
 .student-workbench .bb-build-check{flex:1 1 100%;min-width:0}
 @media(max-width:760px){.student-workbench .bb-build-panel>[data-bb-build-text]{grid-template-columns:minmax(0,1fr)}}
+
+/* New result controls must add real space, rather than clip the plot or playback. */
+.student-workbench .workbench .analysis-pane,.student-workbench .free-center .free-results{flex:0 0 auto;height:auto;min-height:0;max-height:none}
+.student-workbench .analysis-pane .plot-area{flex:0 0 auto;height:clamp(220px,32dvh,360px);min-height:220px}
+.student-workbench .free-results .free-result-content{flex:0 0 auto;min-height:0}
+.student-workbench .free-results .free-plot-area{flex:0 0 auto;height:clamp(220px,32dvh,360px);min-height:220px}
+.student-center-selection{padding:6px 9px;border:1px solid #c9d7eb;border-radius:6px;background:white;color:#35567e;white-space:nowrap}
+@media(min-width:761px) and (max-height:820px){:root{--diagram-height:280px}}
+.student-workbench .workbench[data-workbench-view=plot] .analysis-pane,.student-workbench .free-center[data-workbench-view=plot] .free-results{flex:1 0 auto}
+.student-workbench .workbench[data-workbench-view=plot] .plot-area,.student-workbench .free-center[data-workbench-view=plot] .free-plot-area{flex:1 0 220px;height:auto}
+.student-workbench .free-center[data-workbench-view=plot] .free-result-content{flex:1 0 auto}

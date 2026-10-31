@@ -230,7 +230,7 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory app
 
 Apri `http://127.0.0.1:8765`. Per preparare il sito esegui `python3 app/scripts/build-site.py`: `_site/` conterrà soltanto l’app e lo ZIP offline.
 
-Il workflow GitHub riesegue i confronti numerici con ngspice e verifica modelli, dati, pacchetto e percorso RC prima di pubblicare su Pages. Per rigenerare localmente tutti i confronti: `CIRCUIT_NGSPICE_BIN=/percorso/ngspice node app/scripts/verify-numerics.cjs`. L’applicazione non richiede ngspice per funzionare. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
+Il workflow GitHub compila ngspice 47 dal sorgente ufficiale verificato tramite SHA-256, riesegue i confronti numerici e verifica modelli, dati, pacchetto e percorso RC prima di pubblicare su Pages. La versione del riferimento è fissata come nella verifica locale: la versione fornita dal sistema operativo può produrre scarti differenti nei casi non lineari. Per rigenerare localmente tutti i confronti: `CIRCUIT_NGSPICE_BIN=/percorso/ngspice node app/scripts/verify-numerics.cjs`. L’applicazione non richiede ngspice per funzionare. Cache, strumenti compilati, risultati grezzi voluminosi e copie di lavoro restano esclusi dal repository.
 
 Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza artificiale. I controlli automatici accompagnano lo sviluppo; il collaudo nei browser e il riscontro di chi studia restano parte della verifica.
 

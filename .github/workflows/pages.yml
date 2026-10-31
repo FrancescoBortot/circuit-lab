@@ -30,13 +30,22 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - name: Installa il riferimento numerico indipendente
+      - name: Compila il riferimento numerico ngspice 47 verificato
         run: |
           sudo apt-get update
-          sudo apt-get install --yes ngspice
+          sudo apt-get install --yes build-essential bison flex
+          reference_root="$RUNNER_TEMP/circuit-lab-ngspice"
+          mkdir -p "$reference_root"
+          curl --fail --location --retry 3 https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/47/ngspice-47.tar.gz --output "$reference_root/source.tar.gz"
+          echo "894e649651f1838a14095e5a5439e7d3aa63e87ede14d283173fda4fcdef675f  $reference_root/source.tar.gz" | sha256sum --check --strict
+          tar -xzf "$reference_root/source.tar.gz" -C "$reference_root"
+          cd "$reference_root/ngspice-47"
+          ./configure --prefix="$reference_root/local" --with-x=no --with-readline=no --disable-xspice --disable-openmp
+          make -j2
+          make install
+          "$reference_root/local/bin/ngspice" --version
+          echo "CIRCUIT_NGSPICE_BIN=$reference_root/local/bin/ngspice" >> "$GITHUB_ENV"
       - name: Riesegui i confronti analitici e SPICE
-        env:
-          CIRCUIT_NGSPICE_BIN: /usr/bin/ngspice
         run: node app/scripts/verify-numerics.cjs
       - name: Verifica modelli, dati e distribuzione
         run: node --test app/tests/*.test.cjs

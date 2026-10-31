@@ -276,7 +276,7 @@
     for(const [key,p]of Object.entries(d.circuits)){if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(key)||!p||p.type!==key)throw new Error('Circuito non valido nel progetto.');assert(p);}
     if(!d.circuits[CATALOG.find(c=>c.id===d.experiment).type])throw new Error('Il circuito attivo manca nel progetto.');
     if(!['time','bode','vtc','charge'].includes(d.analysis)||d.analysis==='charge'&&!Radiation.hasPre(d.circuits[CATALOG.find(c=>c.id===d.experiment).type]))throw new Error('Analisi non valida.');
-    Files.checkComparison(d.comparisonStudy);Files.checkAssembly(d.assemblyStudy);const layouts=d.layouts??{};
+    Files.checkNotebook(d.notebookStudy);Files.checkComparison(d.comparisonStudy);Files.checkAssembly(d.assemblyStudy);const layouts=d.layouts??{};
     if(!layouts||typeof layouts!=='object'||Array.isArray(layouts))throw new Error('Disposizione dei componenti non valida.');
     for(const [type,items]of Object.entries(layouts)){
       if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>40)throw new Error('Disposizione dei componenti non valida.');
@@ -284,13 +284,13 @@
     }
     Files.checkRCStudy(d.rcStudy);Files.checkACStudy(d.acStudy);Files.checkOpampStudy(d.opampStudy);Files.checkMetrologyStudy(d.metrologyStudy);Files.checkParameterStudy(d.parameterStudy);
     Trials.validate(d,CATALOG);
-    const normalized={...(d.comparisonStudy===undefined?{}:{comparisonStudy:d.comparisonStudy}),...(d.assemblyStudy===undefined?{}:{assemblyStudy:d.assemblyStudy}),...(d.session===undefined?{}:{session:d.session}),...(d.guidedTrials===undefined?{}:{guidedTrials:d.guidedTrials}),experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
+    const normalized={...(d.notebookStudy===undefined?{}:{notebookStudy:d.notebookStudy}),...(d.comparisonStudy===undefined?{}:{comparisonStudy:d.comparisonStudy}),...(d.assemblyStudy===undefined?{}:{assemblyStudy:d.assemblyStudy}),...(d.session===undefined?{}:{session:d.session}),...(d.guidedTrials===undefined?{}:{guidedTrials:d.guidedTrials}),experiment:d.experiment,analysis:d.analysis,circuits:d.circuits,layouts,name:typeof d.name==='string'?d.name.slice(0,80):'Il mio laboratorio',...(d.rcStudy===undefined?{}:{rcStudy:d.rcStudy}),...(d.acStudy===undefined?{}:{acStudy:d.acStudy}),...(d.opampStudy===undefined?{}:{opampStudy:d.opampStudy}),...(d.metrologyStudy===undefined?{}:{metrologyStudy:d.metrologyStudy}),...(d.parameterStudy===undefined?{}:{parameterStudy:d.parameterStudy})};Files.readJSON(serialize(normalized));return normalized;
   }
   function circuit(project){
     const p=project.circuits[CATALOG.find(c=>c.id===project.experiment)?.type];if(!p)throw new Error('Esperienza non disponibile.');assert(p);
     const d=Bench.real(p)||Radiation.is(p)?network(p,p.type==='difference'&&project.analysis!=='time'?p.bodeInput:null):Free.example(p.type,p);if(Bench.real(p)||Radiation.is(p))for(const part of d.components)Object.assign(part,project.layouts?.[p.type]?.[part.id]||{});d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':'time';
     if(p.type==='rc'){if(!Bench.real(p)){d.probes.input='R1:a';d.settings.acReference='input';}for(const key of ['rcStudy','acStudy'])if(project[key])d[key]=clone(project[key]);if(d.acStudy?.reference==='after-generator')d.acStudy.reference='input';}
-    if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);if(project.assemblyStudy)d.assemblyStudy=clone(project.assemblyStudy);if(project.comparisonStudy)d.comparisonStudy=clone(project.comparisonStudy);
+    if(project.notebookStudy)d.notebookStudy=clone(project.notebookStudy);if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);if(project.assemblyStudy)d.assemblyStudy=clone(project.assemblyStudy);if(project.comparisonStudy)d.comparisonStudy=clone(project.comparisonStudy);
     if(p.type!=='rc'&&project.opampStudy)d.opampStudy=clone(project.opampStudy);
     if(p.type==='difference'){d.settings.acWeights=drives(p.bodeInput||'differential');}
     return Free.parse(Free.serialize(d));

@@ -1,5 +1,5 @@
 (() => {
-  'use strict';
+  'use strict';let studentCalculationError='',projectEpoch=0;
   const M=window.LabModel,$=id=>document.getElementById(id),$$=q=>[...document.querySelectorAll(q)];
   const STORAGE='circuit-lab-v2',format=M.format,copy=M.clone,esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const store=window.LocalProjects.createStore({getItem:k=>localStorage.getItem(k),setItem:(k,v)=>localStorage.setItem(k,v)},STORAGE,M.parse);
@@ -37,7 +37,7 @@
     const value=get(params(),path)??M.physical(params())[path]??(path==='sweepPoints'?41:0),options=unitSets[unit];let factor=1;
     if(options){if(units[path]&&options.some(o=>o[0]===units[path]))factor=units[path];else{factor=options[0][0];for(const[f]of options)if(Math.abs(value)>=f)factor=f;units[path]=factor;}}
     const id='param-'+path.replaceAll('.','-'),chosen=selected===path||(selected==='Rg'&&path==='rg');
-    return `<div class="field ${chosen?'selected':''}" data-key="${path}"><label for="${id}">${label}</label><div class="input-unit"><input id="${id}" data-field="${path}" type="number" step="any" value="${Number((value/factor).toPrecision(12))}" inputmode="decimal" ${disabled?'disabled':''} aria-describedby="error-${id}">${options?`<select data-unit="${path}" data-previous="${factor}" aria-label="Unità: ${label}" ${disabled?'disabled':''}>${options.map(([f,l])=>`<option value="${f}" ${f===factor?'selected':''}>${l}</option>`).join('')}</select>`:`<span>${unit}</span>`}</div>${hint?`<p class="field-hint">${hint}</p>`:''}<p class="field-error" id="error-${id}"></p></div>`;
+    return `<div class="field ${chosen?'selected':''}" data-key="${path}"><label for="${id}">${label}</label><div class="input-unit"><input id="${id}" data-field="${path}" type="text" inputmode="decimal" value="${Number((value/factor).toPrecision(12))}" ${disabled?'disabled':''} aria-describedby="error-${id}">${options?`<select data-unit="${path}" data-previous="${factor}" aria-label="Unità: ${label}" ${disabled?'disabled':''}>${options.map(([f,l])=>`<option value="${f}" ${f===factor?'selected':''}>${l}</option>`).join('')}</select>`:`<span>${unit}</span>`}</div>${hint?`<p class="field-hint">${hint}</p>`:''}<p class="field-error" id="error-${id}"></p></div>`;
   }
   const select=(path,label,options,hint='')=>`<div class="field" data-key="${path}"><label for="select-${path}">${label}</label><select class="form-select" id="select-${path}" data-select="${path}">${options.map(([v,l])=>`<option value="${v}" ${get(params(),path)===v?'selected':''}>${l}</option>`).join('')}</select>${hint?`<p class="field-hint">${hint}</p>`:''}<p class="field-error"></p></div>`;
   function sourceFields(channel,label){
@@ -108,7 +108,7 @@
     $$('#inspectorContent .field.selected').forEach(field=>field.classList.remove('selected'));
     if(panel==='components')$('inspectorTitle').textContent='Componenti';
     const svg=$(networkDiagram(params())?'realSchematic':'schematic');if(svg.contains(document.activeElement))svg.focus({preventScroll:true});
-    drawDiagram();
+    drawDiagram();globalThis.StudentSelection?.notify(null);
   }
   function selectComponent(id){
     if(!applyFields())return;
@@ -117,7 +117,7 @@
     const kind=source?params()[wave].kind:null;
     const inactive=params().type==='difference'&&((id==='V1'&&params().drive==='v2')||(id==='V2'&&params().drive==='v1'));
     renderInspector((M.isRadiation(params())&&M.radiation.fields(params()).some(([k])=>k===id)||['R','C','R1','Rf','R3','R4','C1'].includes(id))?id:id==='Vbias'?'wave2.level':id.startsWith('U')?'rail':id==='Rg'?'rg':id==='CH1'||id==='CH2'?'scopeR':inactive?'drive':source?(kind==='discharge'?'initial':kind==='ground'?wave+'.kind':wave+(['dc','charge','cycle'].includes(kind)?'.level':'.vpp')):undefined);
-    drawDiagram();
+    drawDiagram();globalThis.StudentSelection?.notify(id);
     $('rotateComponent').disabled=!(M.isRadiation(params())?M.radiation.fields(params()).some(([k])=>k===id):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(id));
   }
   function showErrors(errors){
@@ -127,7 +127,7 @@
   }
   function applyFields(rebuild=false,changed=null){
     clearTimeout(debounce);let candidate=copy(params());
-    $$('#inspectorContent [data-field]').forEach(input=>{const unit=input.parentElement.querySelector('[data-unit]');set(candidate,input.dataset.field,input.value.trim()===''?NaN:Number(input.value)*(unit?Number(unit.value):1));});
+    $$('#inspectorContent [data-field]').forEach(input=>{const unit=input.parentElement.querySelector('[data-unit]'),factor=unit?Number(unit.value):1,old=get(candidate,input.dataset.field);if(Number.isFinite(old)&&input.value.trim()===String(Number((old/factor).toPrecision(12))))return;set(candidate,input.dataset.field,globalThis.StudentTools?globalThis.StudentTools.readQuantity(input):input.value.trim()===''?NaN:Number(input.value)*(unit?Number(unit.value):1));});
     $$('#inspectorContent [data-select]').forEach(s=>set(candidate,s.dataset.select,s.value));
     $$('#inspectorContent [data-check]').forEach(c=>set(candidate,c.dataset.check,c.checked));
     if(changed==='instrument'){
@@ -148,7 +148,7 @@
   function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics];if(project.analysis==='charge'&&data.length)rows.push({label:'Pendenza fit simulato',value:format(data[0].slope*1e-12,'V/pC'),primary:true},{label:'Intercetta fit simulato',value:format(data[0].intercept,'V')});if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(p.type==='difference')rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
     rows.sort((a,b)=>Number(Boolean(primaryMetric(b)))-Number(Boolean(primaryMetric(a))));$('summary').innerHTML=rows.map(r=>`<div class="summary-item ${primaryMetric(r)?'metric':''}" ${r.note?'title="'+esc(r.note)+'"':''}><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong></div>`).join('')+(M.real(p)&&project.analysis==='bode'?'<p class="field-hint metric-note">I tagli a −3 dB sono riferiti al massimo della curva nell’intervallo visualizzato.</p>':'');
   }
-  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#627d99',vin2:'#159e89',out:'#4264ef',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
+  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
   function series(){const p=params();let s;
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
     else if(project.analysis==='charge')s=[{key:'out',label:'Picco rispetto alla baseline',points:true},{key:'linear',label:'Fit lineare',dash:'5 5'}];
@@ -164,7 +164,7 @@
     select.value=quantity;select.hidden=['vtc','charge'].includes(project.analysis)||(project.analysis==='time'&&p.type!=='rc');
   }
   async function calculate(){
-    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;lastSimulationResult=null;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
+    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;studentCalculationError='';stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;lastSimulationResult=null;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
       const result=await tasks.run('guidedResult',{params:p,analysis},fraction=>{if(revision===calculationRevision)$('calculationStatus').textContent='Calcolo locale · '+Math.round(fraction*100)+'%';});if(revision!==calculationRevision)return;lastSimulationResult=result;data=result.data;calculating=false;calculationReady=true;derivedMetrics=M.metrics(p,analysis==='time'?null:p.bodeInput);if((M.real(p)||M.isRadiation(p))&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
       quantityControls();renderLegend();
       plot.set({data,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
@@ -177,7 +177,7 @@
       $('resultNotice').textContent=clipped?(p.opamp==='physical'?'Uno o più limiti fisici sono attivi (alimentazione, slew rate o corrente). I valori si modificano nell’operazionale.':'Saturazione nella retroazione: escursione ±'+format(p.rail-p.headroom,'V')+'.'):zeroCommon?'Rapporti resistivi bilanciati: il modo comune si annulla nel modello. Introduci una differenza tra R₄/R₃ e Rf/R₁ per misurare un CMRR finito.':'';
       $('rotateComponent').disabled=!(M.isRadiation(p)?M.radiation.fields(p).some(([k])=>k===selected):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected));
       showErrors({});emitState(true);
-    }catch(error){if(revision!==calculationRevision)return;calculating=false;$('exportCSV').disabled=true;$('exportSVG').disabled=true;$('calculationStatus').textContent=error.name==='AbortError'?'Calcolo annullato':'Calcolo non disponibile';if(error.name!=='AbortError')toast('Calcolo non disponibile: '+error.message,true);}
+    }catch(error){if(revision!==calculationRevision)return;calculating=false;$('exportCSV').disabled=true;$('exportSVG').disabled=true;studentCalculationError=error.name==='AbortError'?'':error.message;$('calculationStatus').textContent=error.name==='AbortError'?'Calcolo annullato':'Calcolo non disponibile';if(error.name!=='AbortError')toast('Calcolo non disponibile: '+error.message,true);}
     finally{if(revision===calculationRevision)$('guidedCancel').textContent='Ricalcola';}
   }
   function cursor(d,fraction,cursors){
@@ -190,27 +190,30 @@
     $('readout').innerHTML=rows.map(([label,value,cls=''])=>`<div class="${cls}"><span>${label}</span><strong>${value}</strong></div>`).join('');
     $('timeCursor').setAttribute('aria-valuetext',project.analysis==='time'?format(d.x,'s',4):format(d.x,''));
   }
-  function applyPreset(key){
-    if(!applyFields())return;if(!key){window.GuidedTrials.select(project,'',M.CATALOG);renderInspector();persist();return;}let p=copy(params());const w=p.wave1;
-    if(M.isRadiation(p)){const trial=M.radiation.applyPreset(p,key);p=trial.parameters;project.analysis=trial.analysis;}else if(p.type==='rc'){
+  function presetCandidate(key,base=project){
+    const next=copy(base);let p=copy(next.circuits[M.CATALOG.find(c=>c.id===next.experiment).type]);const w=p.wave1;
+    if(M.isRadiation(p)){const trial=M.radiation.applyPreset(p,key);p=trial.parameters;next.analysis=trial.analysis;}else if(p.type==='rc'){
       if(['cycle','charge','discharge'].includes(key)){w.kind=key;p.initial=key==='discharge'?w.level:0;}
       if(['square','ideal','direct','probe'].includes(key)){Object.assign(w,{kind:'square',frequency:50,vpp:4,offset:2,phase:0});p.initial=0;}
       if(['ideal','direct','probe'].includes(key)){if(p.bench){p.bench=window.BenchModel.config(p.bench);p.bench.mode=key==='ideal'?'ideal':'real';for(const ch of p.bench.channels){ch.enabled=true;ch.kind=key==='probe'?'probe10':'direct';ch.coupling='dc';}}p.instrument=key;if(key==='direct'){p.scopeR=1e6;p.scopeC=120e-12;}if(key==='probe'){p.scopeR=10e6;p.scopeC=12e-12;}p.rg=50;}
       if(key==='cutoff')Object.assign(w,{kind:'sine',frequency:M.rcSummary(p).cutoff,vpp:2,offset:0});
-      project.analysis='time';
+      next.analysis='time';
     }else if(p.type==='inverting'){
       Object.assign(w,{kind:'sine',frequency:1000,offset:0,vpp:key==='saturation'?10:key==='vtc'?.2:1});
-      project.analysis=key==='vtc'?'vtc':key==='bode'?'bode':'time';p.fmin=30;p.fmax=1e6;
+      next.analysis=key==='vtc'?'vtc':key==='bode'?'bode':'time';p.fmin=30;p.fmax=1e6;
     }else if(p.type==='derivative'){
-      const fc=1/(2*Math.PI*p.R1*p.C1);Object.assign(w,{kind:key==='triangle'?'triangle':'sine',vpp:1,frequency:key==='triangle'?Math.min(500,fc/25):1000,offset:0});project.analysis=key==='bode'?'bode':'time';p.fmin=30;p.fmax=1e6;
+      const fc=1/(2*Math.PI*p.R1*p.C1);Object.assign(w,{kind:key==='triangle'?'triangle':'sine',vpp:1,frequency:key==='triangle'?Math.min(500,fc/25):1000,offset:0});next.analysis=key==='bode'?'bode':'time';p.fmin=30;p.fmax=1e6;
     }else{
       Object.assign(w,{kind:'sine',vpp:1,frequency:1000,offset:0,phase:0});Object.assign(p.wave2,{kind:'square',vpp:2,frequency:100,offset:0,phase:0});p.drive='independent';
       if(key==='offset1')w.offset=1;if(key==='offsetBoth'){w.offset=1;p.wave2.offset=1;}
       if(key==='a1'){p.drive='v1';p.bodeInput='v1';}if(key==='a2'){p.drive='v2';p.bodeInput='v2';}
       if(key==='common'||key==='mismatch'){p.drive='common';p.bodeInput='common';if(key==='mismatch')p.R4=p.Rf*1.01;}
-      if(key==='differential'){p.drive='differential';p.bodeInput='differential';}project.analysis='time';
+      if(key==='differential'){p.drive='differential';p.bodeInput='differential';}next.analysis='time';
     }
-    p.autoTime=true;project.circuits[p.type]=M.normalizeTime(p);window.GuidedTrials.select(project,key,M.CATALOG);quantity='voltage';renderNavigation();renderInspector();calculate();persist();
+    p.autoTime=true;next.circuits[p.type]=M.normalizeTime(p);window.GuidedTrials.select(next,key,M.CATALOG);return M.parse(M.serialize(next));
+  }
+  function applyPreset(key){
+    if(!applyFields())return;if(!key){window.GuidedTrials.select(project,'',M.CATALOG);renderInspector();persist();return;}project=presetCandidate(key);projectEpoch++;quantity='voltage';renderNavigation();renderInspector();calculate();persist();
   }
   function stopPlayback(){playback.pause();}
   function readingRange(){return [...plot.view];}
@@ -238,7 +241,7 @@
   function selectReal(kind,id){if(kind!=='component'){clearSelection();return;}const c=realDiagram.doc.components.find(c=>c.id===id);if(c?.benchRole){selected=id;drawDiagram();document.dispatchEvent(new CustomEvent('open-bench',{detail:{part:id}}));return;}selectComponent(params().type==='rc'&&id==='R1'?'R':params().type==='rc'&&id==='C1'?'C':id);}
   const realDiagram=new window.FreeCanvas($('realSchematic'),{select:selectReal,pin:ref=>selectReal('component',ref.split(':')[0]),move:(id,x,y)=>{const c=realDiagram.doc.components.find(c=>c.id===id);(project.layouts[params().type]??={})[id]={x,y,rotation:c.rotation};drawDiagram();persist();},moveWire:()=>drawDiagram(),moveGroup:()=>drawDiagram(),region:()=>clearSelection(),add:()=>toast('Aggiungi componenti dall’editor libero.'),zoom:value=>{if(networkDiagram(params()))$('diagramZoom').textContent=value+'%';}});
   const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,deselect:clearSelection,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
-  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||window.circuitEditor?.active||e.target.closest('select,dialog')||document.querySelector('dialog[open]'))return;clearSelection();});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented||window.circuitEditor?.active||e.target.closest('select,dialog')||document.querySelector('dialog[open]:not(.student-tool)'))return;clearSelection();});
   let lastContinuousReadout=0;
   const plot=new window.LabPlot($('plot'),cursor);
   const playback=new window.ReadingPlayback({write:value=>plot.inspectDomain(value),onState:running=>{
@@ -261,20 +264,20 @@
   $('inspectorContent').addEventListener('change',e=>{
     const el=e.target;
     if(el.id==='guidedAnalysis')changeAnalysis(el.value);
-    else if(el.matches('[data-unit]')){const physical=Number(el.parentElement.querySelector('input').value)*Number(el.dataset.previous),factor=Number(el.value);units[el.dataset.unit]=factor;el.dataset.previous=String(factor);el.parentElement.querySelector('input').value=Number((physical/factor).toPrecision(12));applyFields();}
+    else if(el.matches('[data-unit]')){const physical=globalThis.StudentTools?globalThis.StudentTools.readQuantity(el.parentElement.querySelector('input'),Number(el.dataset.previous)):Number(el.parentElement.querySelector('input').value)*Number(el.dataset.previous),factor=Number(el.value);units[el.dataset.unit]=factor;el.dataset.previous=String(factor);el.parentElement.querySelector('input').value=Number((physical/factor).toPrecision(12));applyFields();}
     else if(el.matches('[data-select]'))applyFields(true,el.dataset.select);
     else if(el.matches('[data-check]'))applyFields(true);
     else if(el.matches('[data-field]'))applyFields();
   });
   $('inspectorContent').addEventListener('click',e=>{if(e.target.closest('#balanceResistors')){const p=params();p.R3=p.R1;p.R4=p.Rf;renderInspector();calculate();persist();}});
   $('sheetPreset').addEventListener('change',()=>applyPreset($('sheetPreset').value));
-  $('resetCircuit').addEventListener('click',()=>{project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori iniziali ripristinati.');});
+  $('resetCircuit').addEventListener('click',()=>{projectEpoch++;project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori iniziali ripristinati.');});
   $('rotateComponent').addEventListener('click',()=>{if(!networkDiagram(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>activeDiagram().fit());
   $('resetLayout').addEventListener('click',()=>{delete project.layouts[params().type];fitDiagram();drawDiagram();persist();});
   function setWorkspaceView(view){
     const main=$('appLayout').querySelector('.workbench');main.dataset.workbenchView=view;
     for(const b of $$('[data-guided-view]'))b.setAttribute('aria-pressed',String(b.dataset.guidedView===view));
-    document.dispatchEvent(new Event('circuit-lab-view'));if(view==='circuit')stopPlayback();requestAnimationFrame(()=>{if(view!=='plot')activeDiagram().fit();if(view!=='circuit')plot.draw();});
+    document.dispatchEvent(new Event('circuit-lab-view'));if(view==='circuit')stopPlayback();requestAnimationFrame(()=>{if(view!=='plot'){const d=activeDiagram();d.transform?d.transform():d.draw();}if(view!=='circuit')plot.draw();});
   }
   $$('[data-guided-view]').forEach(b=>b.addEventListener('click',()=>setWorkspaceView(b.dataset.guidedView)));
   $('toggleSchematic').addEventListener('click',()=>setWorkspaceView('plot'));$('hideGuidedPlot').addEventListener('click',()=>setWorkspaceView('circuit'));
@@ -302,7 +305,7 @@
   $('exportSVG').addEventListener('click',()=>{const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Arial,sans-serif;font-size:10px;fill:#7185a1}.axis-unit,.guide-text{font-size:9px}';svg.prepend(style);download(svg.outerHTML,'image/svg+xml',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.svg');toast('Download SVG richiesto al browser.');});
   $('projectName').addEventListener('change',()=>{if(window.circuitEditor?.active)return;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();});
   $('helpButton').addEventListener('click',()=>window.circuitEditor?.active?window.circuitEditor.showHelp():$('helpDialog').showModal());for(const id of ['closeHelp','helpDone'])$(id).addEventListener('click',()=>$('helpDialog').close());
-  function loadProject(text){const next=M.parse(text);if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();fitDiagram();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}
+  function loadProject(text){const next=M.parse(text);projectEpoch++;if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();fitDiagram();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}
   function editBreadboard(updates){
     if(!applyFields())return false;
     try{const p=copy(params()),allowed=/^(R|C|R1|Rf|R3|R4|C1|positive|negative|rail|opamp|drive|Rin|Rfpre|Cfpre|Rsh1|Rsh2|Csh1|Csh2|Rpz|Ri|Rgain|Rbias|slew|rout|ilimit|a0|gbw|headroom|wave[12]\.(kind|vpp|frequency|offset|phase|duty|level|low|width|period|delay|rise|fall))$/;
@@ -311,8 +314,8 @@
       project.circuits[current().type]=next;renderInspector();calculate();persist();return true;
     }catch(error){toast(error.message,true);throw error;}
   }
-  function breadboardColors(enabled){Object.assign(colors,enabled?{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#6b7a8c'}:{vin:'#627d99',vin2:'#159e89',out:'#4264ef',source:'#b88bce'});if(calculationReady&&!calculating){plot.updateSeries(series());renderLegend();}}
-  window.GuidedLab={resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
+  function breadboardColors(enabled){Object.assign(colors,enabled?{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#6b7a8c'}:{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce'});if(calculationReady&&!calculating){plot.updateSeries(series());renderLegend();}}
+  window.GuidedLab={projectEpoch:()=>projectEpoch,selectedComponent:()=>selected,captureReading:()=>calculationReady&&!calculating&&valid?{config:copy(plot.config),index:plot.data.indexOf(plot.cursor)}:null,revealErrors:()=>setInspector(true),calculationState:()=>({valid,calculating,ready:calculationReady,analysis:project.analysis,error:studentCalculationError}),inspectSample:index=>calculationReady&&!calculating&&valid?plot.inspectSample(index):false,centerSelected:()=>{if(!selected)return false;const id=networkDiagram(params())&&params().type==='rc'?({R:'R1',C:'C1'}[selected]||selected):selected;return activeDiagram().center(id);},previewPreset:key=>presetCandidate(key),selectComponent,run:()=>{if(!applyFields())return false;calculate();return true;},resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
   const loaded=store.read();if(loaded.doc){project=loaded.doc;storageState.ok=true;}else if(!loaded.error)try{const old=localStorage.getItem('rc-studio-project-v1');if(old)project=M.parse(old);}catch{}
   if(loaded.recovered||loaded.error)setTimeout(()=>toast(loaded.recovered?'Recuperata la copia precedente del laboratorio: la più recente non era leggibile.':loaded.error,true),200);
   ensureSession();$('projectName').value=project.name;renderNavigation();renderInspector();calculate();persist();

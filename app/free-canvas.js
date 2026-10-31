@@ -111,6 +111,7 @@
       if(drag?.moved&&!drag.id&&!drag.wire&&!drag.multi)this.callbacks.view?.();
     }
     zoom(factor,anchor={x:this.view.x+this.view.w/2,y:this.view.y+this.view.h/2}){const w=Math.max(220,Math.min(4000,this.view.w/factor)),ratio=w/this.view.w;this.view={x:anchor.x-(anchor.x-this.view.x)*ratio,y:anchor.y-(anchor.y-this.view.y)*ratio,w,h:this.view.h*ratio};this.draw();this.callbacks.view?.();}
+    center(id){const c=this.doc?.components.find(c=>c.id===id);if(!c)return false;this.view={...this.view,x:c.x-this.view.w/2,y:c.y-this.view.h/2};this.draw();this.callbacks.view?.();return true;}
     fit(){const visible=this.svg.getBoundingClientRect();if(visible.width<1||visible.height<1)return;if(this.doc?.components.length)this.draw();if(!this.doc?.components.length){const rect=visible;this.view={x:0,y:0,w:1000,h:1000*Math.max(1,rect.height)/Math.max(1,rect.width)};this.draw();this.callbacks.view?.();return;}const c=this.doc.components,boxes=[...this.svg.querySelectorAll('.wire-ink')].map(p=>p.getBBox());if(this.labelBounds)boxes.push(this.labelBounds);const minX=Math.min(...c.map(c=>c.x-95),...boxes.map(b=>b.x-20)),maxX=Math.max(...c.map(c=>c.x+110),...boxes.map(b=>b.x+b.width+20)),minY=Math.min(...c.map(c=>c.y-65),...boxes.map(b=>b.y-20)),maxY=Math.max(...c.map(c=>c.y+75),...boxes.map(b=>b.y+b.height+20)),rect=visible,aspect=rect.width/Math.max(1,rect.height),w=Math.max(400,maxX-minX,(maxY-minY)*aspect),h=w/aspect;this.view={x:(minX+maxX-w)/2,y:(minY+maxY-h)/2,w,h};this.draw();this.callbacks.view?.();}
   }
   window.FreeCanvas=FreeCanvas;

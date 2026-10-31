@@ -55,6 +55,7 @@
       if(reveal&&(d<this.view[0]||d>this.view[1])){const span=this.view[1]-this.view[0],start=clamp(d-span/2,this.domain[0],this.domain[1]-span);this.view=[start,start+span];this.draw();}else this.drawCursor();
       this.onStateChange?.();
     }
+    inspectSample(index){if(!Number.isInteger(index)||!this.data[index])return false;this.activeCursor='a';this.cursorA=this.cursor=this.data[index];const x=this.toDomain(this.cursor.x),span=this.view[1]-this.view[0];if(x<this.view[0]||x>this.view[1]){const start=clamp(x-span/2,this.domain[0],this.domain[1]-span);this.view=[start,start+span];this.draw();}else this.drawCursor();this.syncControls();this.onStateChange?.();return true;}
     setFraction(f){this.inspectDomain(this.domain[0]+clamp(f,0,1)*(this.domain[1]-this.domain[0]),true);}
     draw(){
       if(!this.data.length)return;const rect=this.svg.parentElement.getBoundingClientRect(),w=Math.max(250,rect.width),h=Math.max(140,rect.height),left=60,right=24,top=21,bottom=35,pw=w-left-right,ph=h-top-bottom;

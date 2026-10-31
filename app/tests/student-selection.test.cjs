@@ -1,0 +1,2 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),T=require('../student-tools'),L=require('../lab-model');
+test('selection uses the actual shared component identity, including RC aliases',()=>{for(const c of L.CATALOG){const doc=L.circuit({experiment:c.id,analysis:'time',circuits:{[c.type]:L.defaults(c.type)}});for(const part of doc.components){const id=T.schematicId(c.type,part.id);assert.equal(T.canonicalId(c.type,id),part.id);}}});

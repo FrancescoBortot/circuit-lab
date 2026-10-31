@@ -1,0 +1,4 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),T=require('../student-tools');
+test('engineering inputs preserve physical units and distinguish peak-to-peak values',()=>{for(const[text,factor,u,result]of [['10k',1000,'kΩ',10000],['2,2 nF',1e-6,'µF',2.2e-9],['100 us',1,'s',1e-4],['-2.5 mV',1,'V',-.0025],['2e-3',1000,'kΩ',2],['50%',.01,'%',.5],['1V/µs',1,'V/s',1e6],['1',1e6,'V/µs',1e6]])assert.ok(Math.abs(T.quantity(text,factor,u)-result)<Math.max(1e-20,Math.abs(result)*1e-12));for(const s of ['2V','eval(1)','1;2','1,2,3','Infinity',''])assert.ok(Number.isNaN(T.quantity(s,1,'Vpp')));assert.equal(T.quantity('2Vpp',.001,'mVpp'),2);});
+
+test('femtoampere display units preserve a small current input',()=>{assert.equal(T.quantity('1 pA',1e-15,'fA'),1e-12);assert.ok(Math.abs(T.quantity('20',1e-15,'fA')-20e-15)<1e-28);});

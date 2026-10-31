@@ -12,7 +12,7 @@
    try{
     const doc=this.current();this.cancel();this.doc=doc;this.rcContext=rcContext;this.state=clone(doc.metrologyStudy||X.defaults());if(!doc.metrologyStudy)this.state.kind=doc.rcStudy?.dataset?'rc':doc.acStudy?.dataset?'ac':doc.opampStudy?'opamp':'rc';if(kind)this.state.kind=kind;
     for(const i of this.dialog.querySelectorAll('[data-budget]'))i.value=this.state[i.dataset.budget];$('lwKind').value=this.state.kind;$('lwNote').value=this.state.note;this.page=0;this.result=null;$('lwBudgetCSV').disabled=true;this.tableDirty=false;this.error('');this.message('');$('lwExportStatus').textContent='';$('lwBudget').hidden=true;$('lwBackRC').hidden=!fromRC;$('lwPreviewDetails').open=false;this.loadTable();this.tab(tab);this.spec();
-    $('projectDialog')?.close();if(fromRC)window.rcWorkbench.dialog.close();this.dialog.showModal();
+    $('projectDialog')?.close();if(fromRC)window.rcWorkbench.dialog.close();(window.StudentDock?.open(this.dialog)||this.dialog.showModal());
    }catch(e){window.circuitEditor.note(e.message,true);}
   }
   tab(name){this.dialog.querySelectorAll('[data-lw-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.lwTab===name)));this.dialog.querySelectorAll('[data-lw-view]').forEach(s=>s.hidden=s.dataset.lwView!==name);if(name==='gallery')this.renderGallery();if(name==='report'){this.refreshRCStatus();$('lwPreviewDetails').open=false;}}

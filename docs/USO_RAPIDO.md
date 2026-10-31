@@ -12,6 +12,18 @@ Apri [Circuit Lab online](https://francescobortot.github.io/circuit-lab/), oppur
 
 Gli esempi si trovano in “Parti da un esempio”. Diodi/BJT/MOS hanno modelli didattici a 27 °C con parametri e limiti visibili, non sono chip commerciali certificati.
 
+## Interfaccia per lo studio
+
+La barra **Costruisci → Simula → Misura → Esporta** indica l’attività scelta. **Simula** apre le impostazioni; **Esegui simulazione** avvia il calcolo. La scheda dell’esperienza indica obiettivo, parametro da variare e grandezze da tenere fisse. Cambiare una prova mostra prima un’anteprima: il circuito cambia solo con **Applica**.
+
+- **Componenti e banco:** seleziona un componente e usa **Trova nello schema** o **Trova nella breadboard**. La costruzione guidata mostra azione, punti precisi, motivo fisico e controllo. Le inquadrature e gli zoom restano indipendenti. Le impostazioni avanzate si possono aprire insieme senza perdere i controlli esistenti.
+- **Valori:** puoi scrivere `22k`, `2,2 nF` o `1e-3 s` nel campo della grandezza corrispondente. Controlla l’interpretazione mostrata; **Annulla questa modifica** ripristina il valore del componente originale anche dopo averne selezionato un altro; aprire un altro progetto rende conclusa quella modifica. V e Vpp indicano grandezze diverse. Le frecce della tastiera aumentano o diminuiscono il valore visualizzato; Maiusc modifica di dieci unità.
+- **Risultati:** le letture principali portano al campione esatto sul grafico. L’etichetta distingue calcolo in corso, risultato attuale, valori da correggere e risultato da aggiornare. L’ultimo risultato storico conserva i propri parametri e si apre separatamente.
+- **Misure:** **Misura** raccoglie confronto diretto, fit, incertezze e tolleranze. In **I miei dati ↔ modello attuale** prepara i dati, controlla anteprima e unità, poi salva e confronta. L’anteprima segue i cambi di separatore e intestazione. I suggerimenti sulle colonne si applicano solo premendo il pulsante dedicato; senza intestazioni scegli manualmente le unità. Il confronto diretto non esegue un fit dei componenti.
+- **Pannelli:** puoi ridurre gli strumenti di studio e riaprirli dalla barra in basso mantenendo i campi compilati. **Espandi** offre più spazio. Gli errori indicano un’azione per trovare il campo o il collegamento interessato.
+- **Quaderno e salvataggi:** **Strumenti e lavoro** contiene il quaderno, il confronto tra curve, le versioni e **Il mio lavoro**. Nel quaderno annota previsione, osservazione e spiegazione; cattura le letture simulate con i parametri originali. Appunti e dati viaggiano nel JSON. Il recupero nel browser e il download sul disco sono distinti; le versioni nominate si possono confrontare prima di riaprirle.
+- **Spazio e leggibilità:** cerca i circuiti per nome o giornata, richiudi la libreria con **Circuiti / componenti** e attiva il contrasto elevato se utile. Il primo Tab offre collegamenti rapidi a circuito, risultati e comandi. **Come cominciare** è facoltativo e contestuale all’esperienza.
+
 ## Sessioni e prove guidate
 
 1. Scrivi il **nome della sessione** nel campo in alto. Su telefono apri le opzioni **⌄ accanto a Salva** e modifica il nome nel pannello.

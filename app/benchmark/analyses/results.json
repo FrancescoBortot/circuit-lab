@@ -1,5 +1,5 @@
 {
-  "engineSha256": "222b7a89233ead14ce58bdd1290a4ca75e722ce492ad311fdd7eeb2d6d55134e",
+  "engineSha256": "7da577020333a03612bbc2f8a65432b4b2a74d5cc14a31280c38e3a405288332",
   "exporterSha256": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3",
   "reference": "Official locally compiled ngspice 47",
   "externalConnectionDuringSimulation": false,

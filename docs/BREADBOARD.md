@@ -57,3 +57,9 @@ Su desktop il contenitore centrale gestisce lo scorrimento verticale; il banco s
 Le tracce di ispezione sono ricavate dal grafo dei contatti fisici, non da scorciatoie disegnate fra componenti. Non attraversano resistenze, condensatori o l'operazionale. La selezione conserva il fuoco da tastiera e non aggiunge operazioni alla cronologia del circuito. Su telefono «Collegamenti ↓» e «↑ Banco» permettono di passare tra basetta e dettagli; il ripristino dello zoom centra la basetta.
 
 Prove: `node --test app/tests/breadboard.test.cjs`; regressioni: `node --test app/tests/*.test.cjs`; percorso RC: `node app/scripts/check-rc-workflow.cjs`. Il pacchetto autonomo include i moduli tramite il builder già esistente.
+
+## Passaggi guidati e componenti
+
+Ogni passaggio della costruzione guidata distingue **cosa fare**, **punti precisi**, **perché** e **controllo**. Usa **Mostra i punti** per raggiungere i terminali indicati senza cambiare lo zoom. La selezione del componente permette anche di ritrovarlo nello schema. La guida descrive il montaggio previsto: la verifica del banco fisico resta una tua operazione.
+
+I valori ammettono prefissi e unità coerenti, per esempio `22k` per una resistenza o `2,2 nF` per un condensatore. La conferma dell’interpretazione permette di annullare la modifica anche dopo l’aggiornamento della breadboard.

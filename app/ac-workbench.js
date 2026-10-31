@@ -49,7 +49,7 @@
     async open(){
       try{this.owner=window.RCStudyContext.adapter();this.ctx=await window.RCStudyContext.prepare(this.owner);this.simulationReference=this.owner.free?(this.ctx.acReference==='input'?'input':'source'):'after-generator';this.simulation=this.ctx.voltageGain?this.ctx.bode:[];
         this.state=copy(this.owner.getAC()||{version:1,reference:this.simulationReference,referenceNote:'',from:null,to:null,g0:1,uG0:null,independentReference:false,fit:true,overlay:true,showPhase:true,residualReference:'fit',residualQuantity:'db',dataset:null,stamp:''});
-        this.result=null;this.populate();this.dirty=true;$('acResult').hidden=true;$('acEmpty').hidden=false;$('acError').hidden=true;this.disableExports();this.dialog.showModal();
+        this.result=null;this.populate();this.dirty=true;$('acResult').hidden=true;$('acEmpty').hidden=false;$('acError').hidden=true;this.disableExports();(window.StudentDock?.open(this.dialog)||this.dialog.showModal());
       }catch(e){if(e.name!=='AbortError')window.circuitEditor.note(e.message,true);}
     }
     populate(){

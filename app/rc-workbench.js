@@ -51,7 +51,7 @@
       this.cancelPending();
       try{this.owner=adapter();this.ctx=await prepare(this.owner);}catch(e){if(e.name!=='AbortError')window.circuitEditor.note(e.message,true);return;}
       const old=this.owner.get();this.state=old?copy(old):{version:1,source:this.ctx.points.length?'simulation':'experiment',method:'voltage',finalMode:'fit',finalValue:0,from:null,to:null,segment:0,timeUnit:'ms',commonSigma:null,reference:{R:this.ctx.reference?.R??null,C:this.ctx.reference?.C??null,uR:null,uC:null,kind:'nominal',independent:false},dataset:null,deltaTime:0,deltaVoltage:0,overlay:false,logPlot:false,stamp:''};
-      this.dirty=true;this.fit=null;this.resultRows=[];$('rcResult').hidden=true;$('rcEmptyResult').hidden=false;$('rcError').hidden=true;this.disableExports();this.populate();this.dialog.showModal();if(recalculate&&old)this.calculate();
+      this.dirty=true;this.fit=null;this.resultRows=[];$('rcResult').hidden=true;$('rcEmptyResult').hidden=false;$('rcError').hidden=true;this.disableExports();this.populate();(window.StudentDock?.open(this.dialog)||this.dialog.showModal());if(recalculate&&old)this.calculate();
     }
     populate(){
       const s=this.state,parts=this.ctx.parts||[];

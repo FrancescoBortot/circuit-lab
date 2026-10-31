@@ -1,0 +1,2 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),T=require('../student-tools');
+test('experience filtering tolerates accents and multiple search terms without interpreting input as code',()=>{assert.equal(T.matchesQuery('Terza giornata · Preamplificatore di carica','terza carica'),true);assert.equal(T.matchesQuery('Quarta giornata · Linearità in carica','linearita'),true);assert.equal(T.matchesQuery('RC',''),true);assert.equal(T.matchesQuery('RC','[.*]'),false);assert.equal(T.matchesQuery('RC','shaper'),false);});

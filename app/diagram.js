@@ -100,6 +100,7 @@
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     transform(){const g=this.svg.querySelector('#diagramScene');if(g)g.setAttribute('transform',`translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);this.callbacks.zoom?.(Math.round(this.view.k*100));}
     zoom(factor,point=this.bounds?{x:this.bounds.x+this.bounds.width/2,y:this.bounds.y+this.bounds.height/2}:{x:470,y:this.height/2}){const next=bounded(this.view.k*factor,.5,3.5,1),ratio=next/this.view.k;this.view.x=point.x-(point.x-this.view.x)*ratio;this.view.y=point.y-(point.y-this.view.y)*ratio;this.view.k=next;this.transform();}
+    center(id){const c=this.components[id];if(!c)return false;const b=this.bounds||{x:0,y:0,width:940,height:this.height};this.view={...this.view,x:b.x+b.width/2-c.x*this.view.k,y:b.y+b.height/2-c.y*this.view.k};this.transform();return true;}
     fit(){this.view={x:0,y:0,k:1};this.transform();}
     rotate(){const id=this.selected,c=this.components[id];if(!c||!['resistor','capacitor'].includes(c.kind))return;this.commit(id,{x:c.x,y:c.y,rotation:(c.rotation+90)%360});}
     commit(id,value){this.layout[id]=value;this.callbacks.move(id,value);this.render(this.p,this.layout,this.selected);}

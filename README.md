@@ -219,6 +219,8 @@ Il codice è in `app/` e le guide sono in `docs/`. Servono Python 3 e Node.js 24
 ```sh
 python3 app/scripts/build-offline.py
 node --test app/tests/*.test.cjs
+npm ci --prefix app/tests/dom --ignore-scripts --no-audit --no-fund
+npm test --prefix app/tests/dom
 node app/scripts/check-rc-workflow.cjs
 ```
 
@@ -239,3 +241,9 @@ Il progetto viene sviluppato con l’assistenza di strumenti di intelligenza art
 I modelli degli strumenti dispongono di otto ulteriori confronti locali con ngspice: collegamenti diretti e sonde ×10 in DC/AC, amplificatore delle differenze e scarica con accoppiamento AC. Per rigenerarli: `node app/scripts/benchmark-bench.cjs`. I risultati, con gli hash dei sorgenti verificati, sono in `app/benchmark/instruments/results.json`.
 
 Cinque confronti dedicati verificano preamplificatore, shaper, cascata, compensazione polo-zero e catena completa: `node app/scripts/benchmark-radiation.cjs`. Usano reti e operazionali generici equivalenti con integrazione ngspice indipendente; non validano il TL082 reale né sostituiscono misure di laboratorio. Risultati e provenienza sono in `app/benchmark/radiation/results.json`.
+
+### Interfaccia per lo studente
+
+Il percorso Costruisci, Simula, Misura, Esporta mantiene il contesto del circuito. Include schede dell’esperienza, anteprima delle prove, pannelli di studio riducibili, input con unità, confronto guidato dei dati e quaderno portabile nel JSON. La [guida rapida](docs/USO_RAPIDO.md#interfaccia-per-lo-studio) descrive i comandi.
+
+Il test DOM esegue i controller e il worker reali con linkedom, installato soltanto per lo sviluppo. Verifica input, breadboard, annullamento, importazione, confronto, quaderno e riapertura del JSON. Geometria SVG e API native sono emulate: questo controllo non sostituisce il collaudo visivo su browser, portatile e tablet. La distribuzione offline non incorpora questa dipendenza.

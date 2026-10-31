@@ -1,0 +1,10 @@
+{
+  "name": "circuit-lab-dom-tests",
+  "private": true,
+  "scripts": {
+    "test": "node workflow.cjs"
+  },
+  "dependencies": {
+    "linkedom": "0.18.12"
+  }
+}

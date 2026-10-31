@@ -1,8 +1,8 @@
 /* Data-only local files and recoverable browser storage. No network or code execution. */
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./ac-analysis.js'),require('./opamp-analysis.js'),require('./metrology.js'),require('./assembly-guide.js'),require('./comparison-data.js'));
-  else root.LocalProjects=factory(root.ACAnalysis,root.OpampAnalysis,root.Metrology,root.AssemblyGuide,root.ComparisonData);
-})(typeof globalThis!=='undefined'?globalThis:this,function(AC,OP,Meta,Assembly,Comparison){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./ac-analysis.js'),require('./opamp-analysis.js'),require('./metrology.js'),require('./assembly-guide.js'),require('./comparison-data.js'),require('./notebook-model.js'));
+  else root.LocalProjects=factory(root.ACAnalysis,root.OpampAnalysis,root.Metrology,root.AssemblyGuide,root.ComparisonData,root.NotebookModel);
+})(typeof globalThis!=='undefined'?globalThis:this,function(AC,OP,Meta,Assembly,Comparison,Notebook){
   'use strict';
   const MAX_BYTES=1000000,record=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
   function readJSON(text){
@@ -21,6 +21,7 @@
     }
     return value;
   }
+  function checkNotebook(s){Notebook.validate(s);}
   function checkComparison(s){Comparison.validateStudy(s);}
   function checkAssembly(s){Assembly.validate(s);}
   function checkWorkspace(w){
@@ -96,5 +97,5 @@
     readJSON(JSON.stringify(doc,null,2));
   }
   function fileName(name){const clean=String(name||'circuito').normalize('NFKC').replace(/[^\p{L}\p{N} _-]/gu,'').trim().replace(/\s+/g,'-').slice(0,70);return(clean||'circuito')+'.json';}
-  return{checkComparison,checkAssembly,MAX_BYTES,readJSON,checkWorkspace,checkRCStudy,checkACStudy,checkOpampStudy,checkMetrologyStudy,checkParameterStudy,checkStudyUpdate,createStore,fileName};
+  return{checkNotebook,checkComparison,checkAssembly,MAX_BYTES,readJSON,checkWorkspace,checkRCStudy,checkACStudy,checkOpampStudy,checkMetrologyStudy,checkParameterStudy,checkStudyUpdate,createStore,fileName};
 });

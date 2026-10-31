@@ -40,7 +40,7 @@ jobs:
           echo "894e649651f1838a14095e5a5439e7d3aa63e87ede14d283173fda4fcdef675f  $reference_root/source.tar.gz" | sha256sum --check --strict
           tar -xzf "$reference_root/source.tar.gz" -C "$reference_root"
           cd "$reference_root/ngspice-47"
-          ./configure --prefix="$reference_root/local" --with-x=no --with-readline=no --disable-xspice --disable-openmp
+          ./configure --prefix="$reference_root/local" --with-x=no --with-readline=no --disable-openmp
           make -j2
           make install
           "$reference_root/local/bin/ngspice" --version

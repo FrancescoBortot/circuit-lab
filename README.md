@@ -214,6 +214,8 @@ Il codice e la documentazione del progetto sono distribuiti con [licenza MIT](LI
 <details>
 <summary>Per chi vuole modificare il codice — sezione facoltativa</summary>
 
+Le [istruzioni di lavoro](AGENTS.md) definiscono i controlli proporzionati a ciascun intervento, evitando verifiche duplicate e mantenendo i controlli necessari alla correttezza scientifica e all'integrità dei dati. I comandi qui sotto descrivono la verifica completa, da usare quando pertinente.
+
 Il codice è in `app/` e le guide sono in `docs/`. Servono Python 3 e Node.js 24 per ricostruire e verificare la distribuzione:
 
 ```sh

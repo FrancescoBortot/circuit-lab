@@ -100,3 +100,9 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 @media(max-width:600px){.schematic-help-grid{grid-template-columns:1fr}}
 
 .sheet-preset>small{display:block;font-size:11px;line-height:1.5;color:#667b99;margin-top:6px}
+/* Override the general toolbar label row for the three-line preset field. */
+.bb-toolbar .bb-preset-control{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;flex:1 1 250px;min-width:240px;max-width:350px;align-items:start}
+.bb-toolbar .bb-preset-control>span{white-space:nowrap;font-size:12px;font-weight:650}
+.bb-toolbar .bb-preset-control>select{width:100%;max-width:none;min-height:38px;padding:7px 10px;border:1px solid #bdceb5;border-radius:6px;background:#fffef9;color:#31573c;font:inherit}
+.bb-toolbar .bb-preset-control>small{display:block;white-space:normal;line-height:1.4;margin:0;font-size:11px}
+.bb-toolbar .bb-preset-control[hidden]{display:none!important}

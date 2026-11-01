@@ -5,6 +5,7 @@
   class FreeCanvas {
     constructor(svg,callbacks){
       this.svg=svg;this.callbacks=callbacks;this.view={x:0,y:0,w:1000,h:600};this.mode='select';this.pointers=new Map();
+      this.interaction=window.CanvasInteraction?.install(svg,{cancel:()=>this.cancelGesture()});
       svg.addEventListener('pointerdown',e=>this.down(e));svg.addEventListener('pointermove',e=>this.move(e));for(const t of ['pointerup','pointercancel'])svg.addEventListener(t,e=>this.up(e));
       svg.addEventListener('lostpointercapture',e=>this.up({pointerId:e.pointerId,type:'pointercancel'}));
       svg.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.007),this.point(e));},{passive:false});
@@ -38,7 +39,7 @@
       if(!this.doc)return;const focused=this.svg.contains(document.activeElement)?document.activeElement.getAttribute('data-pin')||document.activeElement.getAttribute('data-part')||document.activeElement.getAttribute('data-wire'):null;
       const t=M.topology(this.doc),used=new Set(this.doc.wires.flatMap(w=>[w.a,w.b])),unconnected=new Set(M.diagnostics(this.doc).map(d=>d.pin).filter(Boolean));
       let html='<defs><pattern id="free-grid" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r=".8" fill="#ced9eb"/></pattern></defs>'+`<rect x="${this.view.x}" y="${this.view.y}" width="${this.view.w}" height="${this.view.h}" fill="url(#free-grid)"/>`;
-      html+=this.doc.wires.map(w=>`<g data-wire="${w.id}" tabindex="0" role="button" aria-label="Seleziona filo ${esc(w.id)} da ${esc(w.a)} a ${esc(w.b)}" class="free-wire ${this.selection?.kind==='wire'&&this.selection.id===w.id?'selected':''}"><title>${esc(w.id)} · ${esc(w.a)} → ${esc(w.b)} · ${t.nodes[w.a]<0?'massa':'N'+(t.nodes[w.a]+1)}</title><path class="wire-hit" d="${this.route(w)}"/><path class="wire-ink" d="${this.route(w)}"/></g>`).join('');
+      html+=this.doc.wires.map(w=>`<g data-wire="${w.id}" tabindex="0" role="button" aria-label="Seleziona filo ${esc(w.id)} da ${esc(w.a)} a ${esc(w.b)}" class="free-wire ${this.selection?.kind==='wire'&&this.selection.id===w.id?'selected':''}"><title>${esc(w.id)} · ${esc(w.a)} → ${esc(w.b)} · ${t.nodes[w.a]<0?'massa':'N'+(t.nodes[w.a]+1)}</title><path class="wire-hit" d="${this.route(w)}"/><path class="wire-separation" d="${this.route(w)}" fill="none" stroke="#fcfdff" stroke-width="6" pointer-events="none"/><path class="wire-ink" d="${this.route(w)}"/></g>`).join('');
       html+=this.doc.components.map(c=>this.symbol(c)).join('');
       if(this.labels||this.dcValues)for(const n of t.groups){const at=this.port(n.pins[0]);html+=`<text class="free-net-label" x="${at.x+12}" y="${at.y-15}">${esc(n.label||n.name)+(this.dcValues?' · '+esc(fmt(this.dcValues[n.name],'V')):'')}</text>`;}
       for(const [kind,pin]of Object.entries(this.doc.probes)){if(!pin)continue;const at=this.port(pin);html+=`<g class="free-probe ${kind}" transform="translate(${at.x+9} ${at.y-36})"><rect width="${kind==='output'?43:32}" height="21" rx="5"/><text x="8" y="14">${kind==='output'?'OUT':'IN'}</text></g>`;}

@@ -60,6 +60,8 @@
    const wire={id:'W'+(d.wires.length+1),a,b};
    // A follower's feedback must pass above the triangle, where it stays visible.
    if(a.endsWith(':minus')&&b===a.replace(':minus',':out'))Object.assign(wire,{route:'vertical',offset:-90});
+   // Keep the final stage's inverting branch off the non-inverting input lane.
+   if(a==='Ufinal:minus'&&b==='Ri:a')Object.assign(wire,{route:'horizontal',offset:-100});
    d.wires.push(wire);
   };
   const ground=(pin,x,y)=>{const id='G'+(d.components.filter(c=>c.type==='G').length+1);add('G',id,x,y);link(pin,id+':g');};

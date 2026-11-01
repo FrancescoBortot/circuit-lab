@@ -50,7 +50,7 @@
   function renderInspector(focus){
     const content=$('inspectorContent'),panelChanged=content.dataset.panel!==panel,helpOpen=Boolean(content.querySelector('[data-rc-help]')?.open),precisionOpen=Boolean(content.querySelector('[data-analysis-precision]')?.open),readingOpen=Boolean(content.querySelector('[data-analysis-reading]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
     $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Analisi del circuito';
-    $('sheetPreset').innerHTML='<option value="">Nessuna prova guidata</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    $('sheetPreset').innerHTML='<option value="" disabled>Scegli una prova…</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';

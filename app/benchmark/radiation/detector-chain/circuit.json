@@ -370,7 +370,9 @@
     {
       "id": "W24",
       "a": "Ufinal:minus",
-      "b": "Ri:a"
+      "b": "Ri:a",
+      "route": "horizontal",
+      "offset": -100
     },
     {
       "id": "W25",

@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const M=require('../free-model'),L=require('../lab-model'),C=require('../study-context');
 const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
-function element(){const children=new Map();return{children,textContent:'',innerHTML:'',disabled:false,hidden:false,previousSibling:null,events:{},querySelector(s){if(!children.has(s))children.set(s,element());return children.get(s);},after(other){other.previousSibling=this;},addEventListener(type,fn){this.events[type]=fn;}};}
+function element(){const children=new Map();return{children,textContent:'',innerHTML:'',disabled:false,hidden:false,previousSibling:null,events:{},setAttribute(){},append(...nodes){for(const n of nodes)n.parentNode=this;},querySelector(s){if(!children.has(s))children.set(s,element());return children.get(s);},after(other){other.previousSibling=this;},addEventListener(type,fn){this.events[type]=fn;}};}
 function qualityHarness(){const nodes=[],events={},frames=[],doc=M.example('rc'),anchor=element();class Tasks{constructor(){Tasks.instance=this;}cancel(){}run(){return new Promise(resolve=>{this.resolve=resolve;});}}
  const editor={active:true,doc,result:{method:'trapezoidal',maxResidual:0,warnings:[]}},document={body:{},createElement(){const e=element();nodes.push(e);return e;},querySelector(s){return s==='.free-canvas-toolbar'?anchor:null;},addEventListener(name,fn){events[name]=fn;}};
  const scope={window:{ModelInfo:require('../model-info'),StudyContext:C,FreeModel:M,LabModel:L,CircuitTasks:Tasks,circuitEditor:editor},document,MutationObserver:class{observe(){}},requestAnimationFrame:fn=>frames.push(fn)};

@@ -56,6 +56,16 @@ Sopra l’area centrale, **Circuito e grafico**, **Solo circuito** e **Solo graf
 
 Le etichette di componenti, valori, nodi e sonde vengono distanziate automaticamente dai simboli, dai collegamenti e dalle altre etichette. Nome e valore restano insieme e cliccabili. Lo stesso controllo si applica agli esempi, ai componenti aggiunti e agli schemi con strumenti reali. **Centra schema** include gli ingombri dei testi; le linee sottili tratteggiate collegano eventuali etichette allontanate dal componente e non sono collegamenti elettrici. Gli schemi molto densi richiedono comunque lo zoom per leggere i dettagli.
 
+### Attivare e usare lo schema
+
+Fai clic dentro lo schema per attivarlo: il bordo diventa azzurro e il primo clic non sposta componenti. Poi puoi selezionare, trascinare o usare la rotella per lo zoom. Esc o un clic fuori disattivano l’area; da inattiva, la rotella lascia scorrere la pagina. Da tastiera usa Tab e Invio per attivare, Esc per uscire. I pulsanti di zoom e Adatta restano disponibili. **Guida allo schema**, sotto al disegno, spiega questi gesti, i nodi e le operazioni dell’editor direttamente nell’app, anche offline.
+
+### Montare sulla breadboard
+
+**Prova da caricare** propone configurazioni con un’anteprima delle modifiche. **Percorso del segnale** e **Tutti i collegamenti** regolano il dettaglio dei cavi; **Mostra nel disegno** offre controlli diretti per contatti interni, pin e schema a colori. Il selettore degli strumenti dichiara il carico ideale, dei cavi diretti o delle sonde ×10.
+
+In **Costruzione guidata** ogni Avanti mostra un pezzo o un collegamento alla volta, con una breve spiegazione. I punti precisi sono evidenziati nel disegno; il testo evita elenchi ripetuti di coordinate. L’avanzamento non richiede spunte obbligatorie. **Come leggere la breadboard** include esempi interattivi sui fori collegati, barre e canale centrale, pinout TL082, distinzione GND/V−, uso degli strumenti e controlli pratici. Lo schema a colori rimane in fondo al montaggio. Per tornare alle analisi usa la vista Schema o i passaggi principali.
+
 ## Leggere le curve con calma
 
 La legenda distingue **Ingresso · V₁** (tratteggio) e **Uscita · OUT** (linea continua); i campioni di linea hanno gli stessi colori e tratteggi del grafico. Un clic nasconde o mostra la curva; il nome barrato indica una curva nascosta. Deve restarne visibile almeno una. Nell’editor libero le etichette principali sono **Ingresso · IN** e **Uscita · OUT**.
@@ -64,7 +74,7 @@ Nel **Transitorio guidato**, il selettore **Lettura** sotto il grafico offre **A
 
 ## Percorso consigliato per studiare
 
-**Modello attivo** dichiara fenomeni inclusi ed esclusi. Il pulsante **Usa valori tipici ST TL082** applica un profilo parziale: GBW e slew rate sono riferimenti tipici ST, mentre resistenza e limite di corrente d’uscita restano ipotesi generiche modificabili. Non è un macromodello del costruttore. **Verifica del calcolo** conserva le diagnostiche; per Transitorio e Bode guidati confronta anche due risoluzioni, mostrando scarti su picchi, baseline e taglio. Nell’editor libero il confronto riguarda il Transitorio. Questo scarto non è un’incertezza sperimentale.
+**Modello del circuito** dichiara fenomeni inclusi ed esclusi. Il pulsante **Usa valori tipici ST TL082** applica un profilo parziale: GBW e slew rate sono riferimenti tipici ST, mentre resistenza e limite di corrente d’uscita restano ipotesi generiche modificabili. Non è un macromodello del costruttore. **Precisione del calcolo** conserva le diagnostiche; per Transitorio e Bode guidati confronta anche due risoluzioni, mostrando scarti su picchi, baseline e taglio. Nell’editor libero il confronto riguarda il Transitorio. Questo scarto non è un’incertezza sperimentale.
 
 Apri un’esperienza guidata o un esempio, fai una prima simulazione e modifica un solo componente alla volta. Prima prevedi il cambiamento, poi confronta le curve e misura con i cursori. Conserva circuito e impostazioni nel JSON.
 

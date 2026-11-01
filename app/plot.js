@@ -7,24 +7,34 @@
       this.controls=document.createElement('div');this.controls.className='cursor-toolbar';this.controls.setAttribute('role','group');this.controls.setAttribute('aria-label','Cursori del grafico');
       this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><span>Clicca il grafico per posizionare</span>';
       svg.parentElement.before(this.controls);
+      this.interactionActive=false;svg.setAttribute('tabindex','0');
+      this.activationHint=document.createElement('span');this.activationHint.className='plot-activation-hint';this.controls.append(this.activationHint);this.activationHint.id=svg.id+'InteractionHint';svg.setAttribute('aria-describedby',this.activationHint.id);
+      const activate=value=>{this.interactionActive=value;svg.classList.toggle('canvas-interaction-active',value);svg.style.touchAction=value?'none':'pan-y';this.activationHint.textContent=value?'Grafico attivo · Esc o clic fuori per uscire':'Clicca il grafico o premi Invio per attivarlo';if(!value){const ids=[...this.pointers.keys()];this.pointers.clear();this.drag=null;this.pinch=null;for(const id of ids)if(svg.hasPointerCapture?.(id))svg.releasePointerCapture(id);}};
+      this.activateInteraction=activate;activate(false);
+      this.activationPointer=e=>{if(!svg.contains(e.target)){activate(false);return;}if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||this.interactionActive)return;activate(true);svg.focus({preventScroll:true});e.preventDefault();e.stopImmediatePropagation();};
+      this.activationBlur=()=>activate(false);
+      this.activationFocus=e=>{if(e.relatedTarget&&!svg.contains(e.relatedTarget))activate(false);};
+      document.addEventListener('pointerdown',this.activationPointer,true);window.addEventListener('blur',this.activationBlur);svg.addEventListener('focusout',this.activationFocus);
+      svg.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(e.key==='Escape'){activate(false);e.stopImmediatePropagation();return;}if(!this.interactionActive){if(e.key==='Enter'||e.key===' '){activate(true);e.preventDefault();}e.stopImmediatePropagation();}},{capture:true});
+
       this.controls.addEventListener('click',e=>{const key=e.target.closest('[data-cursor]')?.dataset.cursor;if(!key)return;if(key==='toggle')this.dual=!this.dual;else this.activeCursor=key;this.syncControls();this.drawCursor();this.onStateChange?.();});
       this.resizeObserver=new ResizeObserver(()=>{cancelAnimationFrame(this.frame);this.frame=requestAnimationFrame(()=>this.draw());});this.resizeObserver.observe(svg.parentElement);
-      svg.addEventListener('wheel',e=>{const q=this.point(e);if(!q.inside)return;e.preventDefault();this.zoom(Math.exp(-clamp(e.deltaY,-100,100)*.008),q.domain);},{passive:false});
-      svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const q=this.point(e);if(!q.inside)return;svg.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,q.x);if(this.pointers.size===2){this.pinch=Math.abs([...this.pointers.values()][0]-[...this.pointers.values()][1]);this.drag=null;}else{this.drag={x:q.x,start:this.view[0],end:this.view[1],moved:false};this.inspectDomain(q.domain);}});
-      svg.addEventListener('pointermove',e=>{if(!this.geometry)return;const q=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,q.x);
+      svg.addEventListener('wheel',e=>{if(!this.interactionActive||e.ctrlKey||e.metaKey||e.altKey)return;const q=this.point(e);if(!q.inside)return;e.preventDefault();this.zoom(Math.exp(-clamp(e.deltaY,-100,100)*.008),q.domain);},{passive:false});
+      svg.addEventListener('pointerdown',e=>{if(!this.interactionActive||e.ctrlKey||e.metaKey||e.altKey)return;if(e.button!==0)return;const q=this.point(e);if(!q.inside)return;svg.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,q.x);if(this.pointers.size===2){this.pinch=Math.abs([...this.pointers.values()][0]-[...this.pointers.values()][1]);this.drag=null;}else{this.drag={x:q.x,start:this.view[0],end:this.view[1],moved:false};this.inspectDomain(q.domain);}});
+      svg.addEventListener('pointermove',e=>{if(!this.interactionActive||!this.geometry)return;const q=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,q.x);
         if(this.pointers.size===2&&this.pinch){const[a,b]=[...this.pointers.values()],distance=Math.abs(a-b);if(distance>5)this.zoom(distance/this.pinch,(this.view[0]+this.view[1])/2);this.pinch=distance;}
         else if(this.drag){const dx=q.x-this.drag.x;if(Math.abs(dx)>4)this.drag.moved=true;if(this.drag.moved){const span=this.drag.end-this.drag.start,start=clamp(this.drag.start-dx/this.geometry.pw*span,this.domain[0],this.domain[1]-span);this.view=[start,start+span];this.draw();}}
         else if(!this.dual&&!this.playbackActive&&!this.lockHover&&e.pointerType==='mouse'&&q.inside)this.inspectDomain(q.domain);
       });
-      for(const type of['pointerup','pointercancel'])svg.addEventListener(type,e=>{const moved=this.drag?.moved;this.pointers.delete(e.pointerId);this.drag=null;this.pinch=null;if(moved)this.onStateChange?.();});
-      svg.addEventListener('keydown',e=>{if(!this.data.length)return;const step=(this.view[1]-this.view[0])/(e.shiftKey?10:100),d=this.toDomain(this.cursor.x);
+      for(const type of['pointerup','pointercancel','lostpointercapture'])svg.addEventListener(type,e=>{const moved=this.drag?.moved;this.pointers.delete(e.pointerId);this.drag=null;this.pinch=null;if(moved)this.onStateChange?.();});
+      svg.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||!this.interactionActive)return;if(!this.data.length)return;const step=(this.view[1]-this.view[0])/(e.shiftKey?10:100),d=this.toDomain(this.cursor.x);
         if(['ArrowLeft','ArrowRight','Home','End','+','=','-','0'].includes(e.key))e.preventDefault();
         if(e.key==='ArrowLeft')this.inspectDomain(d-step,true);if(e.key==='ArrowRight')this.inspectDomain(d+step,true);
         if(e.key==='Home')this.inspectDomain(this.domain[0],true);if(e.key==='End')this.inspectDomain(this.domain[1],true);
         if(e.key==='+'||e.key==='=')this.zoom(1.5,d);if(e.key==='-')this.zoom(1/1.5,d);if(e.key==='0')this.fit();
       });
     }
-    destroy(){this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();}
+    destroy(){this.activateInteraction(false);document.removeEventListener('pointerdown',this.activationPointer,true);window.removeEventListener('blur',this.activationBlur);this.svg.removeEventListener('focusout',this.activationFocus);this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();}
     syncControls(){for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
     set(config){
       const old=this.config,same=old&&old.logX===config.logX&&old.xUnit===config.xUnit&&this.data[0]?.x===config.data[0]?.x&&this.data.at(-1)?.x===config.data.at(-1)?.x,ax=this.cursorA?.x,bx=this.cursorB?.x;

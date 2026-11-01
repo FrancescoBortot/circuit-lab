@@ -295,6 +295,6 @@
     if(p.type==='difference'){d.settings.acWeights=drives(p.bodeInput||'differential');}
     return Free.parse(Free.serialize(d));
   }
-  const format=(value,unit='',digits=3)=>!Number.isFinite(value)?'—':!unit||['dB','°'].includes(unit)?new Intl.NumberFormat('it-IT',{maximumSignificantDigits:digits}).format(Object.is(value,-0)?0:value)+(unit?' '+unit:''):RC.format(Number(value.toPrecision(digits)),unit,digits);
+  const format=(value,unit='',digits=3)=>!Number.isFinite(value)?'—':value!==0&&(Math.abs(value)<1e-12||Math.abs(value)>=1e15)?Number(value.toPrecision(digits)).toExponential().replace('.',',')+(unit?' '+unit:''):!unit||['dB','°'].includes(unit)?new Intl.NumberFormat('it-IT',{maximumSignificantDigits:digits}).format(Object.is(value,-0)?0:value)+(unit?' '+unit:''):RC.format(Number(value.toPrecision(digits)),unit,digits);
   return{radiation:Radiation,isRadiation:Radiation.is,charge:(p,options)=>{assert(p);return Radiation.charge(p,options);},physical:Free.physical,network,real:Bench.real,metrics,curveMetrics,circuit,CATALOG,defaults,selectExperience,normalizeTime,validate,system,simulate,response,bode,vtc,summary,coefficients,rcSummary,instrument,inputs,csv,serialize,parse,format,clone};
 });

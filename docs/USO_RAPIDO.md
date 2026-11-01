@@ -160,3 +160,11 @@ Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento
 
 
 **Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono sopra il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.
+
+### Grafico, parametri e misure del banco
+
+Il grafico lascia scorrere la pagina finché non lo attivi con un clic o con Invio. Il bordo evidenziato segnala che rotella e trascinamento agiscono sul grafico; Esc o un clic fuori terminano l’interazione. I pulsanti di zoom restano comandi espliciti disponibili.
+
+**Parametri del circuito** apre direttamente il pannello laterale. Nel foglio libero, usa **Componente da modificare** per scegliere un elemento senza cercarlo nello schema.
+
+Accanto ai risultati trovi **Misure del banco ↔ simulazione**: carica i dati o riapri quelli già salvati per il circuito e l’analisi correnti. Il confronto usa questo stesso circuito, con i parametri attuali. **Strumenti e lavoro** raccoglie separatamente confronti, progetti e appunti, aspetto e aiuto, con una descrizione di ciascun comando.

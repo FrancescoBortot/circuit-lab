@@ -4,7 +4,7 @@
   "hashes": {
     "free-model.js": "7da577020333a03612bbc2f8a65432b4b2a74d5cc14a31280c38e3a405288332",
     "radiation-model.js": "7495c2c366d0f29a9a75e60808c1eb0b1ac547b2b04703662d284ea16d885dda",
-    "lab-model.js": "7dc3f0315dc98d368c28b52d70dd6bd64299a55807b3d48e6086fbd231682fd8",
+    "lab-model.js": "2e81b84a43183a64789cb0a505da3be7e7f0d4bb8cc37894d09d29e18e3cdc8b",
     "bench-model.js": "60d1b624c2028b623a21c566fae6043b5a2bdd813e1e2fb1dcdb4eb211d78814",
     "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
   },

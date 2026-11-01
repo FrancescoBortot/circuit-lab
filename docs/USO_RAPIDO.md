@@ -168,3 +168,13 @@ Il grafico lascia scorrere la pagina finché non lo attivi con un clic o con Inv
 **Parametri del circuito** apre direttamente il pannello laterale. Nel foglio libero, usa **Componente da modificare** per scegliere un elemento senza cercarlo nello schema.
 
 Accanto ai risultati trovi **Misure del banco ↔ simulazione**: carica i dati o riapri quelli già salvati per il circuito e l’analisi correnti. Il confronto usa questo stesso circuito, con i parametri attuali. **Strumenti e lavoro** raccoglie separatamente confronti, progetti e appunti, aspetto e aiuto, con una descrizione di ciascun comando.
+
+### Preamplificatore · 1.3 Verifica della linearità
+
+Nella terza giornata, apri **Prepara la prova 1.3**. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
+
+Il pannello calcola Qin nominale = |Vin|·T/Rin, τ = Rf·Cf, il picco ideale Qin/Cf e la correzione per la scarica durante l’impulso. Usa i componenti misurati del gruppo. La previsione assume massa virtuale ideale; non è una misura della carica né una stima completa dell’incertezza. L’applicazione diretta di Vin al circuito è disponibile con montaggio ideale: con le impedenze strumentali attive la tensione della sorgente e Vin misurata non coincidono.
+
+Per il punto 1.3 prepara 8 o 9 misure tra 2 e 10 µs, senza superare 500 Hz. Per coprire tutti i punti con il generatore usa 500 Hz. **Applica e simula la linearità 1.3** imposta la scansione esistente e conserva i parametri nel JSON del progetto. Il fit visualizzato è sui dati simulati. Il piano CSV contiene T, duty high, Qin e una colonna vuota per Vpre,max misurata rispetto alla baseline, con oscilloscopio in DC.
+
+Dopo aver compilato il CSV, usa **Applica e confronta le mie misure**: nel confronto scegli Qin (colonna 3, pC) e Vpre,max (colonna 4, V). Il confronto non esegue un fit delle misure. Le impostazioni del generatore reale devono essere applicate e verificate al banco; cambiare circuito o componenti richiede di riaprire il pannello per aggiornarne i riferimenti.

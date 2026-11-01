@@ -5,7 +5,7 @@
  const tasks=new window.CircuitTasks(),launchers=[];let dialog=null,tab='plan',selection={},contextKey='',runTicket=0,running=false,record=null,seed=null,queued=false;
  const titles={plan:'Prepara la prova',model:'Previsione e modello',precision:'Controlla il calcolo'};
  function context(){const doc=window.StudentUI.current(),free=doc.mode==='free',type=free?'free':L.CATALOG.find(c=>c.id===doc.experiment).type,analysis=free?doc.settings.analysis:doc.analysis;return{doc,free,type,params:free?null:doc.circuits[type],analysis,stamp:C.stamp(doc)+'|'+analysis,key:free?'free':doc.experiment,state:free?{valid:!window.circuitEditor.fieldError,calculating:window.circuitEditor.busy,ready:Boolean(window.circuitEditor.result)}:window.GuidedLab.calculationState()};}
- function format(n,unit){return Number.isFinite(n)?L.format(n,unit,5):'—';}
+ function format(n,unit){return A.display(n,unit,L.format);}
  const $=s=>dialog.querySelector(s);
  function notice(text,error=false){if(!dialog)return;$('[data-study-message]').textContent=text;$('[data-study-message]').classList.toggle('field-error',error);}
  function prepare(){if(window.BreadboardWorkbench.isActive()&&!window.BreadboardWorkbench.prepare())return false;return window.circuitEditor.active?window.circuitEditor.readFields():window.GuidedLab.snapshot()!==null;}

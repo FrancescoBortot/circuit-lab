@@ -27,5 +27,11 @@
  }
  const labels={massimo:'Picco di uscita',minimo:'Minimo di uscita',tempoDelMassimo:'Istante del picco',baseline:'Valore iniziale',finale:'Valore finale',guadagnoMassimo:'Guadagno massimo',frequenzaDelMassimo:'Frequenza del massimo',taglioDiscendente:'Taglio discendente'};
  function precisionRows(result){if(result.comparisons)return result.comparisons.map(c=>({...c,label:labels[c.name]||c.name,relative:Number.isFinite(c.coarse)&&Number.isFinite(c.fine)&&Math.max(Math.abs(c.coarse),Math.abs(c.fine))>1e-12?100*c.difference/Math.max(Math.abs(c.coarse),Math.abs(c.fine)):null}));return[{label:'Scarto massimo sui nodi · '+result.node,coarse:null,fine:null,difference:result.absolute,relative:100*result.relative,unit:'V'}];}
- return{describe,precisionRows};
+ function display(value,unit='',ordinary){
+  if(!Number.isFinite(value))return'—';const n=Object.is(value,-0)?0:value,a=Math.abs(n);
+  if(n!==0&&(a<1e-9||a>=1e12||unit==='%'&&a<1e-4)){const[m,e]=n.toExponential(4).split('e');return m.replace('.',',')+' × 10^'+Number(e)+(unit?' '+unit:'');}
+  if(['%','V/V'].includes(unit))return new Intl.NumberFormat('it-IT',{maximumSignificantDigits:5}).format(n)+' '+unit;
+  return ordinary(n,unit,5);
+ }
+ return{describe,precisionRows,display};
 });

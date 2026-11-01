@@ -135,3 +135,5 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .study-assistant [data-study-reference] tbody td:last-child{background:#f1f5ff;color:#3657a7}
 
 .study-diagnostics{border-top:1px solid #dce5f1;margin-top:20px;padding-top:14px}.study-diagnostics dl{display:grid;grid-template-columns:minmax(120px,1fr) 2fr;gap:6px 14px;font-size:12px}.study-diagnostics dt{font-weight:600}.study-diagnostics dd{margin:0}.study-diagnostics p,.study-diagnostics li{font-size:12px;color:#64788f}
+
+.study-assistant [data-quality-result] table{min-width:680px}.study-assistant [data-quality-result] th:first-child{min-width:125px}.study-assistant [data-quality-result] td{font-variant-numeric:tabular-nums}

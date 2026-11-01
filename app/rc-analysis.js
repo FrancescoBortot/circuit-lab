@@ -30,7 +30,40 @@
     const count=out[0].length;if(count<2||count>40||out.some(r=>r.length!==count))throw new Error('Ogni riga deve avere lo stesso numero di colonne, da 2 a 40.');
     return{rows:out,delimiter};
   }
+  // Tektronix side-by-side waveform CSV: metadata in columns 1–2, samples in
+  // columns 4–5 on EVERY row (including Record Length, Source, etc.). Values
+  // are already seconds/volts; probe attenuation and scales are provenance.
+  function instrumentTable(table){
+    const keys=table.rows.map(r=>r[0].trim().toLowerCase());
+    if(!keys.includes('record length')||!keys.some(k=>['sample interval','model number','probe atten'].includes(k)))return null;
+    const fail=message=>{throw Error('CSV Tektronix: '+message);},meta=Object.create(null);
+    if(table.delimiter!==','||table.rows[0].length!==6)fail('formato non supportato. Sono previste 6 colonne con tempo e tensione nelle colonne 4 e 5.');
+    for(const row of table.rows){
+      if(row[2].trim()||row[5].trim())fail('colonne separatrici non vuote.');
+      const key=row[0].trim().toLowerCase();if(!key){if(row[1].trim())fail('metadato senza nome.');continue;}
+      if(Object.hasOwn(meta,key))fail('metadato ripetuto: '+key+'.');meta[key]=row[1].trim();
+    }
+    if(meta['horizontal units']!=='s'||meta['vertical units']!=='V')fail('unità non supportate: servono s e V.');
+    if(meta['pt fmt']!=='Y'||!/^CH[1-4]$/.test(meta.source||''))fail('servono una traccia Y e un canale CH1–CH4.');
+    const numeric=key=>{try{return number(meta[key]);}catch{fail('metadato numerico non valido: '+key+'.');}};
+    const count=numeric('record length'),interval=numeric('sample interval');
+    if(!Number.isInteger(count)||count<2||count>LIMIT||count!==table.rows.length)fail('Record Length non corrisponde al numero di campioni (2–4 000).');
+    if(!(interval>0))fail('Sample Interval deve essere positivo.');
+    const instrument={format:'tektronix-waveform-v1',model:meta['model number']||'Tektronix',channel:meta.source,recordLength:count,sampleInterval:interval};
+    if(instrument.model.length>80)fail('nome del modello troppo lungo.');
+    for(const[key,name,positive]of [['trigger point','triggerPoint',false],['probe atten','probeAttenuation',true],['vertical scale','verticalScale',true],['vertical offset','verticalOffset',false],['horizontal scale','horizontalScale',true],['yzero','yzero',false]])if(Object.hasOwn(meta,key)){const value=numeric(key);if(positive&&value<=0)fail(key+' deve essere positivo.');instrument[name]=value;}
+    const points=table.rows.map((row,i)=>{try{return{x:number(row[3]),y:number(row[4])};}catch{fail('campione non valido alla riga '+(i+1)+'.');}});
+    validatePoints(points,LIMIT);
+    const warnings=[];
+    if(points.some((p,i)=>i&&Math.abs((p.x-points[i-1].x)-interval)>Math.max(interval*1e-5,1e-15)))warnings.push('Gli intervalli dei tempi esportati differiscono da Sample Interval: sono conservati i tempi originali.');
+    return{points,instrument,warnings,delimiter:',',decimal:'.',header:false,timeUnit:'s',voltageUnit:'V',timeColumn:3,voltageColumn:4,sigmaColumn:null,labels:['Metadato','Valore','','Tempo (s)','Tensione (V)','']};
+  }
+  function instrumentSummary(parsed){
+    const i=parsed.instrument;if(!i)return'';
+    return i.model+' · '+i.channel+' · '+i.recordLength+' campioni · Δt = '+i.sampleInterval+' s'+(i.probeAttenuation!==undefined?' · sonda ×'+i.probeAttenuation:'')+'. Tempo: '+parsed.points[0].x+' → '+parsed.points.at(-1).x+' s. Valori già in volt: nessuna seconda correzione della sonda. Tempi rispetto al trigger conservati, inclusi quelli negativi; nessun allineamento automatico al modello. Nessuna incertezza assegnata. '+parsed.warnings.join(' ');
+  }
   function parseTable(text,options={}){
+    const detected=instrumentTable(rows(text));if(detected)return detected;
     const table=rows(text,options.delimiter),decimal=options.decimal|| (table.delimiter===','?'.':','),tc=options.timeColumn??0,vc=options.voltageColumn??1,sc=options.sigmaColumn??null;
     if(table.delimiter===','&&decimal===',')throw new Error('Con virgola decimale scegli punto e virgola o tab come separatore.');
     if(![tc,vc,...(sc===null?[]:[sc])].every(c=>Number.isInteger(c)&&c>=0&&c<table.rows[0].length)||tc===vc||sc===tc||sc===vc)throw new Error('Scegli colonne diverse per tempo, tensione e incertezza.');
@@ -125,5 +158,5 @@
   function csvCell(v){if(v===null||v===undefined)return'';if(typeof v==='number')return finite(v)?v.toExponential(12):'';let s=String(v);if(/^[\s]*[=+\-@]/.test(s))s="'"+s;return'"'+s.replaceAll('"','""')+'"';}
   const csv=rows=>'\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
   function demo(){return Array.from({length:11},(_,i)=>({x:i*.0005,y:.2+5*Math.exp(-i*.5)+.008*Math.sin(i*2.1),sigma:.01}));}
-  return{UNITS,LIMIT,number,rows,parseTable,validatePoints,segments,fit,threshold,cutoff,reference,interpolate,simpleReference,csv,demo};
+  return{UNITS,LIMIT,number,rows,instrumentTable,instrumentSummary,parseTable,validatePoints,segments,fit,threshold,cutoff,reference,interpolate,simpleReference,csv,demo};
 });

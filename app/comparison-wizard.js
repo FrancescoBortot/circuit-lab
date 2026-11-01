@@ -6,7 +6,7 @@
   const nav=document.createElement('nav'),preview=document.createElement('div'),status=$('[data-cmp-status]');let active=saved?2:0;
   nav.className='student-import-steps';nav.setAttribute('aria-label','Passaggi del confronto dati');
   steps.forEach((s,i)=>{s.className='student-import-step';s.dataset.importStep=String(i);});
-  steps[0].append(fields[0],$('[data-cmp-raw]'));steps[1].append(fields[1]);
+  steps[0].append(fields[0],$('[data-cmp-raw]'));const instrumentNote=$('[data-cmp-instrument]');if(instrumentNote)steps[0].append(instrumentNote);steps[1].append(fields[1]);
   const independent=$('[data-cmp-independent]')?.closest('label');if(independent)steps[1].append(independent);steps[1].append(preview);
   for(const selector of ['.comparison-kind-note','.flow-actions','[data-cmp-summary]','.comparison-table']){const el=$(selector);if(el)steps[2].append(el);}
   for(const el of [...dialog.querySelectorAll('.comparison-plot')]){
@@ -20,16 +20,17 @@
    const raw=$('[data-cmp-raw]').value;if(new TextEncoder().encode(raw).length>200000)throw Error('Dati ammessi fino a 200 kB.');
    const delimiter=$('[data-cmp-delimiter]').value,table=window.RCAnalysis.rows(raw,delimiter==='tab'?'\t':delimiter),header=$('[data-cmp-header]').checked;
    if(table.rows.length<(header?3:2))throw Error('Inserisci almeno due righe di dati oltre all’eventuale intestazione.');
+   const instrument=window.RCAnalysis.instrumentTable(window.RCAnalysis.rows(raw));
    const hints=header?window.StudentTools.columnHints(table.rows[0],$('[data-cmp-kind]').value):null;
    preview.replaceChildren();const p=document.createElement('p'),wrap=document.createElement('div'),tableNode=document.createElement('table');
-   p.textContent='Anteprima delle prime 8 righe. Separatore rilevato: '+(table.delimiter==='\t'?'tab':table.delimiter)+'. Controlla colonne e unità.';
-   wrap.className='student-table';for(const row of table.rows.slice(0,8)){
+   p.textContent=instrument?window.RCAnalysis.instrumentSummary(instrument)+' Anteprima dei primi 8 campioni (s, V), inclusa la prima riga del file.':'Anteprima delle prime 8 righe. Separatore rilevato: '+(table.delimiter==='\t'?'tab':table.delimiter)+'. Controlla colonne e unità.';
+   wrap.className='student-table';for(const row of (instrument?[['Tempo (s)','Tensione (V)'],...instrument.points.slice(0,8).map(p=>[p.x,p.y])]:table.rows.slice(0,8))){
     const tr=document.createElement('tr');for(const value of row){const td=document.createElement('td');td.textContent=value;tr.append(td);}tableNode.append(tr);
    }
-   wrap.append(tableNode);const use=document.createElement('button');use.textContent='Usa colonne e unità suggerite';use.disabled=!header;
+   wrap.append(tableNode);const use=document.createElement('button');use.textContent='Usa colonne e unità suggerite';use.disabled=!header||Boolean(instrument);
    if(!header)use.title='Senza intestazioni scegli manualmente colonne e unità.';
    use.addEventListener('click',()=>{
-    if(!hints)return;
+    if(!hints||instrument)return;
     for(const[key,name]of [['xColumn','x'],['yColumn','y'],['sigmaColumn','sigma'],['phaseColumn','phase']])$('[data-cmp-'+name+']').value=hints[key]===null?'':hints[key]+1;
     for(const[key,name]of [['xUnit','xunit'],['yUnit','yunit']])if(hints[key]&&[...$('[data-cmp-'+name+']').options].some(o=>o.value===hints[key]))$('[data-cmp-'+name+']').value=hints[key];
     if(table.delimiter!==','&&table.rows.slice(header?1:0).some(row=>row.some(v=>/^[-+]?\d+,\d+(?:e[-+]?\d+)?$/i.test(v))))$('[data-cmp-decimal]').value=',';

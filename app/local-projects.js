@@ -83,6 +83,7 @@
     if(s.dataset!==null){
       const d=s.dataset;checkOriginal(d,points=>{if(!Array.isArray(points)||points.length<2||points.length>4000)fail();let previous=-Infinity;for(const p of points){if(!record(p)||!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<=previous)fail();previous=p.x;}});if(!record(d)||typeof d.name!=='string'||d.name.length>120||typeof d.raw!=='string'||d.raw.length>200000||!['s','ms','us'].includes(d.timeUnit)||!['V','mV'].includes(d.voltageUnit)||!Array.isArray(d.points)||d.points.length<2||d.points.length>4000)fail();
       if(d.format!==undefined){const f=d.format;if(!record(f)||![',',';','\t'].includes(f.delimiter)||!['.',','].includes(f.decimal)||typeof f.header!=='boolean'||![f.timeColumn,f.voltageColumn].every(v=>Number.isInteger(v)&&v>=0&&v<40)||(f.sigmaColumn!==null&&(!Number.isInteger(f.sigmaColumn)||f.sigmaColumn<0||f.sigmaColumn>=40))||f.timeColumn===f.voltageColumn||f.sigmaColumn===f.timeColumn||f.sigmaColumn===f.voltageColumn)fail();}
+      if(d.instrument!==undefined){const parsed=Comparison.parse(d.raw,{kind:'time'});if(JSON.stringify(parsed.instrument)!==JSON.stringify(d.instrument))fail();}
       let sigmas=0;for(let i=0;i<d.points.length;i++){const p=d.points[i];if(!record(p)||!Number.isFinite(p.x)||!Number.isFinite(p.y)||Math.abs(p.x)>1e9||Math.abs(p.y)>1e9||(i&&p.x<=d.points[i-1].x))fail();if(p.sigma!==undefined){if(!Number.isFinite(p.sigma)||p.sigma<1e-15||p.sigma>1e9)fail();sigmas++;}}if(sigmas&&sigmas!==d.points.length)fail();
     }
   }

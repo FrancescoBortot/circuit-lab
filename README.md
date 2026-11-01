@@ -45,7 +45,7 @@ Sulla breadboard clicca un componente, poi **A/B** o un **pin**: scegli una dest
 
 Nelle esperienze guidate le modifiche aggiornano il calcolo automaticamente. Nell’editor libero usa **Simula**; **Auto** permette di ricalcolare dopo le modifiche. Se l’app mostra un errore, leggilo e correggi la causa prima di interpretare il grafico.
 
-**I miei dati ↔ modello** importa CSV o tabelle incollate, conserva gli originali nel progetto e li confronta con il circuito attuale. Mostra previsione, misure, residui e scarti; esporta CSV e relazione HTML. Il confronto non adatta i parametri né estrapola. **Modello del circuito** esplicita ipotesi e limiti; **Precisione del calcolo** permette di controllare lo scarto fra due risoluzioni. [Procedura e significato delle incertezze](docs/USO_RAPIDO.md#confrontare-i-propri-dati-con-qualsiasi-esperienza).
+**I miei dati ↔ modello** importa CSV o tabelle incollate, conserva gli originali nel progetto e li confronta con il circuito attuale. Mostra previsione, misure, residui e scarti; esporta CSV e relazione HTML. Il confronto non adatta i parametri né estrapola. L’**Assistente di laboratorio** propone un piano di prova, calcola riferimenti ideali sui valori attuali, confronta ipotesi senza cambiare il circuito e presenta in tabella gli scarti tra due risoluzioni numeriche. [Procedura e significato delle incertezze](docs/USO_RAPIDO.md#confrontare-i-propri-dati-con-qualsiasi-esperienza).
 
 Per deselezionare un componente, **clicca sullo sfondo dello schema o premi Esc**. Nell’editor libero Esc interrompe anche un collegamento iniziato. I valori validi modificati restano conservati.
 

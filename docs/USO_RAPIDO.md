@@ -74,7 +74,12 @@ Nel **Transitorio guidato**, il selettore **Lettura** sotto il grafico offre **A
 
 ## Percorso consigliato per studiare
 
-**Modello del circuito** dichiara fenomeni inclusi ed esclusi. Il pulsante **Usa valori tipici ST TL082** applica un profilo parziale: GBW e slew rate sono riferimenti tipici ST, mentre resistenza e limite di corrente d’uscita restano ipotesi generiche modificabili. Non è un macromodello del costruttore. **Precisione del calcolo** conserva le diagnostiche; per Transitorio e Bode guidati confronta anche due risoluzioni, mostrando scarti su picchi, baseline e taglio. Nell’editor libero il confronto riguarda il Transitorio. Questo scarto non è un’incertezza sperimentale.
+L’**Assistente di laboratorio** sostituisce le tre tendine sopra il disegno con una sola barra compatta. Si apre in un pannello riducibile, lasciando accessibile il circuito.
+
+- **Prepara la prova** collega obiettivo, parametro da variare e condizioni da mantenere. Puoi aprire il componente indicato, esaminare una prova pronta con anteprima, passare al grafico, confrontare misure e annotare nel quaderno.
+- **Previsione e modello** calcola riferimenti ideali usando i valori attuali: per esempio τ e taglio RC, guadagno e baseline del non invertente, oppure tempi dello shaping. Scegli un parametro e un’ipotesi (doppio, metà o ±1%): la tabella confronta le previsioni **senza modificare il circuito**. Le ipotesi ideali, gli effetti inclusi nel modello e le possibili differenze al banco rimangono distinti. Per reti libere non riconosciute non viene inventata una formula: è disponibile lo studio Parametri e tolleranze. I parametri tipici TL082 si esaminano in un’anteprima prima di applicarli; restano un profilo parziale, non un macromodello del costruttore.
+- **Controlla il calcolo** confronta due risoluzioni: mostra valori prima/dopo, scarto assoluto e relativo, campioni e significato dei risultati. Conserva metodo, residui interni e avvisi. Una modifica elettrica o dell’analisi rende il confronto precedente superato; spostare i simboli non lo invalida. È disponibile su Transitorio e Bode guidati e sul Transitorio libero; il risultato non è un’incertezza sperimentale né una validazione del componente reale.
+
 
 Apri un’esperienza guidata o un esempio, fai una prima simulazione e modifica un solo componente alla volta. Prima prevedi il cambiamento, poi confronta le curve e misura con i cursori. Conserva circuito e impostazioni nel JSON.
 

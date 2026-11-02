@@ -171,7 +171,7 @@ Accanto ai risultati trovi **Misure del banco ↔ simulazione**: carica i dati o
 
 ### Preamplificatore · 1.3 Verifica della linearità
 
-Nella terza giornata, apri **Prepara la prova 1.3**. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
+Nella terza giornata, scegli **1.3 · Verifica della linearità · guida, simulazione e misure** nella tendina **Prova da caricare**, in Schema o Breadboard. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
 
 Il pannello calcola Qin nominale = |Vin|·T/Rin, τ = Rf·Cf, il picco ideale Qin/Cf e la correzione per la scarica durante l’impulso. Usa i componenti misurati del gruppo. La previsione assume massa virtuale ideale; non è una misura della carica né una stima completa dell’incertezza. L’applicazione diretta di Vin al circuito è disponibile con montaggio ideale: con le impedenze strumentali attive la tensione della sorgente e Vin misurata non coincidono.
 

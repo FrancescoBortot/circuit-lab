@@ -13,7 +13,7 @@
   {id:'detector-chain',type:'detector-chain',day:4,step:'3.1–3.3',name:'Catena elettronica completa',short:'→',page:'6–7',description:'Generatore, preamplificatore, shaper compensato e amplificatore finale.'}
  ];
  const PRESETS={
-  preamp:[['pulse','Impulso −1 V · 5 µs · 200 Hz'],['short','Carica ridotta · 2 µs'],['long','Carica maggiore · 10 µs'],['linearity','Linearità · Vmax rispetto a Qin'],['bode','Bode · 10 Hz–1 MHz']],
+  preamp:[['pulse','Impulso −1 V · 5 µs · 200 Hz'],['short','Carica ridotta · 2 µs'],['long','Carica maggiore · 10 µs'],['linearity','1.3 · Verifica della linearità · guida, simulazione e misure'],['bode','Bode · 10 Hz–1 MHz']],
   shaper:[['step','Gradino 0–1 V · 100 Hz'],['bode','Bode · 50 Hz–2 MHz'],['direct','Carico oscilloscopio · cavi diretti'],['probe','Carico oscilloscopio · sonde ×10']],
   'shaper-buffer':[['step','Gradino · buffer finale attivo'],['unbuffered','Confronto · senza buffer finale'],['bode','Bode · buffer finale'],['direct','Buffer finale · cavi diretti']],
   'preamp-shaper':[['pulse','Impulso 5 µs · osserva undershoot'],['long','Impulso 10 µs'],['bode','Bode · preamp e shaper']],

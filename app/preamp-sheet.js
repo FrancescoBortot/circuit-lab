@@ -1,9 +1,8 @@
 /* An explicit bridge from the laboratory sheet to the existing signal and charge controls. */
 (() => {
  'use strict';const S=window.PreampSheetModel,L=window.LabModel,F=window.LabFiles.esc;
- const host=document.createElement('section');host.className='student-measurement-entry';host.innerHTML='<strong>1.3 · Verifica della linearità</strong><span>Preamplificatore di carica · prepara le 8–9 misure richieste dalla scheda.</span><button data-preamp-sheet>Prepara la prova 1.3</button>';document.querySelector('#appLayout .study-launcher').after(host);
- const eligible=()=>!window.circuitEditor.active&&window.GuidedLab.parameters().type==='preamp';function visibility(){host.hidden=!eligible();}document.addEventListener('student-context-updated',visibility);visibility();
- host.querySelector('button').addEventListener('click',()=>{
+ const eligible=()=>!window.circuitEditor.active&&window.GuidedLab.parameters().type==='preamp';
+ function open(){
   const old=document.querySelector('.preamp-sheet-dialog');if(old){window.StudentDock.activate(old);return;}if(!eligible()||!window.GuidedLab.snapshot())return;
   const p=window.GuidedLab.parameters(),format=L.format,d=document.createElement('dialog');let stamp=window.StudyContext.stamp(window.StudentUI.current()),applying=false;
   d.className='workbench-dialog preamp-sheet-dialog';d.setAttribute('aria-labelledby','preampSheetTitle');
@@ -22,5 +21,6 @@
    if(e.target.closest('[data-sheet-apply],[data-sheet-linearity]'))applySelection(Boolean(e.target.closest('[data-sheet-linearity]')));
   }catch(error){$('[data-sheet-status]').textContent=error.message;}});
   d.addEventListener('close',()=>{document.removeEventListener('student-context-updated',changed);d.remove();});preview();(window.StudentDock.open(d)||d.showModal());
- });
+ }
+ window.PreampSheet={open};
 })();

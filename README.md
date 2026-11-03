@@ -94,6 +94,8 @@ Nel **preamplificatore di carica della terza giornata**, apri **Segnali** per in
 
 Nella prova **1.3 → Misure da fare al banco** scegli se variare frequenza, duty high o width. Con duty fisso 99,9% il piano propone frequenze intere da 100 a 500 Hz; con width e frequenza fissa 500 Hz propone 9 durate da 2 a 10 µs. Il duty a passi di 0,1% permette al massimo 5 durate distinte entro questi limiti: la tabella lo segnala senza duplicare le righe. Ogni riga riporta f, duty, durata, carica e picco nominali, più le letture da effettuare al banco; puoi applicarla al circuito oppure scaricare il piano CSV con le colonne delle misure vuote. La simulazione complessiva Linearità · Q mantiene la propria scansione uniforme in durata, distinta dal piano al banco.
 
+Nel pannello **Analisi → Bode** puoi modificare direttamente **Vpp in ingresso**, scegliendo Vpp o mVpp. Il valore è condiviso con il segnale e conservato nel progetto. La curva Bode mostra il rapporto normalizzato Vout/Vin: nel modello lineare il guadagno resta indipendente dall’ampiezza impostata.
+
 ## Importare misure RC da CSV
 
 Apri **Misura τ → Dati sperimentali → Inserisci o apri dati CSV**. Puoi aprire un file o incollare una tabella. Per una prima prova puoi copiare questi **dati sintetici**, costruiti per una scarica con τ vicina a 1 ms:

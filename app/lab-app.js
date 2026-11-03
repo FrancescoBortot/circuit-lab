@@ -81,7 +81,7 @@
         reading='L’asse orizzontale mostra il tempo.'+(p.type==='rc'?' Dal menu sopra il grafico scegli Tensioni oppure Corrente in R; l’asse verticale mostra la grandezza scelta.':' L’asse verticale mostra le tensioni di ingresso e uscita.')+' Attiva Due cursori per leggere valori e differenze tra due istanti.';
       }
       if(project.analysis==='bode'){
-        html+=`<div class="guided-analysis-settings"><h3>Intervallo delle frequenze</h3>${field('fmin','Frequenza minima','freq')}${field('fmax','Frequenza massima','freq')}</div><p class="field-hint">Risposta a piccolo segnale, attorno al punto di lavoro: la curva descrive il comportamento lineare del modello.</p>`;
+        html+=`<div class="guided-analysis-settings"><h3>Segnale e intervallo delle frequenze</h3>${field('wave1.vpp','Vpp in ingresso','voltage','Ampiezza conservata nel segnale. Il Bode mostra Vout/Vin: nel modello lineare il guadagno è indipendente da Vpp.')}${field('fmin','Frequenza minima','freq')}${field('fmax','Frequenza massima','freq')}</div><p class="field-hint">Risposta a piccolo segnale, attorno al punto di lavoro: la curva descrive il comportamento lineare del modello.</p>`;
         reading='L’asse orizzontale è la frequenza in Hz, su scala logaritmica. Nel menu sopra il grafico scegli Modulo (dB) o Fase (°). 0 dB corrisponde a un rapporto di ampiezza pari a 1; 20 dB a 10.'+(p.type==='rc'?' Il rapporto è Vout/V₁, dopo la resistenza del generatore.':p.type==='difference'?' Il rapporto è riferito all’ingresso scelto qui sopra.':' Il rapporto è Vout/V₁.')+' La curva usa 601 frequenze.'+(p.type==='rc'?' Per vedere carica e scarica scegli Tempo · Transitorio.':' La saturazione si osserva nel Transitorio o nella VTC.');
       }
       if(project.analysis==='charge'){

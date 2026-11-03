@@ -95,12 +95,21 @@
  function simulate(p,options={}){const d=network(p),result=F.simulate(d,options);options.capture?.(result);const t=F.topology(d),read=(row,pin)=>{const n=t.nodes[pin];return n<0?0:row.values[t.groups.find(g=>g.index===n)?.name];};return result.data.map((row,i)=>({...row,vin2:0,source:F.source(d.components.find(c=>c.id==='V1').wave,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right'),pre:hasPre(p)?read(row,'Upre:out'):undefined,shaper:hasSh(p)?read(row,'Csh2:a'):undefined,linear:NaN,current:row.currents.Rin??NaN}));}
  function charge(p,options={}){
   const rows=[];if(!hasPre(p))throw Error('La prova in carica richiede il preamplificatore.');
+  const amplitude=Math.abs(p.wave1.level-p.wave1.low);if(!(amplitude>0))throw Error('Imposta V_in diversa da zero per la scansione in carica.');
   for(let i=0;i<p.chargePoints;i++){
-   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low:0,level:-Math.abs(q.wave1.level||1),width,rise:0,fall:0,delay:20e-6});q.autoTime=true;const d=simulate(normalizeTime(q),{...options,onProgress:undefined}),before=d.filter(r=>r.x<q.wave1.delay).at(-1)?.out??0,peak=Math.max(...d.map(r=>r.out))-before;
-   rows.push({x:Math.abs(q.wave1.level)*width/q.Rin,out:peak,width,baseline:before,clipped:d.some(r=>r.clipped)});options.onProgress?.((i+1)/p.chargePoints);
+   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low:p.wave1.low,level:p.wave1.low-amplitude,width,rise:0,fall:0,delay:p.wave1.low===0?20e-6:Math.max(20e-6,20*p.Rfpre*p.Cfpre)});q.autoTime=true;const d=simulate(normalizeTime(q),{...options,onProgress:undefined}),before=d.filter(r=>r.x<q.wave1.delay||r.x===q.wave1.delay&&r.source===q.wave1.low).at(-1)?.out??0,peak=Math.max(...d.filter(r=>r.x>=q.wave1.delay&&r.x<q.wave1.delay+q.wave1.period).map(r=>r.out))-before;
+   rows.push({x:amplitude*width/q.Rin,out:peak,width,baseline:before,clipped:d.some(r=>r.clipped)});options.onProgress?.((i+1)/p.chargePoints);
   }
   const n=rows.length,mx=rows.reduce((s,r)=>s+r.x,0)/n,my=rows.reduce((s,r)=>s+r.out,0)/n,slope=rows.reduce((s,r)=>s+(r.x-mx)*(r.out-my),0)/rows.reduce((s,r)=>s+(r.x-mx)**2,0),intercept=my-slope*mx;
   return rows.map(r=>({...r,linear:intercept+slope*r.x,residual:r.out-intercept-slope*r.x,slope,intercept}));
+ }
+ function timeMetrics(p,data,fmt){
+  if(!data.length)return [];
+  const vmax=Math.max(...data.map(r=>r.out)),rows=[{label:'V_max · uscita simulata',value:fmt(vmax,'V',5),primary:true}];
+  if(p.wave1.kind!=='pulse')return rows;
+  const w=p.wave1,before=data.filter(r=>r.x<w.delay||r.x===w.delay&&r.source===w.low).at(-1);
+  if(before){const pulse=data.filter(r=>r.x>=w.delay&&r.x<w.delay+w.period);if(pulse.length)rows.push({label:'Baseline prima dell’impulso',value:fmt(before.out,'V',5)},{label:'Picco rispetto alla baseline',value:fmt(Math.max(...pulse.map(r=>r.out))-before.out,'V',5),primary:true});}
+  return rows;
  }
  function summary(p,fmt){const rows=[];
   if(hasPre(p)){const tau=p.Rfpre*p.Cfpre;rows.push({label:'τ preamp nominale',value:fmt(tau,'s'),primary:true},{label:'Taglio preamp nominale',value:fmt(1/(2*Math.PI*tau),'Hz')});if(p.wave1.kind==='pulse')rows.push({label:'Carica nominale |Vin|·T/Rin',value:fmt(Math.abs(p.wave1.level-p.wave1.low)*p.wave1.width/p.Rin,'C'),primary:true,note:'Riferimento con nodo d’ingresso a massa virtuale. Il carico e i limiti dell’operazionale possono cambiarlo.'});}
@@ -112,7 +121,7 @@
  function applyPreset(original,key){
   const p=F.clone(original),w=p.wave1;let analysis='time';
   if(!PRESETS[p.type].some(([k])=>k===key))throw Error('Prova guidata non riconosciuta.');
-  if(hasPre(p))Object.assign(w,{kind:'pulse',level:-1,low:0,width:key==='short'?(p.type==='detector-chain'?.5e-6:2e-6):key==='long'?10e-6:5e-6,delay:20e-6,rise:0,fall:0,period:.005,frequency:200});
+  if(hasPre(p))Object.assign(w,{kind:'pulse',level:['short','long'].includes(key)&&w.kind==='pulse'?w.level:-1,low:['short','long'].includes(key)&&w.kind==='pulse'?w.low:0,width:key==='short'?(p.type==='detector-chain'?.5e-6:2e-6):key==='long'?10e-6:5e-6,delay:20e-6,rise:0,fall:0,period:.005,frequency:200});
   if(['shaper','shaper-buffer'].includes(p.type))Object.assign(w,{kind:'square',vpp:1,offset:.5,frequency:100,phase:0,duty:50});
   if(p.type==='shaper-buffer')p.outputBuffer=key!=='unbuffered';
   if(['pz-shaper','detector-chain'].includes(p.type)){p.pzEnabled=key!=='uncompensated';if(['compensated','under','over','bode','simple','bias'].includes(key))p.Rpz=p.Rfpre*p.Cfpre/p.Csh1*(key==='under'?.5:key==='over'?2:1);}
@@ -130,7 +139,7 @@
   return{parameters:normalizeTime(p),analysis};
  }
  function explanation(label){
-  if(/Carica/.test(label))return 'Qin nominale = |Vin|·T/Rin. Il riferimento assume riposo a 0 V, fronti istantanei e massa virtuale all’ingresso. Per il preamplificatore ideale Vmax = |Vin|·Rf_pre/Rin·[1−exp(−T/τpre)]: Vmax ≈ Qin/Cf_pre soltanto per T molto minore di τpre. Impedenza del generatore, carichi e limiti dell’operazionale possono modificare la carica effettiva.';
+  if(/Carica/.test(label))return 'Qin nominale = |Vin|·T/Rin. Vin è l’escursione rispetto al riposo: Qin è la carica aggiuntiva nominale, con fronti istantanei e massa virtuale all’ingresso. Per il preamplificatore ideale il picco rispetto alla baseline vale |Vin|·Rf_pre/Rin·[1−exp(−T/τpre)]: picco ≈ Qin/Cf_pre soltanto per T molto minore di τpre. Impedenza del generatore, carichi e limiti dell’operazionale possono modificare la carica effettiva.';
   if(/Rpz/.test(label))return 'Compensazione ideale: Rpz·Csh1 = Rf_pre·Cf_pre = τpre. La resistenza è in parallelo a Csh1. La costante del ramo CR compensato è (Rsh1 ∥ Rpz)·Csh1; quella del successivo RC è Rsh2·Csh2. La cancellazione esatta assume buffer e preamplificatore ideali.';
   if(/τ preamp|Taglio preamp/.test(label))return 'τpre = Rf_pre·Cf_pre; fc,pre = 1/(2π·τpre). Sono riferimenti nominali del preamplificatore. Il Bode completo comprende anche la banda dell’operazionale e gli strumenti selezionati.';
   if(/τ CR|τ RC/.test(label))return 'Riferimenti nominali: τCR = Rsh1·Csh1 e τRC = Rsh2·Csh2. Con buffer ideale e tempi uguali, la risposta a un gradino V è V·(t/τ)·exp(−t/τ): massimo V/e a t = τ. Con Rpz inserita il primo tempo diventa (Rsh1 ∥ Rpz)·Csh1. Il carico dell’oscilloscopio può cambiare il secondo tempo.';
@@ -138,5 +147,5 @@
   if(/Pendenza|Intercetta/.test(label))return 'Fit lineare non pesato dei picchi simulati rispetto alla baseline in funzione di Qin nominale. La pendenza è espressa in V/pC. Il CSV conserva durata, carica, picco, baseline, previsione del fit e residuo. Nessuna incertezza sperimentale è attribuita al fit numerico.';
   return 'Riferimento ricavato dal circuito e dall’analisi correnti. I tagli in frequenza sono riferiti al massimo della curva nell’intervallo visualizzato. Valori nominali, simulazioni e misure sperimentali hanno significati distinti.';
  }
- return{is,TYPES,CATALOG,PRESETS,hasPre,hasSh,hasFinal,defaults,normalizeTime,fields,validate,network,simulate,charge,summary,applyPreset,explanation};
+ return{timeMetrics,is,TYPES,CATALOG,PRESETS,hasPre,hasSh,hasFinal,defaults,normalizeTime,fields,validate,network,simulate,charge,summary,applyPreset,explanation};
 });

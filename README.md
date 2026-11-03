@@ -90,6 +90,10 @@ Prima di confrontare due curve, verifica che usino lo stesso riferimento d’ing
 
 Per i segnali periodici l’interfaccia usa **Vpp**, tensione picco-picco. Una sinusoide da 1 Vpp ha ampiezza di picco 0,5 V rispetto al proprio offset. Alimentazioni, modello dell’operazionale e carico influenzano il risultato.
 
+Nel **preamplificatore di carica della terza giornata**, apri **Segnali** per inserire **V_in** (escursione con segno, negativa per la scheda) e **Offset** (livello di riposo). Il livello attivo è offset + V_in. I preset che cambiano soltanto la durata conservano questi valori. Il riepilogo del transitorio calcola **V_max** sulla curva simulata e mostra separatamente baseline e picco rispetto alla baseline. La prova 1.3 permette di inserire |Vin| e offset; la scansione conserva entrambi e, con offset non nullo, attende almeno 20 τpre prima dell’impulso.
+
+Nella prova **1.3 → Misure da fare al banco** scegli se variare frequenza, duty high o width. Con duty fisso 99,9% il piano propone frequenze intere da 100 a 500 Hz; con width e frequenza fissa 500 Hz propone 9 durate da 2 a 10 µs. Il duty a passi di 0,1% permette al massimo 5 durate distinte entro questi limiti: la tabella lo segnala senza duplicare le righe. Ogni riga riporta f, duty, durata, carica e picco nominali, più le letture da effettuare al banco; puoi applicarla al circuito oppure scaricare il piano CSV con le colonne delle misure vuote. La simulazione complessiva Linearità · Q mantiene la propria scansione uniforme in durata, distinta dal piano al banco.
+
 ## Importare misure RC da CSV
 
 Apri **Misura τ → Dati sperimentali → Inserisci o apri dati CSV**. Puoi aprire un file o incollare una tabella. Per una prima prova puoi copiare questi **dati sintetici**, costruiti per una scarica con τ vicina a 1 ms:

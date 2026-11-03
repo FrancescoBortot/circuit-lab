@@ -68,3 +68,22 @@ test('reports declare the charge scan and time CSV preserves the intermediate st
 test('physical opamp model is usable in every new network',()=>{
  for(const c of R.CATALOG){const p=L.defaults(c.type);p.opamp='physical';const rows=L.simulate(p);assert.ok(rows.length>400,c.type);assert.ok(rows.every(r=>Number.isFinite(r.out)),c.type);}
 });
+
+test('preamp input amplitude and DC offset obey the independent RC step response',()=>{
+ const p=L.defaults('preamp');Object.assign(p,{opamp:'ideal',autoTime:false,duration:.001,samples:800});Object.assign(p.wave1,{low:.02,level:-.78});
+ const k=p.Rfpre/p.Rin,tau=p.Rfpre*p.Cfpre,t0=p.wave1.delay,Tp=p.wave1.width;
+ const step=t=>t<0?0:1-Math.exp(-t/tau);let error=0;
+ const data=L.simulate(p);for(const row of data){const expected=-k*.02*step(row.x)+k*.8*(step(row.x-t0)-step(row.x-t0-Tp));error=Math.max(error,Math.abs(row.out-expected));}assert.ok(error<8e-6,`max waveform error ${error} V`);
+ const metrics=R.timeMetrics(p,data,(value)=>value);near(metrics[0].value,Math.max(...data.map(r=>r.out)),1e-12);assert.equal(metrics.length,3);assert.ok(metrics[2].value>metrics[0].value,'peak above negative baseline differs from absolute maximum');
+ for(const key of ['short','long']){const q=R.applyPreset(p,key).parameters;assert.equal(q.wave1.level,-.78);assert.equal(q.wave1.low,.02);}
+ assert.deepEqual(L.parse(L.serialize(project(p))).circuits.preamp.wave1,p.wave1);
+});
+test('charge scan retains offset, uses pulse excursion and rejects zero input',()=>{
+ const p=L.defaults('preamp');Object.assign(p,{opamp:'ideal',chargePoints:3});Object.assign(p.wave1,{low:-.01,level:-.81});const rows=L.charge(p),k=p.Rfpre/p.Rin,tau=p.Rfpre*p.Cfpre,delay=20*tau;
+ for(const row of rows){near(row.x,.8*row.width/p.Rin,1e-22);near(row.baseline,-k*p.wave1.low*(1-Math.exp(-delay/tau)),8e-6);const atEnd=-k*p.wave1.low*(1-Math.exp(-(delay+row.width)/tau))+k*.8*(1-Math.exp(-row.width/tau));near(row.out,atEnd-row.baseline,1e-5);}
+ p.wave1.level=p.wave1.low;assert.throws(()=>L.charge(p),/V_in/);
+ p.wave1.level=-.81;const doc=project(p,'charge'),before=L.serialize(doc),html=Files.report(doc);assert.match(html,/Offset di riposo/);assert.match(html,/carica aggiuntiva rispetto al riposo/);assert.doesNotMatch(html,/riposo 0 V/);assert.equal(L.serialize(doc),before);
+});
+test('automatic preamp maximum comes from the saturated simulation',()=>{
+ const p=L.defaults('preamp');p.wave1.level=-100;const data=L.simulate(p),metrics=R.timeMetrics(p,data,x=>x);near(metrics[0].value,Math.max(...data.map(r=>r.out)),1e-12);assert.ok(metrics[0].value<=p.rail-p.headroom+1e-6);assert.ok(metrics[0].value>1);assert.deepEqual(R.timeMetrics(p,[],x=>x),[]);
+});

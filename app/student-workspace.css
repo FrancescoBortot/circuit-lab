@@ -139,3 +139,56 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .study-assistant [data-quality-result] table{min-width:680px}.study-assistant [data-quality-result] th:first-child{min-width:125px}.study-assistant [data-quality-result] td{font-variant-numeric:tabular-nums}
 
 .student-measurement-entry{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:12px 16px;background:#f2f7ff;border-bottom:1px solid #cfdbed}.student-measurement-entry span{flex:1 1 260px;font-size:13px;color:#536b8a}.student-measurement-entry button{padding:9px 12px;border:1px solid #adc1fa;border-radius:7px;background:#fff;color:#304dbe;font-weight:600}.student-more-tools>div{min-width:min(330px,calc(100vw - 24px));max-height:65vh;overflow:auto}.student-more-tools section{display:grid;gap:5px}.student-more-tools h3{font-size:12px;text-transform:uppercase;color:#536b8a;margin:8px 4px 2px}.student-more-tools section button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:3px}.student-more-tools section small{font-weight:400;font-size:12px;color:#536b8a;line-height:1.4}.student-component-picker{display:grid;gap:5px;padding:10px 16px;font-size:13px}.student-component-picker select{width:100%;padding:8px}.plot-activation-hint{font-size:12px;color:#536b8a}.student-workbench .readout strong{overflow-wrap:anywhere}
+
+/* Sheet 1.3: the table owns its scrolling; numbers never break across lines. */
+.preamp-sheet-dialog.student-tool{width:min(880px,calc(100vw - 24px));box-sizing:border-box;font-size:13px;line-height:1.5}
+.preamp-sheet-dialog.student-tool-wide{width:calc(100vw - 32px)}
+.preamp-sheet-dialog>.dialog-heading{display:flex;align-items:center;gap:8px;position:sticky;top:-18px;background:#fff;z-index:3;padding:10px 0;border-bottom:1px solid #dce5f3}
+.preamp-sheet-dialog .dialog-heading h2{font-size:19px;line-height:1.25;flex:1;min-width:0;margin:0}
+.preamp-sheet-dialog .student-tool-controls{flex-wrap:nowrap;gap:5px;margin-left:0}
+.preamp-sheet-dialog button{font:inherit;font-size:12px;line-height:1.3;border:1px solid #c8d6ef;border-radius:6px;padding:7px 10px;color:#31528b;background:#f4f7ff;white-space:nowrap}
+.preamp-sheet-dialog button:hover:not(:disabled){background:#e7eeff;border-color:#8fa7e0}.preamp-sheet-dialog button:disabled{opacity:.5}
+.preamp-sheet-dialog .comparison-fields{gap:10px 14px}.preamp-sheet-dialog .comparison-fields label{font-size:12px}
+.preamp-sheet-dialog .preamp-plan-table{max-height:min(48dvh,440px);overflow:auto;scrollbar-gutter:stable;border:1px solid #dce5f3;border-radius:8px;isolation:isolate}
+.preamp-plan-table table{width:100%;min-width:570px;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:12px;font-variant-numeric:tabular-nums}
+.preamp-plan-table caption{text-align:left;padding:9px 12px;color:#5f7493;background:#f6f8fd;font-weight:600}
+.preamp-plan-table thead{position:sticky;top:0;z-index:2;background:#edf3fc}
+.preamp-plan-table th,.preamp-plan-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal;padding:9px 11px;text-align:right;line-height:1.35;border-bottom:1px solid #e0e7f2}
+.preamp-plan-table th span{display:block;font-size:10px;font-weight:400;color:#607594}.preamp-plan-table th:first-child{width:28px;color:#607594;text-align:center}
+.preamp-plan-table td:last-child{width:76px}.preamp-plan-table tbody tr:nth-child(even){background:#f8faff}.preamp-plan-table tbody tr:hover{background:#edf3ff}
+.preamp-plan-table button{padding:6px 9px;min-height:32px}.preamp-unavailable{display:inline-block;white-space:normal;max-width:90px;font-size:10px;color:#925f39}
+.preamp-baseline-note{background:#f0f5ff;border-left:3px solid #829be5;padding:10px 12px;border-radius:4px;color:#405a80}.preamp-plan-footnote{font-size:12px;color:#5c718f}
+@media(max-width:760px){.preamp-sheet-dialog.student-tool{width:calc(100vw - 16px);padding:12px}.preamp-sheet-dialog>.dialog-heading{top:-12px;flex-wrap:wrap}.preamp-sheet-dialog .dialog-heading h2{font-size:17px;flex-basis:calc(100% - 95px)}.preamp-sheet-dialog .student-tool-controls{margin-left:auto}.preamp-sheet-dialog .preamp-plan-table{max-height:45dvh}}
+
+.comparison-baseline-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.comparison-baseline-controls label{display:grid;gap:5px}.comparison-baseline-controls input,.comparison-baseline-controls select{width:100%;min-width:0;padding:7px;border:1px solid #c8d6ef;border-radius:6px}
+
+/* The fixed panel frame keeps its controls reachable; only the active section scrolls. */
+.preamp-sheet-dialog.student-tool{display:flex;flex-direction:column;overflow:hidden;resize:both}
+.preamp-sheet-dialog.student-minimized{display:none}
+.preamp-sheet-dialog>.dialog-heading{position:static;flex-shrink:0;padding:0 0 10px}
+.preamp-sheet-dialog>.preamp-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex-shrink:0;margin:10px 0}
+.preamp-sheet-dialog .preamp-sheet-tabs{display:flex;gap:5px;flex-shrink:0;margin:0 0 8px;border-bottom:1px solid #dce5f3;padding-bottom:8px}
+.preamp-sheet-tabs button[aria-pressed=true]{background:#e8eeff;border-color:#8fa6e0;color:#244aae;font-weight:600}
+.preamp-sheet-body{min-height:0;flex:1;overflow:auto;padding-right:3px;scrollbar-gutter:stable}
+.preamp-sheet-dialog .preamp-plan-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;gap:9px}
+.preamp-sheet-dialog .preamp-plan-help{margin:8px 0;font-size:12px}.preamp-sheet-dialog .preamp-plan-help summary{font-size:12px}
+.preamp-sheet-dialog .preamp-plan-table{max-height:clamp(140px,31dvh,320px)}
+.preamp-sheet-dialog .preamp-baseline-note{font-size:12px;margin:7px 0;padding:7px 9px}
+.preamp-sheet-dialog .preamp-sheet-actions{flex-shrink:0;border-top:1px solid #dce5f3;margin:8px 0 0;padding-top:9px;gap:6px}
+.preamp-sheet-dialog [data-sheet-status]{flex-shrink:0;font-size:11px;line-height:1.4;margin:6px 0 0;max-height:64px;overflow:auto}.preamp-sheet-dialog [data-sheet-status]:empty{display:none}
+.preamp-sheet-dialog .preamp-plan-footnote{margin:8px 0}.preamp-sheet-dialog .preamp-plan-footnote summary{font-size:12px}
+@media(max-width:520px){.preamp-sheet-dialog .preamp-plan-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.preamp-sheet-dialog .preamp-sheet-tabs button{padding:7px}.preamp-sheet-dialog .preamp-sheet-actions{flex-wrap:wrap}.preamp-sheet-dialog .preamp-sheet-actions button{flex:1 1 auto}.preamp-sheet-dialog.student-tool{resize:none}}
+
+.preamp-sheet-dialog .preamp-input-toggle{flex-shrink:0;text-align:left;background:#f7f9fe;margin:7px 0;padding:6px 9px;white-space:normal}
+.preamp-sheet-dialog>.preamp-inputs[hidden]{display:none}
+.preamp-sheet-body>[data-sheet-pane="plan"]:not([hidden]){height:100%;min-height:0;display:flex;flex-direction:column}
+.preamp-sheet-body [data-sheet-plan]{min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.preamp-sheet-dialog .preamp-plan-table{flex:1;min-height:100px;max-height:none}
+.preamp-sheet-dialog .preamp-plan-help,.preamp-sheet-dialog .preamp-plan-controls,.preamp-sheet-dialog .preamp-baseline-note,.preamp-sheet-dialog .preamp-plan-footnote,.preamp-sheet-dialog [data-sheet-plan]>.field-hint{flex-shrink:0}
+.preamp-sheet-dialog .preamp-plan-footnote{max-height:60px;overflow:auto;font-size:11px}.preamp-sheet-dialog .preamp-plan-footnote summary{font-size:11px}
+
+.preamp-sheet-dialog .dialog-heading .preamp-input-toggle{margin:0;padding:7px 9px;white-space:nowrap}
+.preamp-plan-settings{flex-shrink:0;margin:0 0 7px;font-size:12px}.preamp-plan-settings>summary{cursor:pointer;font-size:12px;font-weight:600;color:#45618d;padding:5px 0}.preamp-plan-settings[open]>.preamp-plan-controls{margin-top:5px}
+.preamp-plan-table caption{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.preamp-plan-table td,.preamp-plan-table th{padding-top:6px;padding-bottom:6px}.preamp-plan-table button{min-height:28px;padding:4px 8px}
+@media(max-width:760px){.preamp-sheet-dialog .dialog-heading h2{flex-basis:100%}.preamp-sheet-dialog .student-tool-controls{margin-left:auto}}

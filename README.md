@@ -96,6 +96,10 @@ Nella prova **1.3 → Misure da fare al banco** scegli se variare frequenza, dut
 
 Nel pannello **Analisi → Bode** puoi modificare direttamente **Vpp in ingresso**, scegliendo Vpp o mVpp. Il valore è condiviso con il segnale e conservato nel progetto. La curva Bode mostra il rapporto normalizzato Vout/Vin: nel modello lineare il guadagno resta indipendente dall’ampiezza impostata.
 
+Per gli impulsi, **baseline**, **massimo assoluto** e **picco sopra la baseline** sono grandezze distinte: ΔV = Vmax − Vbase. Riquadri, cursore, linearità, quaderno, verifica numerica e CSV usano il campione prima dell’impulso; il transitorio conserva le tensioni assolute. In un CSV con più impulsi la colonna relativa usa la baseline di ciascun impulso. Per sinusoidi e livelli continui viene indicata separatamente la baseline DC di equilibrio, calcolata dal punto di lavoro del modello: non viene confusa con il campione iniziale. Se manca il tratto di riposo, la baseline non viene sostituita con zero. La scheda 1.3 mostra separatamente la baseline nominale ideale; la simulazione comprende il modello operazionale e gli strumenti scelti.
+
+Nel confronto **Carica**, puoi importare direttamente ΔV oppure scegliere **Massimo assoluto + colonna baseline**: la sottrazione avviene riga per riga, conservando CSV e valori originali. L’eventuale incertezza deve già riferirsi a ΔV e includere la baseline e le sue correlazioni. Anche tabelle di carica in ordine decrescente mantengono l’ordine originale. Il piano 1.3 ha intestazioni fisse, numeri compatti e colonne delle letture nel CSV, separate dalle previsioni nominali.
+
 ## Importare misure RC da CSV
 
 Apri **Misura τ → Dati sperimentali → Inserisci o apri dati CSV**. Puoi aprire un file o incollare una tabella. Per una prima prova puoi copiare questi **dati sintetici**, costruiti per una scarica con τ vicina a 1 ms:

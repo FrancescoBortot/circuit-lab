@@ -29,3 +29,7 @@ test('measurement plans reject invalid controls and declare partial ranges and i
  const p=S.measurementPlan({...base,duty:99.8},9,'frequency');assert.equal(p.complete,false);assert.ok(p.rows.every(r=>r.available&&r.frequency<=500));assert.match(p.warnings.join(' '),/ne couvre|non copre/);
  const slow=S.measurementPlan({...base,rf:1e9},9,'frequency');assert.match(slow.warnings.join(' '),/10 τ/);
 });
+
+test('measurement CSV has matching columns, blank readings, raw maxima and explicit baseline values',()=>{
+ const input={...base,offset:.02},plan=S.measurementPlan(input,9,'frequency'),csv=S.measurementCSV(plan,input),rows=require('../rc-analysis').rows(csv,';').rows;assert.equal(rows.length,10);assert.equal(rows[0].length,19);for(const row of rows.slice(1)){assert.equal(row.length,19);for(const index of [6,7,16,17,18])assert.equal(row[index],'');assert.equal(Number(row[14]),-.2);assert.ok(Math.abs(Number(row[15])-Number(row[14])-Number(row[5]))<1e-12);}const bad={rows:[{number:1,frequency:500,duty:99.9,width:2e-6,available:false,reason:'limit; "invalid"\nsetting'}]};assert.equal(require('../rc-analysis').rows(S.measurementCSV(bad,input),';').rows[1][13],bad.rows[0].reason);
+});

@@ -24,3 +24,8 @@ test('RMS of a resolved sinusoid includes its DC offset',()=>{
  const data=Array.from({length:10001},(_,i)=>({x:i/10000,y:3+2*Math.sin(2*Math.PI*i/10000)})),s=M.stats(data,'y');
  near(s.mean,3);near(s.rms,Math.sqrt(11),1e-7);near(s.pp,4);
 });
+
+test('pulse baseline is the last resting sample, with absolute and relative extrema kept distinct',()=>{
+ const wave={kind:'pulse',delay:1,period:3},data=[{x:0,out:0},{x:1,out:-2},{x:1,out:-2},{x:1.1,out:-1.5},{x:2,out:-2.2},{x:4,out:-1.9},{x:4,out:-1.9},{x:4.1,out:-1.2}];
+ const m=M.pulse(data,'out',wave);near(m.baseline,-2);near(m.maximum,-1.5);near(m.peak,.5);near(m.trough,-.2);assert.equal(m.maxIndex,3);assert.equal(m.baselineIndex,1);const second=M.pulse(data,'out',wave,4.1);near(second.baseline,-1.9);near(second.peak,.7);assert.equal(M.pulse([{x:2,out:1}],'out',wave),null);assert.equal(M.pulse(data,'out',{kind:'sine'}),null);
+});

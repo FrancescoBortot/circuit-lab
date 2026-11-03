@@ -18,6 +18,7 @@
  function measurementPlan(input,count=9,axis='frequency'){
   if(![8,9].includes(count))throw Error('La scheda richiede 8 o 9 misure.');
   if(!['frequency','duty','width'].includes(axis))throw Error('Scegli frequenza, duty high o width.');
+  calculate({...input,frequency:500,mode:'width',width:2e-6});
   let settings=[];const warnings=[];
   if(axis==='frequency'){
    const duty=input.duty;
@@ -48,5 +49,11 @@
   if(available.some(row=>row.period-row.width<10*row.tau))warnings.push('In alcune righe il riposo è inferiore a 10 τ: controlla il recupero della baseline.');
   return{axis,requested:count,rows,warnings,complete:rows.length===count&&rows.every(row=>row.available)&&Boolean(spansRange)};
  }
- return{calculate,plan,measurementPlan};
+ function measurementCSV(plan,input){
+  const headers=['misura','frequenza_Hz','duty_high_percent','T_low_us','Qin_nominale_pC','picco_meno_baseline_previsto_V','Vin_misurato_V','picco_meno_baseline_misurato_V','Vin_riferimento_V','offset_V','Rin_ohm','Rf_ohm','Cf_pF','stato','baseline_nominale_V','Vmax_nominale_V','baseline_misurata_V','Vmax_assoluto_misurato_V','u_picco_meno_baseline_V'];
+  const rows=plan.rows.map(r=>[r.number,r.frequency,r.duty,r.width*1e6,r.available?r.charge*1e12:'',r.available?r.finite:'','','',input.vin,input.offset??0,input.rin,input.rf,input.cf*1e12,r.available?'Realizzabile':r.reason,r.available?r.baseline:'',r.available?r.maximum:'','','','']);
+  const cell=value=>{const text=String(value??'');return /[;"\r\n]/.test(text)?'"'+text.replaceAll('"','""')+'"':text;};
+  return [headers,...rows].map(row=>row.map(cell).join(';')).join('\n');
+ }
+ return{calculate,plan,measurementPlan,measurementCSV};
 });

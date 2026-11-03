@@ -6,7 +6,7 @@
   const nav=document.createElement('nav'),preview=document.createElement('div'),status=$('[data-cmp-status]');let active=saved?2:0;
   nav.className='student-import-steps';nav.setAttribute('aria-label','Passaggi del confronto dati');
   steps.forEach((s,i)=>{s.className='student-import-step';s.dataset.importStep=String(i);});
-  const note=document.createElement('p');note.textContent='Una tabella salvata per circuito e tipo di analisi. Riaprendo questo pannello ritrovi i dati: puoi ricalcolare il confronto senza reimportarli. Per sostituirli, carica un altro file o modifica il testo e salva.';steps[0].append(note);steps[0].append(fields[0],$('[data-cmp-raw]'));const instrumentNote=$('[data-cmp-instrument]');if(instrumentNote)steps[0].append(instrumentNote);steps[1].append(fields[1]);
+  const note=document.createElement('p');note.textContent='Una tabella salvata per circuito e tipo di analisi. Riaprendo questo pannello ritrovi i dati: puoi ricalcolare il confronto senza reimportarli. Per sostituirli, carica un altro file o modifica il testo e salva.';steps[0].append(note);steps[0].append(fields[0],$('[data-cmp-raw]'));const instrumentNote=$('[data-cmp-instrument]');if(instrumentNote)steps[0].append(instrumentNote);steps[1].append(fields[1]);const baselineFields=$('[data-cmp-baseline-fields]');if(baselineFields)steps[1].append(baselineFields);
   const independent=$('[data-cmp-independent]')?.closest('label');if(independent)steps[1].append(independent);steps[1].append(preview);
   for(const selector of ['.comparison-kind-note','.flow-actions','[data-cmp-summary]','.comparison-table']){const el=$(selector);if(el)steps[2].append(el);}
   for(const el of [...dialog.querySelectorAll('.comparison-plot')]){

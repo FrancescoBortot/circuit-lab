@@ -1,9 +1,9 @@
 /* Modified nodal analysis for the free circuit editor. All topology comes from
    explicit terminal-to-terminal wires. No hidden ground or leakage is added. */
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./local-projects.js'),require('./semiconductors.js'));
-  else root.FreeModel=factory(root.LocalProjects,root.Semiconductors);
-})(typeof globalThis!=='undefined'?globalThis:this,function(Files,Semi){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./local-projects.js'),require('./semiconductors.js'),require('./measurements.js'));
+  else root.FreeModel=factory(root.LocalProjects,root.Semiconductors,root.LabMeasurements);
+})(typeof globalThis!=='undefined'?globalThis:this,function(Files,Semi,Measures){
   'use strict';
   const clone=o=>JSON.parse(JSON.stringify(o));
   const PINS={R:['a','b'],C:['a','b'],L:['a','b'],V:['p','n'],I:['p','n'],U:['plus','minus','out'],G:['g'],J:['j'],D:['a','b'],Q:['c','b','e'],M:['d','g','s']};
@@ -433,7 +433,11 @@
     const branches=doc.components.filter(c=>['R','C','L','V','I','U','D','Q','M'].includes(c.type)),reactive=branches.filter(c=>['C','L'].includes(c.type)),traces=doc.traces||[],time=doc.settings.analysis==='time',readers=traces.map(t=>traceReader(doc,t));
     const terminalBranches=branches.filter(c=>['D','Q','M'].includes(c.type)).flatMap(c=>PINS[c.type].slice(1).map(pin=>c.id+':'+pin));
     const abscissa=doc.settings.analysis==='op'?'punto_indice':doc.settings.analysis==='dc'?'DC_'+result.source+'_'+result.xUnit:'tempo_s',headers=[abscissa,'IN_V','OUT_V',...result.nodes.map(n=>n.name+'_V'),...branches.map(c=>'I_'+c.id+'_A'),...terminalBranches.map(id=>'I_'+id.replace(':','_')+'_A'),...branches.map(c=>'P_'+c.id+'_W'),...reactive.map(c=>'E_'+c.id+'_J'),...(time?branches.map(c=>'W_'+c.id+'_J'):[]),...traces.map(t=>t.id+'_'+(t.kind==='current'?'A':'V'))];
-    const values=d=>[d.x,d.vin,d.out,...result.nodes.map(n=>d.values[n.name]),...branches.map(c=>d.currents[c.id]),...terminalBranches.map(id=>d.currents[id]),...branches.map(c=>d.powers?.[c.id]),...reactive.map(c=>d.energy?.[c.id]),...(time?branches.map(c=>d.work?.[c.id]):[]),...readers.map(read=>read(d))];
+    const wave=time?Measures.excitation(doc):null,source=doc.components.find(c=>c.id===doc.settings.acSource)||doc.components.find(c=>c.type==='V'||c.type==='I'),byCycle=new Map();let dcBaseline=null;
+    if(time&&!wave&&['sine','square','triangle','dc'].includes(source?.wave?.kind))try{dcBaseline=operatingPoint(doc).data[0].out;}catch{}
+    const referenced=time&&(wave||Number.isFinite(dcBaseline));if(referenced)headers.push(wave?'OUT_baseline_V':'OUT_baseline_DC_V',wave?'OUT_meno_baseline_V':'OUT_meno_baseline_DC_V');
+    const reference=d=>{if(!wave)return[dcBaseline,d.out-dcBaseline];const cycle=Math.max(0,Math.floor((d.x-wave.delay)/wave.period+1e-12));if(!byCycle.has(cycle))byCycle.set(cycle,Measures.pulse(result.data,'out',wave,d.x));const m=byCycle.get(cycle);return[m?.baseline,m?d.out-m.baseline:null];};
+    const values=d=>[d.x,d.vin,d.out,...result.nodes.map(n=>d.values[n.name]),...branches.map(c=>d.currents[c.id]),...terminalBranches.map(id=>d.currents[id]),...branches.map(c=>d.powers?.[c.id]),...reactive.map(c=>d.energy?.[c.id]),...(time?branches.map(c=>d.work?.[c.id]):[]),...readers.map(read=>read(d)),...(referenced?reference(d):[])];
     return'\uFEFF'+headers.join(',')+'\r\n'+result.data.map(d=>values(d).map(v=>Number.isFinite(v)?v.toExponential(12):'').join(',')).join('\r\n');
   }
 

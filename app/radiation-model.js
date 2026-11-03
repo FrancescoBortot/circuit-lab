@@ -1,5 +1,5 @@
 /* Days 3–4: ordinary electrical networks, shared by guided and free modes. */
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'));else root.RadiationModel=factory(root.FreeModel,root.BenchModel);})(typeof globalThis!=='undefined'?globalThis:this,function(F,B){
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./measurements.js'));else root.RadiationModel=factory(root.FreeModel,root.BenchModel,root.LabMeasurements);})(typeof globalThis!=='undefined'?globalThis:this,function(F,B,Measures){
  'use strict';
  const TYPES=['preamp','shaper','shaper-buffer','preamp-shaper','pz-shaper','noninverting','detector-chain'];
  const is=p=>TYPES.includes(typeof p==='string'?p:p?.type),hasPre=p=>['preamp','preamp-shaper','pz-shaper','detector-chain'].includes(p.type),hasSh=p=>['shaper','shaper-buffer','preamp-shaper','pz-shaper','detector-chain'].includes(p.type),hasFinal=p=>['noninverting','detector-chain'].includes(p.type);
@@ -93,33 +93,34 @@
   const b=B.config(p.bench);b.sourceIds=['V1'];return B.apply(d,b);
  }
  function simulate(p,options={}){const d=network(p),result=F.simulate(d,options);options.capture?.(result);const t=F.topology(d),read=(row,pin)=>{const n=t.nodes[pin];return n<0?0:row.values[t.groups.find(g=>g.index===n)?.name];};return result.data.map((row,i)=>({...row,vin2:0,source:F.source(d.components.find(c=>c.id==='V1').wave,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right'),pre:hasPre(p)?read(row,'Upre:out'):undefined,shaper:hasSh(p)?read(row,'Csh2:a'):undefined,linear:NaN,current:row.currents.Rin??NaN}));}
+ function pulseInput(p){const w=p.wave1;if(w.kind==='pulse')return{amplitude:Math.abs(w.level-w.low),low:w.low};if(['sine','square','triangle'].includes(w.kind))return{amplitude:w.vpp/2,low:w.offset};return{amplitude:0,low:w.kind==='dc'?w.level:0};}
  function charge(p,options={}){
   const rows=[];if(!hasPre(p))throw Error('La prova in carica richiede il preamplificatore.');
-  const amplitude=Math.abs(p.wave1.level-p.wave1.low);if(!(amplitude>0))throw Error('Imposta V_in diversa da zero per la scansione in carica.');
+  const {amplitude,low}=pulseInput(p);if(!(amplitude>0))throw Error('Imposta V_in diversa da zero per la scansione in carica.');
   for(let i=0;i<p.chargePoints;i++){
-   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low:p.wave1.low,level:p.wave1.low-amplitude,width,rise:0,fall:0,delay:p.wave1.low===0?20e-6:Math.max(20e-6,20*p.Rfpre*p.Cfpre)});q.autoTime=true;const d=simulate(normalizeTime(q),{...options,onProgress:undefined}),before=d.filter(r=>r.x<q.wave1.delay||r.x===q.wave1.delay&&r.source===q.wave1.low).at(-1)?.out??0,peak=Math.max(...d.filter(r=>r.x>=q.wave1.delay&&r.x<q.wave1.delay+q.wave1.period).map(r=>r.out))-before;
-   rows.push({x:amplitude*width/q.Rin,out:peak,width,baseline:before,clipped:d.some(r=>r.clipped)});options.onProgress?.((i+1)/p.chargePoints);
+   const q=F.clone(p),width=p.chargeMin+(p.chargeMax-p.chargeMin)*i/(p.chargePoints-1);Object.assign(q.wave1,{kind:'pulse',low,level:low-amplitude,width,rise:0,fall:0,delay:low===0?20e-6:Math.max(20e-6,20*p.Rfpre*p.Cfpre)});q.autoTime=true;const d=simulate(normalizeTime(q),{...options,onProgress:undefined}),measurement=pulseSummary(q,d);if(!measurement)throw Error('Baseline non disponibile prima dell’impulso.');const before=measurement.baseline,peak=measurement.peak;
+   rows.push({x:amplitude*width/q.Rin,out:peak,width,baseline:before,maximum:measurement.maximum,minimum:measurement.minimum,clipped:d.some(r=>r.clipped)});options.onProgress?.((i+1)/p.chargePoints);
   }
   const n=rows.length,mx=rows.reduce((s,r)=>s+r.x,0)/n,my=rows.reduce((s,r)=>s+r.out,0)/n,slope=rows.reduce((s,r)=>s+(r.x-mx)*(r.out-my),0)/rows.reduce((s,r)=>s+(r.x-mx)**2,0),intercept=my-slope*mx;
   return rows.map(r=>({...r,linear:intercept+slope*r.x,residual:r.out-intercept-slope*r.x,slope,intercept}));
  }
- function timeMetrics(p,data,fmt){
-  if(!data.length)return [];
-  const vmax=Math.max(...data.map(r=>r.out)),rows=[{label:'V_max · uscita simulata',value:fmt(vmax,'V',5),primary:true}];
-  if(p.wave1.kind!=='pulse')return rows;
-  const w=p.wave1,before=data.filter(r=>r.x<w.delay||r.x===w.delay&&r.source===w.low).at(-1);
-  if(before){const pulse=data.filter(r=>r.x>=w.delay&&r.x<w.delay+w.period);if(pulse.length)rows.push({label:'Baseline prima dell’impulso',value:fmt(before.out,'V',5)},{label:'Picco rispetto alla baseline',value:fmt(Math.max(...pulse.map(r=>r.out))-before.out,'V',5),primary:true});}
-  return rows;
+ function pulseSummary(p,data,key='out',at){return Measures.pulse(data,key,p.wave1,at);}
+ function baselines(p){const w=p.wave1,input=w.kind==='pulse'?(w.low??0):['sine','square','triangle'].includes(w.kind)?w.offset:w.kind==='ground'?0:w.level;let value=input;const result={input};if(hasPre(p)){value=-value*p.Rfpre/p.Rin;result.pre=value;}if(hasSh(p)){value=p.pzEnabled?value*p.Rsh1/(p.Rpz+p.Rsh1):0;result.shaper=value;}if(hasFinal(p)){const b=p.biasEnabled?p.Rgain/p.Rbias:0;value=value*(1+p.Rgain/p.Ri+b)-b*p.wave2.level;}result.out=value;return result;}
+ function timeMetrics(p,data,fmt,baselineDC){
+  if(!data.length)return [];const m=pulseSummary(p,data);
+  if(p.wave1.kind!=='pulse')return [{label:'V_max · uscita simulata',value:fmt(Math.max(...data.map(r=>r.out)),'V',5),primary:true},...(Number.isFinite(baselineDC?.out)?[{label:'Baseline DC · equilibrio',value:fmt(baselineDC.out,'V',5)},{label:'Massimo − baseline DC',value:fmt(Math.max(...data.map(r=>r.out))-baselineDC.out,'V',5)}]:[])];
+  if(!m)return [{label:'Baseline e picco',value:'Non disponibili',note:'Il transitorio deve contenere un campione prima dell’impulso e la risposta successiva.'}];
+  return [{label:'V_max · primo impulso',value:fmt(m.maximum,'V',5),primary:true},{label:'Baseline prima dell’impulso',value:fmt(m.baseline,'V',5)},{label:'Picco rispetto alla baseline',value:fmt(m.peak,'V',5),primary:true},{label:'Minimo rispetto alla baseline',value:fmt(m.trough,'V',5)}];
  }
  function summary(p,fmt){const rows=[];
   if(hasPre(p)){const tau=p.Rfpre*p.Cfpre;rows.push({label:'τ preamp nominale',value:fmt(tau,'s'),primary:true},{label:'Taglio preamp nominale',value:fmt(1/(2*Math.PI*tau),'Hz')});if(p.wave1.kind==='pulse')rows.push({label:'Carica nominale |Vin|·T/Rin',value:fmt(Math.abs(p.wave1.level-p.wave1.low)*p.wave1.width/p.Rin,'C'),primary:true,note:'Riferimento con nodo d’ingresso a massa virtuale. Il carico e i limiti dell’operazionale possono cambiarlo.'});}
   if(hasSh(p))rows.push({label:'τ CR nominale',value:fmt(p.Rsh1*p.Csh1,'s'),primary:true},{label:'τ RC nominale',value:fmt(p.Rsh2*p.Csh2,'s'),primary:true});
   if(['pz-shaper','detector-chain'].includes(p.type))rows.push({label:'Rpz attesa · τpre/Csh1',value:fmt(p.Rfpre*p.Cfpre/p.Csh1,'Ω'),primary:true},{label:'Compensazione PZ',value:p.pzEnabled?'Attiva':'Disinserita'});
-  if(hasFinal(p)){const k=p.Rgain/p.Ri,b=p.biasEnabled?p.Rgain/p.Rbias:0;rows.push({label:'Guadagno finale ideale',value:fmt(1+k+b,'V/V'),primary:true},{label:'Baseline finale ideale',value:fmt(-b*p.wave2.level,'V'),primary:true});}
+  if(hasFinal(p)){const k=p.Rgain/p.Ri,b=p.biasEnabled?p.Rgain/p.Rbias:0;rows.push({label:'Guadagno finale ideale',value:fmt(1+k+b,'V/V'),primary:true},{label:'Baseline finale ideale',value:fmt(baselines(p).out,'V'),primary:true});}
   rows.push({label:'Componenti iniziali',value:'Esempio modificabile',note:'Il PDF assegna i valori ai singoli gruppi. Inserisci i componenti misurati.'});return rows;
  }
  function applyPreset(original,key){
-  const p=F.clone(original),w=p.wave1;let analysis='time';
+  const p=F.clone(original),w=p.wave1,originalWave=F.clone(p.wave1),originalRest=baselines(p).input;let analysis='time';
   if(!PRESETS[p.type].some(([k])=>k===key))throw Error('Prova guidata non riconosciuta.');
   if(hasPre(p))Object.assign(w,{kind:'pulse',level:['short','long'].includes(key)&&w.kind==='pulse'?w.level:-1,low:['short','long'].includes(key)&&w.kind==='pulse'?w.low:0,width:key==='short'?(p.type==='detector-chain'?.5e-6:2e-6):key==='long'?10e-6:5e-6,delay:20e-6,rise:0,fall:0,period:.005,frequency:200});
   if(['shaper','shaper-buffer'].includes(p.type))Object.assign(w,{kind:'square',vpp:1,offset:.5,frequency:100,phase:0,duty:50});
@@ -134,7 +135,7 @@
   }
   if(p.type==='noninverting'&&['bode','vtc','saturation'].includes(key))Object.assign(w,{kind:'sine',vpp:key==='saturation'?2:.1,frequency:1000,offset:0,phase:0});
   if(key==='direct'||key==='probe'){const b=B.config(p.bench);b.mode='real';b.wireR=0;for(const ch of b.channels){ch.enabled=true;ch.kind=key==='probe'?'probe10':'direct';ch.coupling='dc';}p.bench=b;}
-  if(key==='bode'){analysis='bode';p.fmin=['shaper','shaper-buffer'].includes(p.type)?50:10;p.fmax=['shaper','shaper-buffer'].includes(p.type)?2e6:1e6;w.kind='sine';w.vpp=.02;w.offset=0;}
+  if(key==='bode'){analysis='bode';p.fmin=['shaper','shaper-buffer'].includes(p.type)?50:10;p.fmax=['shaper','shaper-buffer'].includes(p.type)?2e6:1e6;w.kind='sine';w.vpp=['sine','square','triangle'].includes(originalWave.kind)?originalWave.vpp:.02;w.offset=originalRest;}
   if(key==='linearity')analysis='charge';if(key==='vtc')analysis='vtc';p.autoTime=true;
   return{parameters:normalizeTime(p),analysis};
  }
@@ -147,5 +148,5 @@
   if(/Pendenza|Intercetta/.test(label))return 'Fit lineare non pesato dei picchi simulati rispetto alla baseline in funzione di Qin nominale. La pendenza è espressa in V/pC. Il CSV conserva durata, carica, picco, baseline, previsione del fit e residuo. Nessuna incertezza sperimentale è attribuita al fit numerico.';
   return 'Riferimento ricavato dal circuito e dall’analisi correnti. I tagli in frequenza sono riferiti al massimo della curva nell’intervallo visualizzato. Valori nominali, simulazioni e misure sperimentali hanno significati distinti.';
  }
- return{timeMetrics,is,TYPES,CATALOG,PRESETS,hasPre,hasSh,hasFinal,defaults,normalizeTime,fields,validate,network,simulate,charge,summary,applyPreset,explanation};
+ return{pulseInput,pulseSummary,baselines,timeMetrics,is,TYPES,CATALOG,PRESETS,hasPre,hasSh,hasFinal,defaults,normalizeTime,fields,validate,network,simulate,charge,summary,applyPreset,explanation};
 });

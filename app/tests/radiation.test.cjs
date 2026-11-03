@@ -74,7 +74,7 @@ test('preamp input amplitude and DC offset obey the independent RC step response
  const k=p.Rfpre/p.Rin,tau=p.Rfpre*p.Cfpre,t0=p.wave1.delay,Tp=p.wave1.width;
  const step=t=>t<0?0:1-Math.exp(-t/tau);let error=0;
  const data=L.simulate(p);for(const row of data){const expected=-k*.02*step(row.x)+k*.8*(step(row.x-t0)-step(row.x-t0-Tp));error=Math.max(error,Math.abs(row.out-expected));}assert.ok(error<8e-6,`max waveform error ${error} V`);
- const metrics=R.timeMetrics(p,data,(value)=>value);near(metrics[0].value,Math.max(...data.map(r=>r.out)),1e-12);assert.equal(metrics.length,3);assert.ok(metrics[2].value>metrics[0].value,'peak above negative baseline differs from absolute maximum');
+ const metrics=R.timeMetrics(p,data,(value)=>value);near(metrics[0].value,Math.max(...data.map(r=>r.out)),1e-12);assert.equal(metrics.length,4);assert.ok(metrics[2].value>metrics[0].value,'peak above negative baseline differs from absolute maximum');
  for(const key of ['short','long']){const q=R.applyPreset(p,key).parameters;assert.equal(q.wave1.level,-.78);assert.equal(q.wave1.low,.02);}
  assert.deepEqual(L.parse(L.serialize(project(p))).circuits.preamp.wave1,p.wave1);
 });
@@ -87,3 +87,14 @@ test('charge scan retains offset, uses pulse excursion and rejects zero input',(
 test('automatic preamp maximum comes from the saturated simulation',()=>{
  const p=L.defaults('preamp');p.wave1.level=-100;const data=L.simulate(p),metrics=R.timeMetrics(p,data,x=>x);near(metrics[0].value,Math.max(...data.map(r=>r.out)),1e-12);assert.ok(metrics[0].value<=p.rail-p.headroom+1e-6);assert.ok(metrics[0].value>1);assert.deepEqual(R.timeMetrics(p,[],x=>x),[]);
 });
+
+test('negative absolute maxima are measured after the pulse; all stages and CSV use the sampled baseline',()=>{
+ for(const type of ['preamp','noninverting','detector-chain']){const p=L.defaults(type);p.opamp='ideal';p.wave1.low=.03;p.wave1.level=type==='preamp'?-.17:.05;p.wave1.delay=.004;p.autoTime=false;p.duration=.0045;if(type==='noninverting'){p.biasEnabled=true;p.Rgain=90000;p.Rbias=1e6;p.wave2.level=5;}
+ const data=L.simulate(p),m=R.pulseSummary(p,data);assert.ok(m);near(m.maximum,m.baseline+m.peak,1e-12);const metrics=R.timeMetrics(p,data,x=>x);near(metrics[0].value,m.maximum,1e-12);near(metrics[1].value,m.baseline,1e-12);near(metrics[2].value,m.peak,1e-12);const csv=L.csv(p,'time',data);assert.match(csv,/OUT_baseline_V,OUT_meno_baseline_V/);assert.equal(csv.split('\r\n')[1].split(',').at(-2),m.baseline.toExponential(12));}
+});
+test('Bode preserves the DC operating baseline and existing sinusoidal amplitude',()=>{
+ const p=L.defaults('preamp');Object.assign(p.wave1,{kind:'sine',offset:.02,vpp:.04});let trial=R.applyPreset(p,'bode').parameters;assert.equal(trial.wave1.offset,.02);assert.equal(trial.wave1.vpp,.04);near(R.baselines(trial).out,-.2);Object.assign(p.wave1,{kind:'pulse',low:.03,level:-.97});trial=R.applyPreset(p,'bode').parameters;assert.equal(trial.wave1.offset,.03);
+ const q=L.defaults('noninverting');q.wave1.low=.03;q.biasEnabled=true;const k=q.Rgain/q.Ri,b=q.Rgain/q.Rbias;near(R.baselines(q).out,(1+k+b)*.03-b*q.wave2.level);assert.equal(R.summary(q,x=>x).find(r=>r.label==='Baseline finale ideale').value,R.baselines(q).out);
+});
+
+test('charge sweep uses sinusoidal peak and DC offset when launched from Bode',()=>{const p=L.defaults('preamp');Object.assign(p,{opamp:'ideal',chargePoints:3});Object.assign(p.wave1,{kind:'sine',vpp:.04,offset:.02,level:-100,low:7});const rows=L.charge(p);for(const row of rows){near(row.x,.02*row.width/p.Rin,1e-22);near(row.baseline,-.2,1e-5);}assert.deepEqual(R.pulseInput(p),{amplitude:.02,low:.02});});

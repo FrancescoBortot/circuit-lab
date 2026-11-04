@@ -8,7 +8,7 @@
     constructor(svg,callbacks){
       this.svg=svg;this.callbacks=callbacks;this.view={x:0,y:0,k:1};this.pointers=new Map();
       this.interaction=window.CanvasInteraction?.install(svg,{cancel:()=>this.cancelGesture()});
-      svg.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.008),this.point(e));},{passive:false});
+      window.CanvasInteraction?.installZoom(svg,{active:()=>this.interaction?.active,begin:()=>this.cancelGesture(),touching:()=>this.pointers.size>0,zoom:(factor,e)=>this.zoom(factor,this.point(e))});
       svg.addEventListener('pointerdown',e=>this.down(e));svg.addEventListener('pointermove',e=>this.move(e));
       for(const type of ['pointerup','pointercancel'])svg.addEventListener(type,e=>this.up(e));
       svg.addEventListener('lostpointercapture',e=>this.up({pointerId:e.pointerId,type:'pointercancel'}));

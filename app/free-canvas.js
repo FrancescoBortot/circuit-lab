@@ -8,7 +8,7 @@
       this.interaction=window.CanvasInteraction?.install(svg,{cancel:()=>this.cancelGesture()});
       svg.addEventListener('pointerdown',e=>this.down(e));svg.addEventListener('pointermove',e=>this.move(e));for(const t of ['pointerup','pointercancel'])svg.addEventListener(t,e=>this.up(e));
       svg.addEventListener('lostpointercapture',e=>this.up({pointerId:e.pointerId,type:'pointercancel'}));
-      svg.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.007),this.point(e));},{passive:false});
+      window.CanvasInteraction?.installZoom(svg,{active:()=>this.interaction?.active,begin:()=>this.cancelGesture(),touching:()=>this.pointers.size>0,zoom:(factor,e)=>this.zoom(factor,this.point(e))});
       svg.addEventListener('keydown',e=>{
         if(e.ctrlKey||e.metaKey||e.altKey)return;
         const pin=e.target.closest('[data-pin]')?.dataset.pin,id=e.target.closest('[data-part]')?.dataset.part,wire=e.target.closest('[data-wire]')?.dataset.wire;

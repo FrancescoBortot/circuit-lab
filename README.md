@@ -319,21 +319,33 @@ vicine; le quattro barre sono indipendenti. Un incrocio grafico dei fili non cre
 un contatto. I fori già occupati vengono rifiutati senza perdere il montaggio.
 Trascinare un componente cambia i suoi contatti fisici: i cavi non lo seguono.
 
-**Verifica montaggio** confronta le partizioni elettriche dei terminali, non la
-somiglianza del disegno. Accetta disposizioni diverse e lo scambio dei capi dei
-passivi non polarizzati; mantiene identità e numerazione dei pin degli integrati
-e degli strumenti. Le alimentazioni comuni dei TL082 condividono lo stesso
-riferimento; la distribuzione A/B deriva dalla configurazione fisica selezionata.
-Segnala componenti o collegamenti mancanti, corti, elementi non previsti connessi,
-valori nominali e tensioni diversi. I problemi indicano terminali, fori e, quando
-individuabile, il ponticello responsabile; Mostra punti li evidenzia sulla basetta.
+**Verifica montaggio** controlla il cablaggio attuale senza imporre che sia
+identico allo schema selezionato. Componenti sostitutivi o aggiuntivi, valori e
+alimentazioni diversi, reti alternative e disposizioni differenti non sono
+errori di per sé. Il confronto esatto rimane disponibile come informazione
+separata, nella voce «Differenze dallo schema».
 
-Un montaggio elettricamente corretto può ricevere consigli su ponticelli
-ridondanti, fili o componenti inutilizzati, collegamenti lunghi, posizione dei
-bypass e completamento delle sonde. Sono consigli di disposizione, non una prova
-di ottimalità globale né una misura delle prestazioni dell'hardware. Il profilo
-supporta R, C non polarizzati, L e TL082 a 8 pin; il confronto usa i collegamenti e
-i valori dichiarati dall'utente. Le forme d'onda continuano a riferirsi allo schema.
+Gli errori riguardano problemi elettrici rilevati sul montaggio: corti fra uscite
+o alimentazioni a potenziale diverso, ritorno del generatore mancante, percorso
+passivo interrotto, alimentazione del TL082 assente o invertita e ingressi in uso
+lasciati scollegati. I ritorni degli strumenti del banco sono comuni: anche una
+clip di massa inserita male può creare un corto. Terminali, fori e, quando
+individuabile, il ponticello responsabile sono richiamabili con Mostra punti.
+
+Ponticelli ridondanti, componenti bypassati, rami aggiuntivi lasciati aperti,
+elementi separati dal circuito, cavi lunghi e disposizione dei bypass producono
+consigli. L'assenza di guasti rilevati in un circuito alternativo non certifica
+la sua funzione: questa verifica è strutturale e non simula la sua risposta,
+stabilità, dissipazione o limiti dei componenti. Le forme d'onda dell'app
+continuano a riferirsi allo schema selezionato. Il profilo supporta R, C non
+polarizzati, L e TL082 a 8 pin; usa i collegamenti e i valori dichiarati.
+
+Schema, breadboard e grafici accettano lo zoom graduale con la rotella e il gesto
+apri/chiudi di due dita sul trackpad, dopo aver attivato l'area con un clic.
+La sensibilità è uniforme, le unità della rotella sono normalizzate e i salti o
+le raffiche troppo grandi sono limitati. Il pinch del trackpad è gestito sia
+come Ctrl+wheel sia come gesto WebKit, evitando il doppio zoom. Esc o un clic
+fuori restituiscono lo scorrimento alla pagina; lo zoom non modifica il circuito.
 
 Il montaggio effettivo viene conservato nel progetto, separatamente da schema,
 guida e lista manuale. Esporta/Importa montaggio JSON trasferisce la sola basetta;

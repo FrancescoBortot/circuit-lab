@@ -29,8 +29,9 @@
   for(const [key,predicate,label]of [['positive',c=>c.kind==='supply'&&c.node.endsWith('+'),'V+'],['negative',c=>c.kind==='supply'&&c.node.endsWith('−'),'V−'],['ground',c=>c.kind==='supply-ground','GND']]){const contacts=model.contacts.filter(predicate);if(contacts.length){port('PSU:'+key,'Alimentatore · '+label,canonical(contacts[0].node),true,contacts.map(c=>c.hole));ports.at(-1).voltage=key==='ground'?0:model.nets.find(n=>n.index===contacts[0].node).voltage;}}
   if(model.topology?.ground&&!ports.some(p=>p.required&&p.node==='ground')){const contact=model.contacts.find(c=>c.node===-1);if(contact)port('PSU:ground','Riferimento GND','ground',true,[contact.hole]);}
   for(const ch of model.channels){port('OSC'+ch.id.slice(2)+':tip','Oscilloscopio '+ch.id+' · puntale',canonical(ch.node),false,[ch.hole]);if(ch.ground)port('OSC'+ch.id.slice(2)+':ground','Oscilloscopio '+ch.id+' · massa',canonical(-1),false,[ch.ground]);}
-  const ref={units,ports,netNames,rows:model.modules[0]?.rows||30,proposedWires:clone(model.wires||[])};
-  ref.signature='physical-ref-v1-'+digest({units:units.map(({id,kind,value,pins})=>({id,kind,value,pins})),ports:ports.map(({id,node,required,voltage})=>({id,node,required,voltage}))});return ref;
+  const sourceVoltages=Object.fromEntries(model.sources.filter(s=>s.wave?.kind==='dc').map(s=>['AFG'+(model.sources.indexOf(s)+1)+':signal',s.wave.level*(s.wave.polarity??1)]));
+  const ref={units,ports,netNames,sourceVoltages,rows:model.modules[0]?.rows||30,proposedWires:clone(model.wires||[])};
+  ref.signature='physical-ref-v1-'+digest({units:units.map(({id,kind,value,pins})=>({id,kind,value,pins})),ports:ports.map(({id,node,required,voltage})=>({id,node,required,voltage})),sources:model.sources.map(s=>s.wave)});return ref;
  }
  function blank(ref,rows=ref.rows){return{version:1,rows,splitRails:false,referenceStamp:ref.signature,supply:{positive:ref.ports.find(p=>p.id==='PSU:positive')?.voltage??15,negative:ref.ports.find(p=>p.id==='PSU:negative')?.voltage??-15},parts:[],wires:[],leads:[]};}
  function proposed(ref){const board=blank(ref);board.parts=ref.units.map(u=>({id:u.id,kind:u.kind,holes:clone(u.holes),...(u.value===undefined?{}:{value:u.value})}));board.wires=ref.proposedWires.map(w=>({id:w.id,a:w.a,b:w.b,color:w.color}));let i=0;board.leads=ref.ports.flatMap(p=>p.holes.map(h=>({id:'L'+(++i),port:p.id,hole:h})));validate(board);return board;}
@@ -49,9 +50,9 @@
  function translate(board,item,toHole,anchorHole){const a=parse(anchorHole),z=parse(toHole),dc=columns.indexOf(z.col)-columns.indexOf(a.col),dr=z.row-a.row,shift=h=>{const q=parse(h);return hole(columns[columns.indexOf(q.col)+dc]||'?',q.row+dr);};return edit(board,next=>{if(item.kind==='lead'){next.leads.find(l=>l.id===item.id).hole=toHole;return;}if(item.kind==='wire'){const wire=next.wires.find(w=>w.id===item.id);wire.a=shift(wire.a);wire.b=shift(wire.b);return;}const part=next.parts.find(p=>p.id===item.id);if(!part)throw Error('Componente non disponibile.');if(part.kind==='DIP8'){const row=Math.min(...Object.values(part.holes).map(h=>parse(h).row))+dr,rotation=parse(part.holes[1]).col==='e'?0:180;part.holes=dipHoles(row,rotation);}else part.holes=Object.fromEntries(Object.entries(part.holes).map(([pin,h])=>[pin,shift(h)]));});}
  function rotate(board,id){return edit(board,next=>{const p=next.parts.find(p=>p.id===id);if(p.kind==='DIP8')p.holes=dipHoles(Math.min(...Object.values(p.holes).map(h=>parse(h).row)),parse(p.holes[1]).col==='e'?180:0);else[p.holes.a,p.holes.b]=[p.holes.b,p.holes.a];});}
  function remove(board,selection){return edit(board,next=>{const key={part:'parts',wire:'wires',lead:'leads'}[selection.kind];next[key]=next[key].filter(v=>v.id!==selection.id);});}
- function graph(board,withoutWire=null){const parent=new Map(),find=h=>{if(!parent.has(h))parent.set(h,h);if(parent.get(h)!==h)parent.set(h,find(parent.get(h)));return parent.get(h);},join=(a,b)=>{parent.set(find(a),find(b));};for(const g of groups(board))for(const h of g)join(g[0],h);for(const w of board.wires)if(w.id!==withoutWire)join(w.a,w.b);const ports=new Map();for(const l of board.leads){if(ports.has(l.port))join(ports.get(l.port),l.hole);else ports.set(l.port,l.hole);}return{find,ports};}
+ function graph(board,withoutWire=null){const parent=new Map(),find=h=>{if(!parent.has(h))parent.set(h,h);if(parent.get(h)!==h)parent.set(h,find(parent.get(h)));return parent.get(h);},join=(a,b)=>{parent.set(find(a),find(b));};for(const g of groups(board))for(const h of g)join(g[0],h);for(const w of board.wires)if(w.id!==withoutWire)join(w.a,w.b);const ports=new Map();let ground=null;for(const l of board.leads){if(ports.has(l.port))join(ports.get(l.port),l.hole);else ports.set(l.port,l.hole);/* Bank instruments share their return, even without an explicit jumper. */if(l.port.endsWith(':ground')){if(ground)join(ground,l.hole);else ground=l.hole;}}return{find,ports};}
  const signature=tokens=>JSON.stringify([...tokens].sort()),contains=(all,subset)=>{const counts=new Map();for(const t of all)counts.set(t,(counts.get(t)||0)+1);for(const t of subset){const n=counts.get(t)||0;if(!n)return false;counts.set(t,n-1);}return true;};
- function check(board,ref){
+ function compareReference(board,ref){
   validate(board);const errors=[],suggestions=[],extras=[],net=graph(board),actual=new Map(),wanted=new Map(),present=new Set(board.parts.map(p=>p.id));
   const add=(map,key,t)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(t);};
   const diag=(code,title,text,items=[],points=[])=>({code,title,text,items,holes:[...new Set(points)]});
@@ -71,7 +72,7 @@
    const terms=node.terms.map(t=>t.label+' ('+short(t.hole)+')');errors.push(diag('short','Collegamento inatteso / corto',terms.join('; ')+'. Questi terminali non devono appartenere tutti alla stessa rete.'+(culprits.length?' Ricontrolla '+culprits.map(w=>w.id).join(', ')+'.':''),[...node.terms.map(t=>({kind:t.kind,id:t.id})),...(culprits.length?culprits:wires).map(w=>({kind:'wire',id:w.id}))],node.terms.map(t=>t.hole)));
   }
   for(const n of remaining){const candidates=unmatched.filter(a=>a.tokens.some(t=>n.tokens.includes(t))&&contains(n.tokens,a.tokens));if(candidates.length<2)continue;errors.push(diag('open','Collegamento mancante · '+ref.netNames[n.id],n.terms.map(t=>t.label).join('; ')+': devono condividere la stessa rete. Controlla i contatti interni e i ponticelli fra i punti evidenziati.',candidates.flatMap(a=>a.terms.map(t=>({kind:t.kind,id:t.id}))),candidates.flatMap(a=>a.terms.map(t=>t.hole))));}
-  // Exact partition equivalence is the final gate, including ambiguous passive ends.
+  // Exact partition equivalence describes the reference only, including ambiguous passive ends.
   if(remaining.length&&!errors.some(e=>['open','short'].includes(e.code)))errors.push(diag('connections','Reti diverse dallo schema','Alcuni terminali appartengono a reti diverse. Ricontrolla i gruppi di fori evidenziati.',unmatched.flatMap(a=>a.terms.map(t=>({kind:t.kind,id:t.id}))),unmatched.flatMap(a=>a.terms.map(t=>t.hole))));
   if(!errors.length){
    for(const part of unused)suggestions.push(diag('unused-part','Elemento non utilizzato · '+part.id,'È separato dal circuito di riferimento. Puoi rimuoverlo per liberare spazio e rendere il montaggio più chiaro.',[{kind:'part',id:part.id}],Object.values(part.holes)));
@@ -81,5 +82,60 @@
   }
   const correct=errors.length===0;return{correct,status:correct?(suggestions.length?'improvable':'correct'):'incorrect',errors,suggestions,referenceChanged:board.referenceStamp!==ref.signature,counts:{parts:board.parts.length,wires:board.wires.length,leads:board.leads.length}};
  }
- return{clone,columns,colors,short,parse,hole,railCount,holes,group,groups,point,dipHoles,reference,blank,proposed,occupied,validate,edit,translate,rotate,remove,graph,check};
+ // Reference equivalence is useful information, never the gate for electrical faults.
+ function check(board,ref){
+  validate(board);const comparison=compareReference(board,ref),net=graph(board),errors=[],suggestions=[],terminals=new Map(),sources=[];
+  const diag=(code,title,text,items=[],points=[])=>({code,title,text,items,holes:[...new Set(points)]});
+  const item=t=>({kind:t.kind,id:t.id}),root=h=>net.find(h),add=t=>{const key=root(t.hole);if(!terminals.has(key))terminals.set(key,[]);terminals.get(key).push(t);};
+  for(const p of board.parts)for(const [pin,h]of Object.entries(p.holes))add({kind:'part',id:p.id,pin,hole:h});
+  for(const l of board.leads){add({kind:'lead',id:l.id,hole:l.hole});const ground=l.port.endsWith(':ground'),supply=l.port.startsWith('PSU:')&&!ground,dc=ref.sourceVoltages?.[l.port];if(ground||supply||l.port.startsWith('AFG'))sources.push({...l,potential:ground?'dc:0':supply?'dc:'+board.supply[l.port.split(':')[1]]:Number.isFinite(dc)?'dc:'+dc:l.port});}
+  const at=h=>terminals.get(root(h))||[],others=(h,id)=>at(h).some(t=>t.kind!=='part'||t.id!==id);
+  const conflicts=(a,b)=>a.potential!==b.potential;
+  // A real short joins incompatible source outputs, not merely differently named nets.
+  for(const [r,terms]of terminals){const outputs=sources.filter(s=>root(s.hole)===r);if(!outputs.some((a,i)=>outputs.slice(i+1).some(b=>conflicts(a,b))))continue;
+   const wires=board.wires.filter(w=>root(w.a)===r),culprits=wires.filter(w=>{const split=graph(board,w.id);return outputs.some((a,i)=>outputs.slice(i+1).some(b=>conflicts(a,b)&&split.find(a.hole)!==split.find(b.hole)));});
+   errors.push(diag('short','Corto fra uscite o alimentazioni',outputs.map(s=>s.port+' ('+short(s.hole)+')').join('; ')+': queste uscite sono collegate direttamente ma impongono tensioni diverse.'+(culprits.length?' Controlla '+culprits.map(w=>w.id).join(', ')+'.':''),[...terms.map(item),...(culprits.length?culprits:wires).map(w=>({kind:'wire',id:w.id}))],terms.map(t=>t.hole)));
+  }
+  const passives=board.parts.filter(p=>p.kind!=='DIP8'),chips=board.parts.filter(p=>p.kind==='DIP8');
+  // Reachability through the *actual* passive network. No expected node or part ID is used.
+  const adjacency=new Map(),edge=(a,b)=>{if(!adjacency.has(a))adjacency.set(a,new Set());if(!adjacency.has(b))adjacency.set(b,new Set());adjacency.get(a).add(b);adjacency.get(b).add(a);};
+  for(const p of passives)edge(root(p.holes.a),root(p.holes.b));
+  const reach=start=>{const seen=new Set([start]),queue=[start];for(let i=0;i<queue.length;i++)for(const n of adjacency.get(queue[i])||[])if(!seen.has(n)){seen.add(n);queue.push(n);}return seen;};
+  const signals=sources.filter(s=>/^AFG[12]:signal$/.test(s.port)),powered=new Set();
+  for(const source of sources)for(const r of reach(root(source.hole)))powered.add(r);
+  for(const signal of signals){const channel=signal.port.split(':')[0],returns=sources.filter(s=>s.port===channel+':ground'),seen=reach(root(signal.hole)),input=chips.some(p=>['2','3','5','6'].some(pin=>seen.has(root(p.holes[pin]))));
+   if(!returns.length)errors.push(diag('missing-return','Manca il ritorno del '+channel,'Collega il ritorno GND del generatore: il solo cavo del segnale non completa il collegamento.',[{kind:'port',id:channel+':ground'}],[signal.hole]));
+   else if(!returns.some(s=>seen.has(root(s.hole)))&&!input)errors.push(diag('open','Percorso del segnale interrotto · '+channel,'Il segnale non raggiunge né un percorso di ritorno attraverso i componenti né un ingresso dell’integrato. Controlla i capi liberi e i ponticelli.',passives.filter(p=>seen.has(root(p.holes.a))||seen.has(root(p.holes.b))).map(p=>({kind:'part',id:p.id})),[signal.hole,...passives.flatMap(p=>[p.holes.a,p.holes.b]).filter(h=>seen.has(root(h)))]));
+  }
+  const supplied=h=>{const all=sources.filter(s=>root(s.hole)===root(h));return all.some(s=>s.potential.startsWith('dc:'))?Number(all.find(s=>s.potential.startsWith('dc:')).potential.slice(3)):null;};
+  if(!signals.length&&chips.length===0){const dc=sources.filter(s=>s.potential.startsWith('dc:')),closed=dc.some(s=>dc.some(t=>conflicts(s,t)&&reach(root(s.hole)).has(root(t.hole))));if(dc.some(s=>s.potential!=='dc:0')&&!closed)errors.push(diag('open','Percorso dell’alimentazione interrotto','Nessun ramo dei componenti chiude il percorso fra due potenziali diversi dell’alimentatore. Controlla il ritorno e i capi liberi.',passives.map(p=>({kind:'part',id:p.id})),passives.flatMap(p=>Object.values(p.holes))));}
+  for(const p of chips){const used=Object.values(p.holes).some(h=>others(h,p.id));if(!used){suggestions.push(diag('unused-part','Integrato non collegato · '+p.id,'È separato dal circuito. Puoi rimuoverlo o completarne i collegamenti.',[{kind:'part',id:p.id}],Object.values(p.holes)));continue;}
+   const high=supplied(p.holes[8]),low=supplied(p.holes[4]);
+   if(high===null||low===null)errors.push(diag('missing-power','Alimentazione incompleta · '+p.id,'Il TL082 richiede una tensione continua ai pin 8 (V+) e 4 (V−). Controlla anche eventuali interruzioni delle barre.',[{kind:'part',id:p.id}],[p.holes[8],p.holes[4]]));
+   else if(high<=low)errors.push(diag('reversed-power','Alimentazione invertita o nulla · '+p.id,'Il potenziale al pin 8 deve essere maggiore di quello al pin 4. Attualmente: '+high+' V e '+low+' V.',[{kind:'part',id:p.id}],[p.holes[8],p.holes[4]]));
+   for(const [out,minus,plus,name]of [['1','2','3','A'],['7','6','5','B']]){const usedSection=[out,minus,plus].some(pin=>others(p.holes[pin],p.id));if(!usedSection)continue;
+    for(const pin of [minus,plus])if(at(p.holes[pin]).length===1)errors.push(diag('floating-input','Ingresso non collegato · '+p.id+' '+name,'Il pin '+pin+' dell’operazionale in uso è lasciato flottante. Collegalo alla rete prevista dal tuo circuito.',[{kind:'part',id:p.id}],[p.holes[pin]]));
+    // A direct output/+ connection alone is positive feedback; passive feedback needs analysis.
+    if(root(p.holes[out])===root(p.holes[plus])&&root(p.holes[out])!==root(p.holes[minus]))suggestions.push(diag('positive-feedback','Controlla la retroazione · '+p.id+' '+name,'L’uscita è collegata direttamente all’ingresso +. Può essere intenzionale per un comparatore; per un amplificatore lineare verifica la retroazione negativa.',[{kind:'part',id:p.id}],[p.holes[out],p.holes[plus]]));
+   }
+  }
+  if(board.parts.length&&!signals.length&&!sources.some(s=>s.port.startsWith('PSU:')&&!s.port.endsWith(':ground')))errors.push(diag('missing-source','Montaggio senza alimentazione o segnale','Collega il generatore o l’alimentatore per completare il circuito.',ref.ports.filter(p=>p.required&&!p.id.endsWith(':ground')).map(p=>({kind:'port',id:p.id}))));
+  if(!board.parts.length)errors.push(diag('missing-circuit','Montaggio da costruire','Inserisci i componenti del tuo circuito prima di verificarlo.'));
+  for(const p of passives){const connected=Object.values(p.holes).some(h=>powered.has(root(h))),bypassed=root(p.holes.a)===root(p.holes.b),floating=Object.values(p.holes).filter(h=>at(h).length===1);
+   if(!connected)suggestions.push(diag('unused-part','Elemento separato dal circuito · '+p.id,'Non raggiunge i collegamenti degli strumenti. Puoi rimuoverlo oppure collegarlo se deve essere utilizzato.',[{kind:'part',id:p.id}],Object.values(p.holes)));
+   else if(bypassed)suggestions.push(diag('bypassed-part','Componente bypassato · '+p.id,'I due capi appartengono alla stessa rete: questo componente non ha effetto. Verifica che il ponte sia intenzionale.',[{kind:'part',id:p.id}],Object.values(p.holes)));
+   else if(floating.length)suggestions.push(diag('dangling-part','Capo libero · '+p.id,'Il ramo termina in un capo non collegato e non contribuisce al percorso del segnale. Controlla se è intenzionale.',[{kind:'part',id:p.id}],floating));
+  }
+  for(const w of board.wires){const g=graph(board,w.id),terms=[...terminals.values()].flat(),left=terms.some(t=>g.find(t.hole)===g.find(w.a)),right=terms.some(t=>g.find(t.hole)===g.find(w.b));if(!left||!right)suggestions.push(diag('unused-wire','Ponticello '+w.id+' senza funzione','Almeno un’estremità non raggiunge componenti o strumenti. Puoi rimuoverlo per liberare spazio.',[{kind:'wire',id:w.id}],[w.a,w.b]));else if(g.find(w.a)===g.find(w.b))suggestions.push(diag('redundant-wire','Ponticello '+w.id+' ridondante','I due estremi restano collegati anche senza questo ponticello. Puoi rimuoverlo per rendere il montaggio più leggibile.',[{kind:'wire',id:w.id}],[w.a,w.b]));else if(Math.abs(parse(w.a).row-parse(w.b).row)>12)suggestions.push(diag('long-wire','Percorso lungo · '+w.id,'Se il montaggio reale lo permette, avvicina i componenti e accorcia il collegamento.',[{kind:'wire',id:w.id}],[w.a,w.b]));}
+  for(const d of comparison.suggestions.filter(d=>['probe-ground','bypass-distance'].includes(d.code)))suggestions.push(d);
+  const differences=[],changes=comparison.errors;
+  for(const [codes,title,text]of [
+   [['missing-part','wrong-kind','extra-part'],'Componenti diversi dallo schema','La scelta dei componenti differisce dal riferimento. Sono verificati gli elementi presenti sul tuo montaggio.'],
+   [['wrong-value'],'Valori diversi dallo schema','I valori nominali dichiarati sono diversi. Questo può cambiare la risposta del circuito e non costituisce da solo un guasto.'],
+   [['wrong-supply'],'Tensioni diverse dallo schema','La tensione impostata differisce dal riferimento. Il controllo dell’alimentazione usa i collegamenti e le tensioni attuali.'],
+   [['short','open','connections','missing-port','extra-port'],'Collegamenti diversi dallo schema','Il cablaggio differisce dal riferimento. Una rete diversa non è automaticamente un corto o un collegamento errato.']
+  ]){const group=changes.filter(d=>codes.includes(d.code));if(group.length)differences.push(diag('reference-difference',title,text,group.flatMap(d=>d.items),group.flatMap(d=>d.holes)));}
+  const correct=errors.length===0;return{correct,equivalent:comparison.correct,status:correct?(suggestions.length?'improvable':'correct'):'incorrect',errors,suggestions,differences,referenceChanged:comparison.referenceChanged,counts:comparison.counts};
+ }
+ return{clone,columns,colors,short,parse,hole,railCount,holes,group,groups,point,dipHoles,reference,blank,proposed,occupied,validate,edit,translate,rotate,remove,graph,compareReference,check};
 });

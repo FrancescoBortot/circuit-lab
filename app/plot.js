@@ -9,7 +9,7 @@
       svg.parentElement.before(this.controls);
       this.interactionActive=false;svg.setAttribute('tabindex','0');
       this.activationHint=document.createElement('span');this.activationHint.className='plot-activation-hint';this.controls.append(this.activationHint);this.activationHint.id=svg.id+'InteractionHint';svg.setAttribute('aria-describedby',this.activationHint.id);
-      const activate=value=>{this.interactionActive=value;svg.classList.toggle('canvas-interaction-active',value);svg.style.touchAction=value?'none':'pan-y';this.activationHint.textContent=value?'Grafico attivo · Esc o clic fuori per uscire':'Clicca il grafico o premi Invio per attivarlo';if(!value){const ids=[...this.pointers.keys()];this.pointers.clear();this.drag=null;this.pinch=null;for(const id of ids)if(svg.hasPointerCapture?.(id))svg.releasePointerCapture(id);}};
+      const activate=value=>{this.interactionActive=value;svg.classList.toggle('canvas-interaction-active',value);svg.style.touchAction=value?'none':'pan-y';this.activationHint.textContent=value?'Grafico attivo · pizzica con due dita per zoom · Esc per uscire':'Clicca il grafico o premi Invio per attivarlo';if(!value){const ids=[...this.pointers.keys()];this.pointers.clear();this.drag=null;this.pinch=null;for(const id of ids)if(svg.hasPointerCapture?.(id))svg.releasePointerCapture(id);}};
       this.activateInteraction=activate;activate(false);
       this.activationPointer=e=>{if(!svg.contains(e.target)){activate(false);return;}if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||this.interactionActive)return;activate(true);svg.focus({preventScroll:true});e.preventDefault();e.stopImmediatePropagation();};
       this.activationBlur=()=>activate(false);
@@ -19,7 +19,7 @@
 
       this.controls.addEventListener('click',e=>{const key=e.target.closest('[data-cursor]')?.dataset.cursor;if(!key)return;if(key==='toggle')this.dual=!this.dual;else this.activeCursor=key;this.syncControls();this.drawCursor();this.onStateChange?.();});
       this.resizeObserver=new ResizeObserver(()=>{cancelAnimationFrame(this.frame);this.frame=requestAnimationFrame(()=>this.draw());});this.resizeObserver.observe(svg.parentElement);
-      svg.addEventListener('wheel',e=>{if(!this.interactionActive||e.ctrlKey||e.metaKey||e.altKey)return;const q=this.point(e);if(!q.inside)return;e.preventDefault();this.zoom(Math.exp(-clamp(e.deltaY,-100,100)*.008),q.domain);},{passive:false});
+      this.zoomInteraction=window.CanvasInteraction.installZoom(svg,{active:()=>this.interactionActive,accept:e=>this.point(e).inside,begin:()=>{activate(false);activate(true);},touching:()=>this.pointers.size>0,zoom:(factor,e)=>{const q=this.point(e);if(q.inside)this.zoom(factor,q.domain);}});
       svg.addEventListener('pointerdown',e=>{if(!this.interactionActive||e.ctrlKey||e.metaKey||e.altKey)return;if(e.button!==0)return;const q=this.point(e);if(!q.inside)return;svg.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,q.x);if(this.pointers.size===2){this.pinch=Math.abs([...this.pointers.values()][0]-[...this.pointers.values()][1]);this.drag=null;}else{this.drag={x:q.x,start:this.view[0],end:this.view[1],moved:false};this.inspectDomain(q.domain);}});
       svg.addEventListener('pointermove',e=>{if(!this.interactionActive||!this.geometry)return;const q=this.point(e);if(this.pointers.has(e.pointerId))this.pointers.set(e.pointerId,q.x);
         if(this.pointers.size===2&&this.pinch){const[a,b]=[...this.pointers.values()],distance=Math.abs(a-b);if(distance>5)this.zoom(distance/this.pinch,(this.view[0]+this.view[1])/2);this.pinch=distance;}
@@ -34,7 +34,7 @@
         if(e.key==='+'||e.key==='=')this.zoom(1.5,d);if(e.key==='-')this.zoom(1/1.5,d);if(e.key==='0')this.fit();
       });
     }
-    destroy(){this.activateInteraction(false);document.removeEventListener('pointerdown',this.activationPointer,true);window.removeEventListener('blur',this.activationBlur);this.svg.removeEventListener('focusout',this.activationFocus);this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();}
+    destroy(){this.zoomInteraction.destroy();this.activateInteraction(false);document.removeEventListener('pointerdown',this.activationPointer,true);window.removeEventListener('blur',this.activationBlur);this.svg.removeEventListener('focusout',this.activationFocus);this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();}
     syncControls(){for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
     set(config){
       const old=this.config,same=old&&old.logX===config.logX&&old.xUnit===config.xUnit&&this.data[0]?.x===config.data[0]?.x&&this.data.at(-1)?.x===config.data.at(-1)?.x,ax=this.cursorA?.x,bx=this.cursorB?.x;

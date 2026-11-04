@@ -1,7 +1,7 @@
 /* Explicit ownership of diagram gestures. An inactive drawing lets the page scroll. */
 (() => {
  'use strict';let sequence=0;
- function install(svg,{cancel=()=>{},onActivate=()=>{},activeHint='Schema attivo · trascina per spostare, due dita per zoom · Esc o clic fuori per uscire',idleHint='Tocca o clicca nello schema per attivarlo · Invio da tastiera'}={}){
+ function install(svg,{cancel=()=>{},onActivate=()=>{},activeHint='Schema attivo · trascina per spostare · pizzica con due dita per zoom · Esc per uscire',idleHint='Tocca o clicca nello schema per attivarlo · Invio da tastiera'}={}){
   let active=false;const hint=document.createElement('span');hint.className='canvas-interaction-hint';hint.id='canvasInteractionHint'+(++sequence);hint.setAttribute('role','status');hint.style.pointerEvents='none';svg.after(hint);
   const described=svg.getAttribute('aria-describedby');svg.setAttribute('aria-describedby',[described,hint.id].filter(Boolean).join(' '));
   function render(){svg.classList.toggle('canvas-interaction-active',active);svg.classList.toggle('canvas-interaction-idle',!active);svg.style.touchAction=active?'none':'pan-y';hint.textContent=active?activeHint:idleHint;hint.hidden=Boolean(svg.closest('[hidden]'));}
@@ -16,6 +16,20 @@
   window.addEventListener('blur',()=>set(false));
   new MutationObserver(()=>{if(svg.hidden||svg.closest('[hidden]'))set(false);render();}).observe(svg,{attributes:true,attributeFilter:['hidden']});
   render();return{get active(){return active;},activate:()=>set(true),deactivate:()=>set(false),refresh:render};
+ }
+ // Mouse wheels, Chromium/Firefox trackpad pinch (ctrl+wheel), and Safari pinch.
+ // Normalize units, bound a single jump and cap bursts without a delayed zoom tail.
+ function installZoom(target,{active=()=>true,zoom,begin=()=>{},touching=()=>false,accept=()=>true}){
+  let last=null,credit=.08,gesture=null;
+  const eligible=e=>active()&&!e.metaKey&&!e.altKey&&accept(anchor(e));
+  const anchor=e=>{const r=target.getBoundingClientRect();return{clientX:Number.isFinite(e.clientX)&&e.clientX>=r.left&&e.clientX<=r.left+r.width?e.clientX:r.left+r.width/2,clientY:Number.isFinite(e.clientY)&&e.clientY>=r.top&&e.clientY<=r.top+r.height?e.clientY:r.top+r.height/2};};
+  function step(log,e,pinch){if(!Number.isFinite(log)||!log)return;const now=Number.isFinite(e.timeStamp)?e.timeStamp:Date.now(),gap=last===null?Infinity:Math.max(0,now-last);if(gap>180){credit=.08;if(!gesture)begin();}else credit=Math.min(.08,credit+gap*(pinch?.0015:.001));last=now;const amount=Math.max(-credit,Math.min(credit,log));credit=Math.max(0,credit-Math.abs(amount));if(amount)zoom(Math.exp(amount),anchor(e));}
+  const wheel=e=>{if(!eligible(e))return;e.preventDefault();if(gesture)return;const units=e.deltaMode===1?16:e.deltaMode===2?Math.max(200,Math.min(1000,target.clientHeight||800)):1;step(-e.deltaY*units*(e.ctrlKey?.004:.001),e,Boolean(e.ctrlKey));};
+  const start=e=>{if(!eligible(e))return;e.preventDefault();gesture={scale:Number.isFinite(e.scale)&&e.scale>0?e.scale:1,ignore:touching()};last=null;credit=.08;if(!gesture.ignore)begin();};
+  const change=e=>{if(!eligible(e)){gesture=null;return;}if(!gesture)return;e.preventDefault();if(gesture.ignore||!Number.isFinite(e.scale)||e.scale<=0)return;const previous=gesture.scale;gesture.scale=e.scale;step(Math.log(e.scale/previous)*.7,e,true);};
+  const end=e=>{if(!gesture)return;if(eligible(e))e.preventDefault();gesture=null;last=null;};
+  const handlers={wheel,gesturestart:start,gesturechange:change,gestureend:end};for(const [type,handler]of Object.entries(handlers))target.addEventListener(type,handler,{passive:false});
+  return{destroy(){for(const [type,handler]of Object.entries(handlers))target.removeEventListener(type,handler);gesture=null;}};
  }
  // Navigation for a scrollable drawing; the same activation policy as the editors.
  function installViewport(viewport,{pan,zoom}){
@@ -49,7 +63,7 @@
   }
   for(const type of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(type,up);
   viewport.addEventListener('click',event=>{if(blockClick&&event.detail!==0){blockClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
-  viewport.addEventListener('wheel',event=>{event.preventDefault();const mid={x:event.clientX,y:event.clientY};zoom(Math.exp(-Math.max(-100,Math.min(100,event.deltaY))*.008),mid,mid);},{passive:false});
+  installZoom(viewport,{active:()=>interaction.active,begin:cancel,touching:()=>pointers.size>0,zoom:(factor,event)=>{const mid={x:event.clientX,y:event.clientY};zoom(factor,mid,mid);}});
   viewport.addEventListener('keydown',event=>{
    if(event.ctrlKey||event.metaKey||event.altKey)return;
    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();return;}
@@ -58,5 +72,5 @@
   });
   return{interaction,cancel};
  }
- window.CanvasInteraction={install,installViewport};
+ window.CanvasInteraction={install,installViewport,installZoom};
 })();

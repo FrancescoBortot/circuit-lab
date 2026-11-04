@@ -31,10 +31,21 @@
   return{root,files,manifest};
  }
  function readArchive(bytes,sessionId){const files=F.unzipSession(bytes),manifests=Object.keys(files).filter(p=>p.endsWith('/sessione.json'));if(manifests.length!==1)throw Error('Manifesto della sessione assente o ambiguo.');const manifest=JSON.parse(new TextDecoder().decode(files[manifests[0]]));if(manifest.application!=='Circuit Lab session'||manifest.version!==1||!Array.isArray(manifest.trials)||!manifest.trials.length||manifest.trials.length>64)throw Error('Sessione non valida.');const seen=new Set(),records=manifest.trials.map(t=>{if(typeof t.project!=='string'||!F.archivePath(t.project,true)||!t.project.startsWith(manifests[0].slice(0,manifests[0].lastIndexOf('/')+1))||!files[t.project])throw Error('Progetto mancante nel pacchetto.');const doc=L.parse(new TextDecoder().decode(files[t.project]));if(doc.session?.id!==manifest.session?.id)throw Error('Sessioni incoerenti.');doc.session.id=sessionId;const record=capture(null,L.serialize(doc));if(seen.has(record.id))throw Error('Prove duplicate.');seen.add(record.id);return record;});return records;}
+ function directoryPaths(files){
+  const paths=Object.keys(files);const sizes=Object.values(files).map(v=>typeof v==='string'?enc.encode(v).length:v instanceof Uint8Array?v.length:Infinity);if(sizes.some(n=>n>6000000)||sizes.reduce((a,b)=>a+b,0)>40000000)throw Error('File della sessione troppo grandi.');if(!paths.length||paths.length>512||paths.some(p=>!F.archivePath(p,true)))throw Error('Percorsi della sessione non validi.');return paths;
+ }
  async function writeDirectory(parent,files,onFile=()=>{}){
-  const paths=Object.keys(files);const sizes=Object.values(files).map(v=>typeof v==='string'?enc.encode(v).length:v instanceof Uint8Array?v.length:Infinity);if(sizes.some(n=>n>6000000)||sizes.reduce((a,b)=>a+b,0)>40000000)throw Error('File della sessione troppo grandi.');if(!paths.length||paths.length>512||paths.some(p=>!F.archivePath(p,true)))throw Error('Percorsi della sessione non validi.');let completed=0;
+  const paths=directoryPaths(files);let completed=0;
   for(const path of paths){const parts=path.split('/');let directory=parent;for(const name of parts.slice(0,-1))directory=await directory.getDirectoryHandle(name,{create:true});const file=await directory.getFileHandle(parts.at(-1),{create:true}),stream=await file.createWritable();try{await stream.write(files[path]);await stream.close();}catch(error){try{await stream.abort();}catch{}throw error;}onFile(++completed,paths.length);}
   return completed;
  }
- return{key,capture,fileName,bundle,readArchive,writeDirectory};
+ async function writeSnapshot(parent,files,onFile=()=>{}){
+  directoryPaths(files);
+  const name='Salvataggio-'+new Date().toISOString().replace(/[:.]/g,'-')+'-'+Math.random().toString(36).slice(2,10);
+  const target=await parent.getDirectoryHandle(name,{create:true}),marker='SALVATAGGIO-INCOMPLETO.txt';
+  const handle=await target.getFileHandle(marker,{create:true}),stream=await handle.createWritable();
+  await stream.write('Salvataggio in corso o interrotto. Usa soltanto una cartella senza questo avviso.');await stream.close();
+  const count=await writeDirectory(target,files,onFile);await target.removeEntry(marker);return{count,name};
+ }
+ return{key,capture,fileName,bundle,readArchive,writeDirectory,writeSnapshot};
 });

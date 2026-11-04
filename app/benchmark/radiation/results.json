@@ -2,10 +2,10 @@
   "reference": "ngspice · native R/C, matched generic behavioral opamp equations",
   "version": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n******",
   "hashes": {
-    "measurements.js": "75c70df7f1c4f7ab971a1c7c8102325f50f69b52f8cb15ceb1cb62bd5f5c29a6",
-    "free-model.js": "04701e3e48fb38472d93051c165bfe1e2a235a26820879f5040815d946613527",
-    "radiation-model.js": "832b862bce4fa4db022ee4edb23ba1a40defcf247541f0c39627534cd7eac30e",
-    "lab-model.js": "cc2bcfc7bcd84480ca2bbcaa33723f424ae18b030aa5f8d4969a7598276130bd",
+    "measurements.js": "3ad51f8da4e181459e87e3fcf6c77bb6d713c046f757a258d3fba6db4505abaf",
+    "free-model.js": "4f942d9b0c7beb64031fc8408985705d471b99e77ffc7c700fb473c9b86e61ea",
+    "radiation-model.js": "8ddbe6ea310ea1ba10e58137a15c27a7fc8887e688e7a4f156f25389baf5f63c",
+    "lab-model.js": "863e79ea07512fd15ada741a7a2b3eb5273925465713bc5c882ee124f0082ef9",
     "bench-model.js": "60d1b624c2028b623a21c566fae6043b5a2bdd813e1e2fb1dcdb4eb211d78814",
     "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
   },

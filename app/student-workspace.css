@@ -192,3 +192,45 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .preamp-plan-table caption{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .preamp-plan-table td,.preamp-plan-table th{padding-top:6px;padding-bottom:6px}.preamp-plan-table button{min-height:28px;padding:4px 8px}
 @media(max-width:760px){.preamp-sheet-dialog .dialog-heading h2{flex-basis:100%}.preamp-sheet-dialog .student-tool-controls{margin-left:auto}}
+
+/* The active task owns the visible space. */
+.student-workbench .student-provenance>span{display:none}
+.student-workbench .student-measurement-entry>span{display:none}
+.student-workbench .student-measurement-entry{padding:6px 12px;gap:6px;font-size:12px}
+.student-workbench .student-measurement-entry button{padding:4px 8px;min-height:32px}
+.student-workbench .analysis-pane .analysis-toolbar{order:1}
+.student-workbench .analysis-pane .plot-meta{order:2}
+.student-workbench .analysis-pane .cursor-toolbar{order:3}
+.student-workbench .analysis-pane .plot-area{order:4}
+.student-workbench .analysis-pane .student-result-metrics{order:5}
+.student-workbench .analysis-pane .plot-bottom{order:6}
+.student-workbench .analysis-pane .timeline{order:7}
+.student-workbench .workbench[data-workbench-view=plot] .study-launcher,
+.student-workbench .workbench[data-workbench-view=plot] .student-measurement-entry,
+.student-workbench .free-center[data-workbench-view=plot] .study-launcher,
+.student-workbench .free-center[data-workbench-view=plot] .student-measurement-entry{display:none}
+.student-workbench .workbench[data-workbench-view=plot] .plot-area,
+.student-workbench .free-center[data-workbench-view=plot] .free-plot-area{flex:0 0 auto;height:clamp(220px,32dvh,360px)}
+.student-workbench .inspector-scroll{display:flex;flex-direction:column;gap:12px}
+.student-workbench .inspector-scroll>#inspectorContent{order:0;flex-shrink:0}
+.student-workbench .inspector-scroll>.bench-mode-strip{order:1;flex-shrink:0}
+.student-workbench .inspector-scroll>.sheet-preset{order:2;flex-shrink:0}
+.student-workbench .inspector-scroll>.inspector-summary{order:3;flex-shrink:0}
+.student-workbench .free-results .student-result-metrics{order:4}
+.student-workbench .free-results .free-results-bottom{order:3}
+.student-workbench .free-results .free-result-content{order:2}
+@media(max-width:760px){
+ .student-workbench .schematic-stage{height:300px;min-height:260px}
+ .student-workbench .workbench[data-workbench-view=plot] .student-context{padding-block:4px}
+ .student-workbench .schematic-tools{flex-wrap:wrap}
+}
+/* SVG text shares the readable palette, including exported graphics. */
+.student-workbench .plot-area text,.student-workbench .free-plot-area text,.student-workbench .comparison-plot text{fill:#42546c;font-size:12px}
+.student-workbench .plot-area .axis-unit,.student-workbench .free-plot-area .axis-unit,.student-workbench .comparison-plot .axis-unit{fill:#42546c;font-size:11px}
+.student-workbench .plot-area .guide-text{fill:#52627a;font-size:11px}
+.student-workbench .cursor-toolbar span{font-size:11px;white-space:normal}
+body[data-student-contrast=high] :is(.plot-area,.free-plot-area,.comparison-plot) text{fill:#10243c}
+@media(max-width:760px){
+ .student-workbench .workbench[data-workbench-view=plot] .plot-area,
+ .student-workbench .free-center[data-workbench-view=plot] .free-plot-area{height:220px}
+}

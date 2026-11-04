@@ -1,0 +1,31 @@
+const fs=require('node:fs'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'workflow.cjs'),'utf8').split('(async()=>{await flush();assert.ok(env.StudentUI)')[0];
+const {env,document,storage,click,fill,change,flush,waitFor}=new Function('require','__dirname',source+'\nreturn {env,document,storage,click,fill,change,flush,waitFor};')(require,__dirname);
+const assert=require('node:assert/strict');
+(async()=>{
+ await waitFor(()=>env.GuidedLab.plotSnapshot());
+ env.MeasurementComparison.open();fill('[data-cmp-raw]','t,V\n0,0\n0.001,1');
+ click('[data-experiment="inverting"]');await flush();
+ assert.equal(document.querySelector('[data-cmp-import]').disabled,true);
+ assert.match(document.querySelector('[data-cmp-status]').textContent,/altra esperienza/);
+ assert.equal(env.GuidedLab.document().comparisonStudy,undefined);
+ click('[data-experiment="rc"]');await flush();
+ assert.equal(document.querySelector('[data-cmp-raw]').value,'t,V\n0,0\n0.001,1');
+ assert.equal(document.querySelector('[data-cmp-import]').disabled,false);
+ click('[data-cmp-close]');console.log('PASS comparison context guard and draft recovery');
+ const text=env.GuidedLab.snapshot();storage.set('cl-flow-revisions',JSON.stringify(Array.from({length:24},(_,i)=>({name:'V'+i,date:'2026-11-03',text}))));
+ env.LabWorkflow.revisions();let versions=[...document.querySelectorAll('dialog[open]')].find(d=>d.textContent.includes('Versioni nominate'));
+ [...versions.querySelectorAll('button')].find(b=>b.textContent==='Riapri').click();await flush();assert.equal(versions.open,false);assert.equal(JSON.parse(storage.get('cl-flow-revisions')).length,24);assert.ok(JSON.parse(storage.get('cl-flow-recovery')).text);
+ env.LabWorkflow.revisions();versions=[...document.querySelectorAll('dialog[open]')].find(d=>d.textContent.includes('Versioni nominate'));
+ [...versions.querySelectorAll('button')].find(b=>b.textContent==='Rimuovi versione').click();await flush();assert.equal(JSON.parse(storage.get('cl-flow-revisions')).length,23);
+ [...versions.querySelectorAll('button')].find(b=>b.textContent==='Recupera versione rimossa').click();await flush();assert.equal(JSON.parse(storage.get('cl-flow-revisions')).length,24);versions.close();console.log('PASS full revision archive, recovery backup and reversible removal');
+ const Base=env.LabPlot;let created=0,destroyed=0;env.LabPlot=class extends Base{constructor(...a){super(...a);created++;}destroy(){destroyed++;super.destroy();}};
+ for(let i=0;i<3;i++){env.MeasurementComparison.open();await flush();click('[data-cmp-close]');}assert.equal(created,6);assert.equal(destroyed,6);console.log('PASS comparison releases every plot');
+ const original=document.getElementById('plot'),before=original.outerHTML,model=env.GuidedLab.snapshot();
+ const exported=env.PlotExport.build([{svg:original,series:[{label:'Misure <b>& modello',color:'#e36c16'}]}],'Prova <script>');
+ assert.match(exported.outerHTML,/Misure &lt;b&gt;&amp; modello/);assert.match(exported.outerHTML,/Prova &lt;script&gt;/);assert.equal(original.outerHTML,before);assert.equal(env.GuidedLab.snapshot(),model);assert.ok(Number(exported.getAttribute('height'))>0);console.log('PASS standalone graphic labels, source and project preservation');
+ Object.defineProperty(document.documentElement,'clientWidth',{configurable:true,value:390});env.LabWorkflow.go(1);assert.ok(document.getElementById('appLayout').classList.contains('inspector-closed'));Object.defineProperty(document.documentElement,'clientWidth',{configurable:true,value:1280});console.log('PASS mobile simulation keeps plot unobstructed');
+ env.LabWorkflow.go(0);assert.equal(document.getElementById('studentProjects')?.open||false,false);
+ // NEXT_CHECK
+ process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1);});

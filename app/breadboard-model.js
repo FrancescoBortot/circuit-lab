@@ -87,6 +87,10 @@
   }
   for(const[i,c]of model.sources.entries())for(const pin of ['p','n'])add(c.id,pin,model.pinHoles[c.id+':'+pin],'AFG CH'+(i+1)+' · '+(pin==='p'?'segnale':'ritorno'),{name:pin==='p'?'Segnale':'GND',instrument:true});
   for(const c of model.contacts.filter(c=>c.kind==='supply'||c.kind==='supply-ground')){const net=netAt(c.hole);result.push({ref:c.id,part:'PSU',hole:c.hole,label:c.kind==='supply-ground'?'Alimentatore · GND':net.name.endsWith('+')?'Alimentatore · V+':'Alimentatore · V−',node:net.index,net:net.id,color:net.color,network:net.name,instrument:true,auxiliary:true});}
+  for(const ch of model.channels){
+   add('OSC',ch.id+'tip',ch.hole,'Oscilloscopio '+ch.id+' · puntale',{name:ch.id+' puntale',instrument:true,channel:ch.id});
+   if(ch.ground)add('OSC',ch.id+'ground',ch.ground,'Oscilloscopio '+ch.id+' · massa',{name:ch.id+' massa',instrument:true,channel:ch.id});
+  }
   return result;
  }
  function terminals(model,id){const all=terminalList(model);return all.filter(t=>t.part===id).map(t=>({...t,targets:all.filter(other=>other.ref!==t.ref&&other.node===t.node)}));}
@@ -100,5 +104,5 @@
   for(let i=1;i<walk.length;i++){if(walk[i].startsWith('@')){segments.push({kind:'strip',a:walk[i-1],b:walk[i+1],group:walk[i].slice(1)});i++;}else segments.push({kind:'wire',a:walk[i-1],b:walk[i],id:seen.get(walk[i]).wire});}
   return{from,to,segments};
  }
- return{create,packagingOptions,verify,palette,pinNames,localPoint,group,clone,terminals,trace};
+ return{create,packagingOptions,verify,palette,pinNames,localPoint,group,clone,terminalList,terminals,trace};
 });

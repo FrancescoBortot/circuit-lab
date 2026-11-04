@@ -138,3 +138,59 @@
 .bb-build-check,.bb-build-manual{flex-basis:100%;font-size:11px}.bb-build-check{display:flex;align-items:center;gap:7px}.bb-build-check input{flex:none}.bb-build-panel textarea{width:100%;min-height:60px}.bb-build-panel details{font-size:11px}
 
 .bb-part-list button{flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;white-space:normal}.bb-part-list button small{font-size:11px;font-weight:400;color:#53694e;line-height:1.35}
+
+.bb-schema-wrap{position:relative;padding-bottom:30px}
+.bb-schema-viewport.canvas-interaction-idle{overflow:hidden;overscroll-behavior:auto}
+.bb-schema-viewport.canvas-interaction-active{outline:2px solid #6387c8;outline-offset:2px;touch-action:none}
+.bb-schema-wrap>.canvas-interaction-hint{bottom:2px;left:0;font-size:11px}
+
+.bb-schema-viewport{user-select:none;-webkit-user-select:none;cursor:pointer}
+.bb-schema-viewport.canvas-interaction-active{cursor:grab}
+.bb-schema-viewport.canvas-interaction-active:active{cursor:grabbing}
+
+/* Connection cards are readable at the bench; extra routes stay on demand. */
+.bb-layout{grid-template-columns:minmax(0,1fr) minmax(280px,320px)}
+.bb-terminal-summary{margin:8px 10px!important;font-size:12px!important;line-height:1.55!important;color:#304b3c!important}
+.bb-target-details,.bb-route-details{margin:8px 10px;font-size:12px}.bb-target-details summary,.bb-route-details summary{cursor:pointer;padding:4px 0;color:#315e43}
+.bb-terminal-heading{min-height:40px}.bb-terminal-heading>span{font-size:11px}.bb-destinations button{min-height:38px;font-size:12px}
+.bb-property .bb-route-steps{font-size:12px;line-height:1.6}.bb-property .bb-route-steps small{font-size:11px}
+.bb-part-list button{min-height:38px}.bb-property>.bb-clear-selection{float:right}.bb-jump-board{float:none;margin-bottom:8px}
+@media(max-width:1050px) and (min-width:761px){.bb-layout{grid-template-columns:minmax(0,1fr) 280px}}
+@media(max-width:760px){.bb-layout{grid-template-columns:minmax(0,1fr)}.bb-terminal-list{grid-template-columns:1fr}.bb-property{scroll-margin-top:12px}}
+
+.bb-lab-dialog{width:min(960px,calc(100vw - 28px));max-width:960px;max-height:88dvh;padding:0;border:1px solid #bdceb5;border-radius:12px;background:#fffef9;color:#294335;overflow:auto}
+.bb-lab-dialog::backdrop{background:#182b3559}.bb-lab-dialog>header{display:flex;justify-content:space-between;align-items:start;gap:12px;padding:16px 20px;border-bottom:1px solid #d8e2d1;background:#f3f8ed}.bb-lab-dialog h2{font-size:20px;margin:0 0 6px}.bb-lab-dialog header p{margin:0;font-size:12px}
+.bb-lab-dialog button,.bb-lab-dialog select,.bb-lab-dialog input,.bb-lab-dialog textarea{font:inherit;border:1px solid #bccdb5;border-radius:6px;padding:8px;background:#fff;color:#294335;max-width:100%;min-height:40px}.bb-lab-dialog button{cursor:pointer}
+.bb-lab-filters{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:16px 20px}.bb-lab-dialog label{display:grid;gap:5px;font-size:12px}.bb-lab-dialog select,.bb-lab-dialog input{width:100%;min-width:0}
+[data-bb-lab-summary],[data-bb-lab-error]{margin:0 20px 12px;font-size:12px}[data-bb-lab-error]:empty{display:none}[data-bb-lab-error]{color:#a22e24}
+[data-bb-lab-rows]{padding:0 20px 20px}.bb-lab-row{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:10px 20px;padding:16px 0;border-top:1px solid #dce4d5;break-inside:avoid}.bb-lab-row p{font-size:14px;line-height:1.5;margin:5px 0}.bb-lab-row small{font-size:12px;line-height:1.5;color:#526a4e}.bb-lab-phase{font-size:11px;color:#667c5a}.bb-lab-row-actions{display:grid;gap:8px;align-content:start}.bb-lab-note{grid-column:1/-1;font-size:12px}.bb-lab-note summary{cursor:pointer;padding:4px 0}.bb-lab-note textarea{width:100%;min-height:65px}.bb-lab-stale{color:#8c5414!important;font-size:12px!important}
+@media(max-width:760px){.bb-lab-filters{grid-template-columns:1fr 1fr;padding:12px}.bb-lab-row{grid-template-columns:1fr}.bb-lab-row-actions{grid-template-columns:auto 1fr;align-items:end}.bb-lab-row-actions>button{align-self:end}[data-bb-lab-rows]{padding:0 12px 12px}.bb-lab-dialog>header{padding:12px}}
+
+.bb-guide .bb-build-panel{flex-wrap:wrap;align-items:start}.bb-build-panel>span{flex-basis:100%;font-weight:400}.student-build-action,.student-build-reason{display:block;margin-bottom:5px}.student-build-action{font-weight:600}.bb-build-panel>span>small{font-size:11px;font-weight:400;color:#526c49}
+.bb-build-operation{display:flex;align-items:start;gap:12px;flex-basis:100%;font-size:12px}.bb-build-operation>label{display:grid;gap:4px;min-width:150px}.bb-build-operation select,.bb-build-index textarea{border:1px solid #bccdb5;border-radius:6px;padding:7px;background:#fff;color:#294335;max-width:100%;font:inherit}.bb-build-index{flex:1;min-width:0}.bb-build-index summary{padding:10px 0;cursor:pointer}.bb-build-index>label{display:grid;gap:4px;margin:8px 0}.bb-build-index select{width:100%}.bb-optional-checks{margin:12px 0}.bb-optional-checks label{display:flex;align-items:start;gap:8px;font-size:12px;line-height:1.5;margin:8px 0}.bb-optional-checks input{margin-top:3px;flex:none}.bb-build-panel>details{flex-basis:100%}
+.bb-build-panel [data-bb-command=build-return]{background:#e5efd9;border-color:#628a51}
+@media(max-width:760px){.bb-build-operation{flex-direction:column;gap:0}.bb-build-index,.bb-build-operation>label{width:100%}.bb-guide:has(.bb-build-panel:not([hidden])){position:relative}.bb-build-panel button{min-height:40px}}
+
+.bb-wire-label{display:none}.bb-cable-selected .bb-wire-label{display:block}
+.bb-isolate [data-bb-cable].bb-muted,.bb-isolate [data-bb-cable-ref].bb-muted{display:none!important}
+.bb-isolate [data-bb-part].bb-muted{opacity:.65!important}.bb-connection-strip{flex-wrap:wrap}.bb-connection-strip [data-bb-command=isolate]{margin-left:auto;min-height:36px}
+.bb-consulting{display:block;padding:6px 0;color:#7d5016;font-weight:600}
+.bb-guide:has(.bb-build-panel:not([hidden])){position:relative}
+
+.bb-lab-tabs{display:flex;gap:5px;padding:14px 20px 0}.bb-lab-tabs button[aria-pressed=true]{background:#e4efdc;border-color:#5d8b4b;font-weight:600}.bb-measure-intro{font-size:13px;line-height:1.6;color:#4e6749}.bb-measure-row{border-top:1px solid #dce4d5;padding:16px 0;break-inside:avoid}.bb-measure-row h3{margin:0 0 8px;font-size:15px}.bb-measure-row p{font-size:13px;line-height:1.6;margin:6px 0}.bb-saved-measure{background:#eef5e9;padding:8px;border-radius:6px}.bb-saved-measure small{display:block;font-size:11px;color:#5a7052}.bb-measure-actions{display:flex;gap:10px;align-items:end;margin-top:10px}.bb-measure-actions label{flex:1}.bb-property>[data-bb-measure-part]{width:100%;margin-top:12px;min-height:40px}
+@media(max-width:760px){.bb-lab-tabs{padding:12px 12px 0}.bb-measure-actions{flex-wrap:wrap}.bb-measure-actions label{flex-basis:100%;order:-1}.bb-measure-actions button{flex:1}}
+
+.bb-lab-header-actions{display:flex;gap:8px;align-items:start;flex:none}
+@media(max-width:760px){.bb-lab-header-actions{flex-direction:column}.bb-lab-header-actions button{width:100%;font-size:12px}.bb-lab-dialog h2{font-size:18px}}
+
+.bb-lab-dialog>header{position:sticky;top:0;z-index:2}.bb-lab-row select:focus-visible,.bb-lab-dialog button:focus-visible{outline:2px solid #4c78b5;outline-offset:2px}
+
+/* Keep the current instruction and the highlighted points visible together. */
+.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide{position:sticky;top:0}
+.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide-steps,.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide-tools>[data-bb-command=build-start],.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide-tools>[data-bb-command=help],.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide-tools>.bb-framing-switch{display:none}
+.bb-build-explanation{font-size:12px;font-weight:400}.bb-build-explanation summary{cursor:pointer;padding:4px 0;color:#4e6b43}.bb-build-explanation p{margin:6px 0;line-height:1.5}.bb-guide-extra{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.bb-workbench .bb-guide:has(.bb-build-index[open]),.bb-workbench .bb-guide:has(.bb-build-explanation[open]){position:relative}
+.bb-build-markers [data-bb-build-point],.bb-inspection-layer [data-bb-build-point]{scroll-margin-top:calc(var(--bb-guide-height,95px) + 145px)}
+@media(max-width:760px){.bb-build-operation{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bb-build-operation>label{min-width:0}.bb-build-index[open]{grid-column:1/-1}.bb-build-panel [data-bb-command=build-return][hidden]{display:none}.bb-guide .bb-build-panel{gap:5px}.bb-build-panel>span{font-size:12px}.bb-build-panel>button{font-size:11px;padding:6px}.bb-workbench:has(.bb-build-panel:not([hidden])) .bb-guide-tools{margin-left:auto}}
+
+.bb-building .bb-toolbar,.bb-building>.bb-message,.bb-building>.bb-connection-strip{display:none}

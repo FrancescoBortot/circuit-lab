@@ -1,8 +1,8 @@
 {
   "hashes": {
-    "free-model.js": "04701e3e48fb38472d93051c165bfe1e2a235a26820879f5040815d946613527",
+    "free-model.js": "4f942d9b0c7beb64031fc8408985705d471b99e77ffc7c700fb473c9b86e61ea",
     "bench-model.js": "60d1b624c2028b623a21c566fae6043b5a2bdd813e1e2fb1dcdb4eb211d78814",
-    "lab-model.js": "cc2bcfc7bcd84480ca2bbcaa33723f424ae18b030aa5f8d4969a7598276130bd",
+    "lab-model.js": "863e79ea07512fd15ada741a7a2b3eb5273925465713bc5c882ee124f0082ef9",
     "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
   },
   "reference": "Official locally compiled ngspice 47; native R/C and controlled sources",

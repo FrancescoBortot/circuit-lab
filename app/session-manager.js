@@ -54,7 +54,7 @@
     await this.capture(window.GuidedLab.sessionState()||{text});await this.serial;
     try{for(const r of await this.repository.all()){const old=this.records.get(r.id);if(!old||r.updatedAt>old.updatedAt)this.records.set(r.id,r);}}catch{}
     const records=[...this.records.values()].filter(r=>r.sessionId===doc.session.id),bundle=S.bundle(records,doc.name,doc.session);this.note('Preparazione dei file della sessione…');
-    if(this.folder&&!forceZIP){const count=await S.writeDirectory(this.folder,bundle.files,(n,total)=>{$('sessionStatus').textContent='Salvataggio nella cartella: '+n+' / '+total;});this.note(count+' file salvati nella cartella '+bundle.root+'.');}
+    if(this.folder&&!forceZIP){const saved=await S.writeSnapshot(this.folder,bundle.files,(n,total)=>{$('sessionStatus').textContent='Salvataggio nella cartella: '+n+' / '+total;});this.note(saved.count+' file salvati nella cartella '+saved.name+'/'+bundle.root+'.');}
     else{const bytes=F.zipSession(bundle.files);window.circuitEditor.download(bytes,'application/zip',T.slug(doc.name,60)+'-sessione.zip');this.note('ZIP della sessione preparato; download richiesto al browser.');}
    }catch(error){this.note('Sessione non esportata: '+error.message+' Le copie nel browser restano disponibili.',true);}
    finally{this.busy=false;this.mode();$('saveProject').disabled=false;this.render();}

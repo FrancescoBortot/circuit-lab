@@ -51,6 +51,8 @@ Per deselezionare un componente, **clicca sullo sfondo dello schema o premi Esc*
 
 In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Frequenza · Bode** oppure **Ampiezza · VTC** (per gli amplificatori). Il pannello spiega lo scopo della prova e mostra i relativi controlli. **Come leggere il grafico** chiarisce assi e curve; risoluzione e dettagli del calcolo si aprono su richiesta. In fondo trovi gli strumenti per confrontare il modello con misure raccolte in laboratorio.
 
+**Avanzate · Ingresso e baseline** permette di impostare Vin per tutti i circuiti e scegliere la baseline di OUT: automatica, valore manuale in volt oppure media su un intervallo del transitorio. Per i segnali periodici l’ampiezza è Vpp; per gli impulsi guidati Vin è l’escursione rispetto al riposo. L’intervallo della baseline deve essere crescente e contenuto nel tempo simulato; la media tiene conto dei tempi effettivi dei campioni. La scelta aggiorna letture, quaderno e CSV e si conserva nel progetto JSON. I campioni assoluti restano invariati. Nell’editor libero gli stessi controlli si trovano in **Simulazione**; la baseline riguarda la tensione OUT, mentre i generatori di corrente mantengono le proprie unità.
+
 ## Giornate 3 e 4 · catena elettronica
 
 Il menu delle esperienze è diviso nelle quattro giornate. I sette nuovi circuiti coprono preamplificatore di carica, shaper CR–RC, buffer finale facoltativo, undershoot, compensazione polo-zero, amplificatore non invertente e catena completa. Ogni voce offre situazioni selezionabili da **Prova guidata**, parametri modificabili, schema e breadboard. Preamplificatore e catena includono la linearità rispetto alla carica iniettata, con fit e residui nel CSV. I valori iniziali sono esempi da sostituire con i componenti del proprio gruppo. [Guida alle giornate 3 e 4](docs/GIORNATE_3_4.md).
@@ -259,3 +261,84 @@ Cinque confronti dedicati verificano preamplificatore, shaper, cascata, compensa
 Il percorso Costruisci, Simula, Misura, Esporta mantiene il contesto del circuito. Include schede dell’esperienza, anteprima delle prove, pannelli di studio riducibili, input con unità, confronto guidato dei dati e quaderno portabile nel JSON. La [guida rapida](docs/USO_RAPIDO.md#interfaccia-per-lo-studio) descrive i comandi.
 
 Il test DOM esegue i controller e il worker reali con linkedom, installato soltanto per lo sviluppo. Verifica input, breadboard, annullamento, importazione, confronto, quaderno e riapertura del JSON. Geometria SVG e API native sono emulate: questo controllo non sostituisce il collaudo visivo su browser, portatile e tablet. La distribuzione offline non incorpora questa dipendenza.
+
+### Miglioramenti a salvataggi e grafici
+
+I grafici della simulazione si scaricano anche con **PNG**. Nel confronto delle misure, **Grafici PNG** e **Grafici SVG** includono modello, punti misurati, legenda e residui, con la vista attualmente selezionata. Ricalcola il confronto dopo aver modificato il circuito.
+
+Ogni salvataggio diretto nella cartella crea una sottocartella `Salvataggio-…` distinta. Una cartella con `SALVATAGGIO-INCOMPLETO.txt` indica una scrittura interrotta. I salvataggi precedenti rimangono disponibili separatamente. Le versioni nominate si possono rimuovere e recuperare; la copia prima dell’ultimo ripristino è scaricabile dal pannello Versioni anche quando l’archivio contiene 24 copie.
+
+Dopo modifiche ai modelli numerici, prima della suite locale completa riesegui `node app/scripts/verify-numerics.cjs` con ngspice 47 disponibile: aggiorna le evidenze e i relativi hash. Le modifiche alla sola interfaccia richiedono i controlli proporzionati indicati in AGENTS.md.
+
+### Navigare negli schemi con dita e trackpad
+
+Tocca o clicca lo schema per attivarlo. Sullo sfondo trascina per spostare la vista; con due dita avvicina o allontana e sposta il centro del gesto per ingrandire e navigare. Con trackpad usa il pinch mentre lo schema è attivo. Sollevando un dito puoi continuare a spostare la vista con quello rimasto. La stessa interazione è disponibile nello **Schema a colori sotto la breadboard**, mantenendo la selezione dei collegamenti con un tocco. Esc o un clic fuori disattivano la navigazione e lasciano scorrere la pagina. Lo zoom non cambia valori o collegamenti del circuito.
+
+### Breadboard al banco
+
+Selezionando un componente si leggono i collegamenti di ogni terminale, compresi
+alimentatore e oscilloscopio. Le schede mostrano un riepilogo; destinazioni e
+percorsi fisici si aprono a richiesta. I contatti interni sono distinti dai
+ponticelli e «Isola selezione» nasconde gli altri cavi senza cambiare il circuito.
+
+«Controllo al banco» raccoglie la lista filtrabile di componenti, alimentazioni,
+segnale e sonde. Gli stati Da montare / Montato / Controllato / Da rivedere e le
+note sono conferme manuali salvate nel progetto. La guida si può mettere in pausa,
+riprendere, consultare per componente o operazione e ricominciare senza cancellare
+i controlli. Avanti cambia il passo consultato, non certifica il montaggio.
+L'inquadratura del passo mostra insieme gli estremi e mantiene accessibili i
+controlli; la consultazione libera permette di tornare al passo corrente.
+
+La scheda «Punti di misura» indica puntale e riferimento GND, l'impostazione
+nominale dell'alimentatore o il punto di lavoro DC calcolato dal motore esistente.
+Il riferimento DC è distinto dall'ampiezza e dalla forma d'onda. I valori non
+calcolabili restano non disponibili. Le letture al banco, in V, conservano data e
+riferimento alla registrazione; non sostituiscono campioni della simulazione.
+Le modifiche pertinenti al circuito o al montaggio richiedono una nuova verifica:
+le osservazioni precedenti rimangono riconoscibili e conservate. Gli spostamenti
+puramente grafici non invalidano i controlli.
+
+«Scarica scheda» esporta un HTML autonomo con terminali, fori, collegamenti,
+impostazioni, lista di controllo, note, misure e figura del montaggio. Aprendolo
+nel browser, «Stampa / Salva in PDF» usa la stampa del dispositivo. Il documento
+è una scheda di consultazione: il progetto JSON mantiene lo stato riapribile.
+
+### Riprodurre e verificare un montaggio personale
+
+Nella vista Breadboard, **Riproduci e verifica** apre una basetta indipendente dal
+montaggio proposto. Lo schema selezionato resta il riferimento. Si scelgono i
+componenti della lista e i due fori dei capi; il TL082 attraversa il canale centrale
+con un solo posizionamento della fila superiore. I cavi richiedono due fori,
+alimentatore e strumenti un foro per ogni cavo. Si possono trascinare componenti,
+cavi, estremità e collegamenti degli strumenti, ruotare il TL082, correggere i
+valori nominali e le tensioni dichiarate, annullare e ripristinare le operazioni.
+
+La basetta può avere 30 o 63 file, con barre continue oppure interrotte a metà.
+I cinque contatti di ogni mezza fila sono distinti dall'altra metà e dalle file
+vicine; le quattro barre sono indipendenti. Un incrocio grafico dei fili non crea
+un contatto. I fori già occupati vengono rifiutati senza perdere il montaggio.
+Trascinare un componente cambia i suoi contatti fisici: i cavi non lo seguono.
+
+**Verifica montaggio** confronta le partizioni elettriche dei terminali, non la
+somiglianza del disegno. Accetta disposizioni diverse e lo scambio dei capi dei
+passivi non polarizzati; mantiene identità e numerazione dei pin degli integrati
+e degli strumenti. Le alimentazioni comuni dei TL082 condividono lo stesso
+riferimento; la distribuzione A/B deriva dalla configurazione fisica selezionata.
+Segnala componenti o collegamenti mancanti, corti, elementi non previsti connessi,
+valori nominali e tensioni diversi. I problemi indicano terminali, fori e, quando
+individuabile, il ponticello responsabile; Mostra punti li evidenzia sulla basetta.
+
+Un montaggio elettricamente corretto può ricevere consigli su ponticelli
+ridondanti, fili o componenti inutilizzati, collegamenti lunghi, posizione dei
+bypass e completamento delle sonde. Sono consigli di disposizione, non una prova
+di ottimalità globale né una misura delle prestazioni dell'hardware. Il profilo
+supporta R, C non polarizzati, L e TL082 a 8 pin; il confronto usa i collegamenti e
+i valori dichiarati dall'utente. Le forme d'onda continuano a riferirsi allo schema.
+
+Il montaggio effettivo viene conservato nel progetto, separatamente da schema,
+guida e lista manuale. Esporta/Importa montaggio JSON trasferisce la sola basetta;
+un riferimento cambiato viene segnalato e richiede una nuova verifica. Le modifiche
+non conservano un precedente esito verde. Annulla gestisce ogni gesto completo;
+Esc, cancellazione del puntatore e multitocco non confermano trascinamenti in
+anteprima. Il primo estremo di un cavo si conserva durante pan e zoom. Su telefono
+la scelta del componente porta alla basetta, con comandi rapidi per i dettagli.

@@ -3,7 +3,7 @@ const Lab=require('../lab-model.js'),Free=require('../free-model.js'),copy=x=>JS
 function surface(kind){
  const listeners={},captures=new Set(),selected=[],moves=[],document={activeElement:null};
  const svg={addEventListener:(type,handler)=>listeners[type]=handler,setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);listeners.lostpointercapture?.({pointerId:id});},getScreenCTM:()=>({inverse:()=>({})}),querySelector:()=>null,focus(){document.activeElement=svg;}};
- const scope={window:{LabModel:Lab,FreeModel:Free},document,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}}};
+ const scope={window:{LabModel:Lab,FreeModel:Free},document,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(m){return m.a===undefined?this:{x:this.x*m.a+(m.e||0),y:this.y*(m.d??m.a)+(m.f||0)};}}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..',kind==='guided'?'diagram.js':'free-canvas.js'),'utf8'),scope);
  const callbacks={select:(...args)=>selected.push(args),deselect:()=>selected.push([null]),move:(...args)=>moves.push(args),moveWire:(...args)=>moves.push(args),moveGroup:(...args)=>moves.push(args),pin:(...args)=>selected.push(args),region:(...args)=>selected.push(args)};
  const canvas=new scope.window[kind==='guided'?'LabDiagram':'FreeCanvas'](svg,callbacks);canvas.draw=()=>{};
@@ -62,4 +62,19 @@ for(const kind of ['guided','free'])test(kind+' browser modifier shortcuts do no
  for(const modifier of ['metaKey','ctrlKey','altKey'])for(const key of ['ArrowRight','+','0'])h.listeners.keydown(h.event(0,0,{target,key,[modifier]:true}));
  assert.deepEqual(copy(h.canvas.view),before);assert.equal(h.moves.length,0);
  h.listeners.keydown(h.event(0,0,{target,key:'ArrowRight'}));assert.equal(h.moves.length,1);
+});
+
+for(const kind of ['guided','free'])test(kind+' pinch follows its center, continues with one finger and preserves the circuit',()=>{
+ const h=surface(kind),before=JSON.stringify(kind==='free'?h.doc:h.canvas.layout);
+ if(kind==='free'){h.canvas.view={x:100,y:50,w:500,h:300};h.svg.getScreenCTM=()=>({inverse:()=>({a:h.canvas.view.w/1000,d:h.canvas.view.h/600,e:h.canvas.view.x,f:h.canvas.view.y})});}
+ else h.canvas.view={x:30,y:-10,k:2};
+ const world=()=>kind==='free'?{x:h.canvas.view.x+400*h.canvas.view.w/1000,y:h.canvas.view.y+220*h.canvas.view.h/600}:{x:(400-h.canvas.view.x)/h.canvas.view.k,y:(220-h.canvas.view.y)/h.canvas.view.k};
+ const anchor=kind==='free'?{x:300,y:150}:{x:185,y:105};
+ h.canvas.down(h.event(300,200));h.canvas.down(h.event(500,200,{pointerId:2}));h.canvas.move(h.event(200,220));h.canvas.move(h.event(600,220,{pointerId:2}));
+ assert.ok(Math.abs(world().x-anchor.x)<1e-9);assert.ok(Math.abs(world().y-anchor.y)<1e-9);
+ h.canvas.up(h.event(600,220,{pointerId:2}));const x=h.canvas.view.x;h.canvas.move(h.event(230,220));assert.notEqual(h.canvas.view.x,x);h.canvas.up(h.event(230,220));
+ assert.equal(JSON.stringify(kind==='free'?h.doc:h.canvas.layout),before);assert.equal(h.moves.length,0);assert.equal(h.selected.length,0);
+});
+for(const kind of ['guided','free'])test(kind+' pinch cancellation and coincident fingers stay finite and ignore late releases',()=>{
+ const h=surface(kind);h.canvas.down(h.event(200,200));h.canvas.down(h.event(200,200,{pointerId:2}));h.canvas.move(h.event(240,240,{pointerId:2}));assert.ok(Object.values(h.canvas.view).every(Number.isFinite));h.canvas.up(h.event(200,200,{type:'pointercancel'}));h.canvas.up(h.event(240,240,{pointerId:2}));assert.equal(h.moves.length,0);assert.equal(h.selected.length,0);assert.equal(h.canvas.pointers.size,0);
 });

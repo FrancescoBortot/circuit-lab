@@ -104,13 +104,14 @@
   const n=rows.length,mx=rows.reduce((s,r)=>s+r.x,0)/n,my=rows.reduce((s,r)=>s+r.out,0)/n,slope=rows.reduce((s,r)=>s+(r.x-mx)*(r.out-my),0)/rows.reduce((s,r)=>s+(r.x-mx)**2,0),intercept=my-slope*mx;
   return rows.map(r=>({...r,linear:intercept+slope*r.x,residual:r.out-intercept-slope*r.x,slope,intercept}));
  }
- function pulseSummary(p,data,key='out',at){return Measures.pulse(data,key,p.wave1,at);}
+ function pulseSummary(p,data,key='out',at){return Measures.pulse(data,key,p.wave1,at,p);}
  function baselines(p){const w=p.wave1,input=w.kind==='pulse'?(w.low??0):['sine','square','triangle'].includes(w.kind)?w.offset:w.kind==='ground'?0:w.level;let value=input;const result={input};if(hasPre(p)){value=-value*p.Rfpre/p.Rin;result.pre=value;}if(hasSh(p)){value=p.pzEnabled?value*p.Rsh1/(p.Rpz+p.Rsh1):0;result.shaper=value;}if(hasFinal(p)){const b=p.biasEnabled?p.Rgain/p.Rbias:0;value=value*(1+p.Rgain/p.Ri+b)-b*p.wave2.level;}result.out=value;return result;}
  function timeMetrics(p,data,fmt,baselineDC){
   if(!data.length)return [];const m=pulseSummary(p,data);
+  if(p.wave1.kind!=='pulse'&&p.baselineMode&&p.baselineMode!=='auto'){const ref=Measures.baseline(data,'out',p);return ref?[{label:ref.label,value:fmt(ref.value,'V',5)},{label:'Massimo − baseline',value:fmt(Math.max(...data.map(r=>r.out))-ref.value,'V',5),primary:true}]:[{label:'Baseline selezionata',value:'Non disponibile'}];}
   if(p.wave1.kind!=='pulse')return [{label:'V_max · uscita simulata',value:fmt(Math.max(...data.map(r=>r.out)),'V',5),primary:true},...(Number.isFinite(baselineDC?.out)?[{label:'Baseline DC · equilibrio',value:fmt(baselineDC.out,'V',5)},{label:'Massimo − baseline DC',value:fmt(Math.max(...data.map(r=>r.out))-baselineDC.out,'V',5)}]:[])];
   if(!m)return [{label:'Baseline e picco',value:'Non disponibili',note:'Il transitorio deve contenere un campione prima dell’impulso e la risposta successiva.'}];
-  return [{label:'V_max · primo impulso',value:fmt(m.maximum,'V',5),primary:true},{label:'Baseline prima dell’impulso',value:fmt(m.baseline,'V',5)},{label:'Picco rispetto alla baseline',value:fmt(m.peak,'V',5),primary:true},{label:'Minimo rispetto alla baseline',value:fmt(m.trough,'V',5)}];
+  return [{label:'V_max · primo impulso',value:fmt(m.maximum,'V',5),primary:true},{label:m.baselineLabel,value:fmt(m.baseline,'V',5)},{label:'Picco rispetto alla baseline',value:fmt(m.peak,'V',5),primary:true},{label:'Minimo rispetto alla baseline',value:fmt(m.trough,'V',5)}];
  }
  function summary(p,fmt){const rows=[];
   if(hasPre(p)){const tau=p.Rfpre*p.Cfpre;rows.push({label:'τ preamp nominale',value:fmt(tau,'s'),primary:true},{label:'Taglio preamp nominale',value:fmt(1/(2*Math.PI*tau),'Hz')});if(p.wave1.kind==='pulse')rows.push({label:'Carica nominale |Vin|·T/Rin',value:fmt(Math.abs(p.wave1.level-p.wave1.low)*p.wave1.width/p.Rin,'C'),primary:true,note:'Riferimento con nodo d’ingresso a massa virtuale. Il carico e i limiti dell’operazionale possono cambiarlo.'});}

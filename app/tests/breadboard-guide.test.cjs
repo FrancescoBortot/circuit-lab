@@ -3,7 +3,7 @@ const L=require('../lab-model'),B=require('../breadboard-model'),R=require('../b
 const source=fs.readFileSync(path.join(__dirname,'../breadboard-workbench.js'),'utf8');
 function controller(){
  const model=B.create(L.network(L.defaults('shaper')));model.terminals=[...model.parts,...model.sources].flatMap(c=>B.terminals(model,c.id));model.connections=R.connections(model);
- const state={step:3,part:'Rsh2',ref:'Rsh2:a',target:'Ubuf:out',net:'net:0',cable:'wire:W1'},frames=[],settings={framing:'bench',zoom:1},saved=[],scope={B,R,settings,save:()=>saved.push({...settings}),M:require('../free-model'),model,state,draftDirty:false,validDraft:true,finishDraft:()=>scope.validDraft,sourceDialog:{open:false,close(){this.open=false;}},drawGeometry:()=>frames.push(R.board(model,{step:state.step,framing:settings.framing})),updateControls(){},updateSelection(){},renderProperties(){}};
+ const state={step:3,part:'Rsh2',ref:'Rsh2:a',target:'Ubuf:out',net:'net:0',cable:'wire:W1'},frames=[],settings={framing:'bench',zoom:1},saved=[],scope={B,R,settings,save:()=>saved.push({...settings}),M:require('../free-model'),model,state,draftDirty:false,validDraft:true,finishDraft:()=>scope.validDraft,construction:{active:false},sourceDialog:{open:false,close(){this.open=false;}},drawGeometry:()=>frames.push(R.board(model,{step:state.step,framing:settings.framing})),updateControls(){},updateSelection(){},renderProperties(){}};
  vm.createContext(scope);const section=(from,to)=>source.slice(source.indexOf(' function '+from+'('),source.indexOf(' function '+to+'('));
  vm.runInContext(section('setStep','selectNet')+section('choose','command'),scope);return{scope,model,state,frames,settings,saved};
 }
@@ -53,7 +53,7 @@ test('construction advances one operation, goes back, completes and preserves re
  scope.constructionCommand('build-next');assert.equal(scope.construction.active,false);assert.equal(scope.state.step,3);assert.equal(JSON.stringify(model),before);
 });
 test('reference schematic zoom changes both dimensions, zooms out and fits inside its viewport',()=>{
- const svg={style:{},getAttribute:()=> '0 0 2000 600'},viewport={clientWidth:900,clientHeight:380,scrollLeft:300,scrollTop:50},output={textContent:''},settings={schemaZoom:1,zoom:1.55},scope={settings,root:{querySelector:s=>s==='.bb-schema'?svg:s==='.bb-schema-viewport'?viewport:output}};
+ const svg={style:{},getAttribute:()=> '0 0 2000 600'},viewport={clientWidth:900,clientHeight:380,scrollLeft:300,scrollTop:50},output={textContent:''},settings={schemaZoom:1,zoom:1.55},scope={schemaNavigation:{interaction:{refresh(){}}},settings,root:{querySelector:s=>s==='.bb-schema'?svg:s==='.bb-schema-viewport'?viewport:output}};
  vm.createContext(scope);vm.runInContext(source.slice(source.indexOf(' function applySchemaZoom('),source.indexOf(' function constructionCommand(')),scope);
  scope.applySchemaZoom();assert.equal(svg.style.width,'2000px');assert.equal(svg.style.height,'600px');
  scope.schemaZoomCommand('schema-in');assert.equal(svg.style.width,'2400px');assert.equal(svg.style.height,'720px');assert.equal(output.textContent,'120%');

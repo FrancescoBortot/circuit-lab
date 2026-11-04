@@ -62,6 +62,7 @@
       }
     }
     const s=doc.settings;
+    errors.push(...Object.values(Measures.validateBaseline(s,s?.duration)));
     for(const key of ['probeScaleInput','probeScaleOutput'])if(s?.[key]!==undefined&&(!Number.isFinite(s[key])||s[key]<=0||s[key]>1000))errors.push('Scala della sonda non valida.');
     if(s?.dcSource!==undefined&&s.dcSource!==null&&!doc.components.some(c=>c.id===s.dcSource&&['V','I'].includes(c.type)))errors.push('Sorgente DC non valida.');
     if([s?.dcStart,s?.dcStop].some(v=>v!==undefined&&(!Number.isFinite(v)||Math.abs(v)>1000))||s?.dcPoints!==undefined&&(!Number.isInteger(s.dcPoints)||s.dcPoints<2||s.dcPoints>1001))errors.push('Intervallo o punti DC non validi.');
@@ -435,8 +436,9 @@
     const abscissa=doc.settings.analysis==='op'?'punto_indice':doc.settings.analysis==='dc'?'DC_'+result.source+'_'+result.xUnit:'tempo_s',headers=[abscissa,'IN_V','OUT_V',...result.nodes.map(n=>n.name+'_V'),...branches.map(c=>'I_'+c.id+'_A'),...terminalBranches.map(id=>'I_'+id.replace(':','_')+'_A'),...branches.map(c=>'P_'+c.id+'_W'),...reactive.map(c=>'E_'+c.id+'_J'),...(time?branches.map(c=>'W_'+c.id+'_J'):[]),...traces.map(t=>t.id+'_'+(t.kind==='current'?'A':'V'))];
     const wave=time?Measures.excitation(doc):null,source=doc.components.find(c=>c.id===doc.settings.acSource)||doc.components.find(c=>c.type==='V'||c.type==='I'),byCycle=new Map();let dcBaseline=null;
     if(time&&!wave&&['sine','square','triangle','dc'].includes(source?.wave?.kind))try{dcBaseline=operatingPoint(doc).data[0].out;}catch{}
-    const referenced=time&&(wave||Number.isFinite(dcBaseline));if(referenced)headers.push(wave?'OUT_baseline_V':'OUT_baseline_DC_V',wave?'OUT_meno_baseline_V':'OUT_meno_baseline_DC_V');
-    const reference=d=>{if(!wave)return[dcBaseline,d.out-dcBaseline];const cycle=Math.max(0,Math.floor((d.x-wave.delay)/wave.period+1e-12));if(!byCycle.has(cycle))byCycle.set(cycle,Measures.pulse(result.data,'out',wave,d.x));const m=byCycle.get(cycle);return[m?.baseline,m?d.out-m.baseline:null];};
+    const explicit=doc.settings.baselineMode&&doc.settings.baselineMode!=='auto',referenced=time&&(explicit||wave||Number.isFinite(dcBaseline));if(referenced)headers.push(wave||explicit?'OUT_baseline_V':'OUT_baseline_DC_V',wave||explicit?'OUT_meno_baseline_V':'OUT_meno_baseline_DC_V');
+    const explicitRef=explicit?Measures.baseline(result.data,'out',doc.settings):null;
+    const reference=d=>{if(explicit)return[explicitRef?.value,explicitRef?d.out-explicitRef.value:null];if(!wave)return[dcBaseline,d.out-dcBaseline];const cycle=Math.max(0,Math.floor((d.x-wave.delay)/(wave.period>0?wave.period:Infinity)+1e-12));if(!byCycle.has(cycle))byCycle.set(cycle,Measures.pulse(result.data,'out',wave,d.x));const m=byCycle.get(cycle);return[m?.baseline,m?d.out-m.baseline:null];};
     const values=d=>[d.x,d.vin,d.out,...result.nodes.map(n=>d.values[n.name]),...branches.map(c=>d.currents[c.id]),...terminalBranches.map(id=>d.currents[id]),...branches.map(c=>d.powers?.[c.id]),...reactive.map(c=>d.energy?.[c.id]),...(time?branches.map(c=>d.work?.[c.id]):[]),...readers.map(read=>read(d)),...(referenced?reference(d):[])];
     return'\uFEFF'+headers.join(',')+'\r\n'+result.data.map(d=>values(d).map(v=>Number.isFinite(v)?v.toExponential(12):'').join(',')).join('\r\n');
   }

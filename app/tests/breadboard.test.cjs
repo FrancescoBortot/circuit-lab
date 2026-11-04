@@ -53,7 +53,7 @@ test('power supply ground occupies its own free hole and has an explicit cable',
 test('inverter R1 inspection distinguishes the input and the summing junction, including the hidden strips',()=>{
  const b=B.create(guided()),[a,z]=B.terminals(b,'R1');
  assert.equal(a.hole,'M1:a4');assert.equal(z.hole,'M1:a9');
- assert.deepEqual(a.targets.map(t=>t.ref),['V1:p']);assert.deepEqual(new Set(z.targets.map(t=>t.ref)),new Set(['U1:minus','Rf:a']));
+ assert.deepEqual(a.targets.map(t=>t.ref),['V1:p','OSC:CH1tip']);assert.deepEqual(new Set(z.targets.map(t=>t.ref)),new Set(['U1:minus','Rf:a']));
  const route=B.trace(b,'R1:b','U1:minus');assert.equal(route.from.hole,'M1:a9');assert.equal(route.to.hole,'M1:e13');
  assert.deepEqual(route.segments.map(s=>[s.kind,s.a,s.b]),[['strip','M1:a9','M1:b9'],['wire','M1:b9','M1:a13'],['strip','M1:a13','M1:e13']]);
  assert.equal(B.trace(b,'R1:a','R1:b'),null);assert.equal(B.trace(b,'U1:minus','U1:out'),null);
@@ -146,4 +146,9 @@ test('one physical PSU refuses incompatible opamp rails while the electrical doc
 test('a scope tip connected to GND is described as a measurement, separately from its ground clip',()=>{
  const d=guided('shaper'),g=d.components.find(c=>c.type==='G'),b=B.create(d,{channels:[{enabled:true,target:g.id+':g'}]}),steps=R.assemblySteps(b);
  assert.match(steps.find(s=>s.id==='CH1tip').purpose,/Misuro la tensione del nodo GND/);assert.match(steps.find(s=>s.id==='CH1ground').purpose,/massa della sonda/);
+});
+test('parallel jumper trunks reuse a lane only when their vertical spans do not overlap',()=>{
+ for(const circuit of L.CATALOG){const model=B.create(L.network(L.defaults(circuit.type))),before=JSON.stringify(model),g=R.geometry(model),routes=R.connections(model).filter(c=>c.kind==='wire'&&((B.localPoint(c.a.hole).x<185)===(B.localPoint(c.b.hole).x<185)));
+ for(let i=0;i<routes.length;i++)for(let j=i+1;j<routes.length;j++){const a=routes[i].route,b=routes[j].route;if(a[1].x===b[1].x)assert.ok(Math.max(a[1].y,a[2].y)<Math.min(b[1].y,b[2].y)||Math.max(b[1].y,b[2].y)<Math.min(a[1].y,a[2].y),circuit.type+' '+routes[i].id+' '+routes[j].id);}
+ for(const c of R.connections(model))for(const at of c.route)assert.ok(at.x>=0&&at.x<=g.width&&at.y>=0&&at.y<=g.height);assert.equal(JSON.stringify(model),before);}
 });

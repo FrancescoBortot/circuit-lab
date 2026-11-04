@@ -106,17 +106,29 @@
     rotate(){const id=this.selected,c=this.components[id];if(!c||!['resistor','capacitor'].includes(c.kind))return;this.commit(id,{x:c.x,y:c.y,rotation:(c.rotation+90)%360});}
     commit(id,value){this.layout[id]=value;this.callbacks.move(id,value);this.render(this.p,this.layout,this.selected);}
     cancelDrag(){const drag=this.drag;this.drag=null;if(drag?.id&&drag.moved){this.components[drag.id]={...drag.start};this.draw();}}
-    cancelGesture(){this.cancelDrag();const pointers=[...this.pointers.keys()];this.pointers.clear();this.pinch=null;for(const id of pointers)if(this.svg.hasPointerCapture(id))this.svg.releasePointerCapture(id);}
-    down(e){if(e.button!==0)return;const point=this.point(e);this.pointers.set(e.pointerId,point);this.svg.setPointerCapture(e.pointerId);
-      if(this.pointers.size>=2){this.cancelDrag();const[a,b]=[...this.pointers.values()];this.pinch=this.pointers.size===2?{distance:Math.hypot(a.x-b.x,a.y-b.y),mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}:null;return;}
+    cancelGesture(){this.cancelDrag();const pointers=[...this.pointers.keys()];this.pointers.clear();this.pinch=null;this.navigation=false;for(const id of pointers)if(this.svg.hasPointerCapture(id))this.svg.releasePointerCapture(id);}
+    down(e){if(e.button!==0)return;const point=this.point(e);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});this.svg.setPointerCapture(e.pointerId);
+      if(this.pointers.size>=2){this.cancelDrag();this.navigation=true;this.pinch=this.pinchState();return;}
       const id=e.target.closest('[data-component]')?.dataset.component;this.drag={id,point,start:id?{...this.components[id]}:{...this.view},moved:false};
     }
-    move(e){if(!this.pointers.has(e.pointerId))return;const point=this.point(e);this.pointers.set(e.pointerId,point);
-      if(this.pointers.size===2&&this.pinch){const[a,b]=[...this.pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};if(this.pinch.distance>0)this.zoom(distance/this.pinch.distance,this.pinch.mid);this.view.x+=mid.x-this.pinch.mid.x;this.view.y+=mid.y-this.pinch.mid.y;this.pinch={distance,mid};this.transform();return;}
+    move(e){if(!this.pointers.has(e.pointerId))return;const point=this.point(e);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(this.pointers.size===2&&this.pinch){
+        const next=this.pinchState(),before=this.point({clientX:this.pinch.mid.x,clientY:this.pinch.mid.y}),after=this.point({clientX:next.mid.x,clientY:next.mid.y});
+        if(this.pinch.distance>0&&next.distance>0)this.zoom(next.distance/this.pinch.distance,before);
+        this.view.x+=after.x-before.x;this.view.y+=after.y-before.y;this.pinch=next;this.transform();return;
+      }
       if(!this.drag)return;const dx=point.x-this.drag.point.x,dy=point.y-this.drag.point.y;if(Math.hypot(dx,dy)>4)this.drag.moved=true;
       if(this.drag.moved){if(this.drag.id){const c=this.drag.start;this.components[this.drag.id]={...c,x:bounded(Math.round((c.x+dx/this.view.k)/5)*5,60,860,c.x),y:bounded(Math.round((c.y+dy/this.view.k)/5)*5,38,this.p.type==='difference'?300:245,c.y)};this.draw();}else{this.view.x=this.drag.start.x+dx;this.view.y=this.drag.start.y+dy;this.transform();}}
     }
-    up(e){if(!this.pointers.has(e.pointerId))return;const drag=this.drag;this.drag=null;this.pointers.delete(e.pointerId);this.pinch=null;
+    pinchState(){if(this.pointers.size!==2)return null;const[a,b]=[...this.pointers.values()];return{distance:Math.hypot(a.x-b.x,a.y-b.y),mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};}
+    up(e){if(!this.pointers.has(e.pointerId))return;
+      if(this.navigation){
+        if(e.type!=='pointerup'){this.cancelGesture();return;}
+        this.pointers.delete(e.pointerId);if(this.svg.hasPointerCapture?.(e.pointerId))this.svg.releasePointerCapture(e.pointerId);this.pinch=this.pinchState();this.drag=null;
+        if(this.pointers.size===1){const p=[...this.pointers.values()][0];this.drag={point:this.point({clientX:p.x,clientY:p.y}),start:{...this.view},moved:true};}
+        if(!this.pointers.size)this.navigation=false;return;
+      }
+      const drag=this.drag;this.drag=null;this.pointers.delete(e.pointerId);this.pinch=null;
       if(e.type==='pointerup'&&drag){if(drag.id){const id=drag.id,c=this.components[id];if(drag.moved)this.commit(id,{x:c.x,y:c.y,rotation:c.rotation});this.callbacks.select(id);}else if(!drag.moved)this.callbacks.deselect?.();}
       else if(drag?.id&&drag.moved){this.components[drag.id]={...drag.start};this.draw();}
     }

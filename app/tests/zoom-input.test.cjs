@@ -20,3 +20,6 @@ test('Safari pinch uses incremental scale, avoids duplicate wheel zoom and respe
 test('invalid zoom deltas do not corrupt the next gesture',()=>{
  const h=harness();h.send('wheel',{deltaY:NaN});h.send('wheel',{deltaY:Infinity});h.send('gesturestart',{scale:1});h.send('gesturechange',{scale:0});h.send('gesturechange',{scale:NaN});assert.equal(h.changes.length,0);h.send('gesturechange',{scale:1.05,timeStamp:1200});assert.ok(Number.isFinite(h.changes[0].factor));
 });
+test('a lost WebKit gesture end cannot leave wheel zoom stuck after leaving and returning to a view',()=>{
+ const h=harness();h.send('gesturestart',{scale:1,timeStamp:1000});h.send('gesturechange',{scale:1.05,timeStamp:1016});h.activate(false);h.activate(true);h.send('wheel',{deltaY:-20,timeStamp:1500});assert.equal(h.changes.length,2);assert.ok(h.changes[1].factor>1);
+});

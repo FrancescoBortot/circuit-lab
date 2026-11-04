@@ -24,9 +24,10 @@
   const eligible=e=>active()&&!e.metaKey&&!e.altKey&&accept(anchor(e));
   const anchor=e=>{const r=target.getBoundingClientRect();return{clientX:Number.isFinite(e.clientX)&&e.clientX>=r.left&&e.clientX<=r.left+r.width?e.clientX:r.left+r.width/2,clientY:Number.isFinite(e.clientY)&&e.clientY>=r.top&&e.clientY<=r.top+r.height?e.clientY:r.top+r.height/2};};
   function step(log,e,pinch){if(!Number.isFinite(log)||!log)return;const now=Number.isFinite(e.timeStamp)?e.timeStamp:Date.now(),gap=last===null?Infinity:Math.max(0,now-last);if(gap>180){credit=.08;if(!gesture)begin();}else credit=Math.min(.08,credit+gap*(pinch?.0015:.001));last=now;const amount=Math.max(-credit,Math.min(credit,log));credit=Math.max(0,credit-Math.abs(amount));if(amount)zoom(Math.exp(amount),anchor(e));}
-  const wheel=e=>{if(!eligible(e))return;e.preventDefault();if(gesture)return;const units=e.deltaMode===1?16:e.deltaMode===2?Math.max(200,Math.min(1000,target.clientHeight||800)):1;step(-e.deltaY*units*(e.ctrlKey?.004:.001),e,Boolean(e.ctrlKey));};
-  const start=e=>{if(!eligible(e))return;e.preventDefault();gesture={scale:Number.isFinite(e.scale)&&e.scale>0?e.scale:1,ignore:touching()};last=null;credit=.08;if(!gesture.ignore)begin();};
-  const change=e=>{if(!eligible(e)){gesture=null;return;}if(!gesture)return;e.preventDefault();if(gesture.ignore||!Number.isFinite(e.scale)||e.scale<=0)return;const previous=gesture.scale;gesture.scale=e.scale;step(Math.log(e.scale/previous)*.7,e,true);};
+  const time=e=>Number.isFinite(e.timeStamp)?e.timeStamp:Date.now();
+  const wheel=e=>{if(!eligible(e))return;e.preventDefault();if(gesture){if(time(e)-gesture.time<=180)return;gesture=null;last=null;}const units=e.deltaMode===1?16:e.deltaMode===2?Math.max(200,Math.min(1000,target.clientHeight||800)):1;step(-e.deltaY*units*(e.ctrlKey?.004:.001),e,Boolean(e.ctrlKey));};
+  const start=e=>{if(!eligible(e))return;e.preventDefault();gesture={scale:Number.isFinite(e.scale)&&e.scale>0?e.scale:1,ignore:touching(),time:time(e)};last=null;credit=.08;if(!gesture.ignore)begin();};
+  const change=e=>{if(!eligible(e)){gesture=null;return;}if(!gesture)return;e.preventDefault();gesture.time=time(e);if(gesture.ignore||!Number.isFinite(e.scale)||e.scale<=0)return;const previous=gesture.scale;gesture.scale=e.scale;step(Math.log(e.scale/previous)*.7,e,true);};
   const end=e=>{if(!gesture)return;if(eligible(e))e.preventDefault();gesture=null;last=null;};
   const handlers={wheel,gesturestart:start,gesturechange:change,gestureend:end};for(const [type,handler]of Object.entries(handlers))target.addEventListener(type,handler,{passive:false});
   return{destroy(){for(const [type,handler]of Object.entries(handlers))target.removeEventListener(type,handler);gesture=null;}};

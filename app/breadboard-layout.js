@@ -29,7 +29,8 @@
   for(const [key,predicate,label]of [['positive',c=>c.kind==='supply'&&c.node.endsWith('+'),'V+'],['negative',c=>c.kind==='supply'&&c.node.endsWith('−'),'V−'],['ground',c=>c.kind==='supply-ground','GND']]){const contacts=model.contacts.filter(predicate);if(contacts.length){port('PSU:'+key,'Alimentatore · '+label,canonical(contacts[0].node),true,contacts.map(c=>c.hole));ports.at(-1).voltage=key==='ground'?0:model.nets.find(n=>n.index===contacts[0].node).voltage;}}
   if(model.topology?.ground&&!ports.some(p=>p.required&&p.node==='ground')){const contact=model.contacts.find(c=>c.node===-1);if(contact)port('PSU:ground','Riferimento GND','ground',true,[contact.hole]);}
   for(const ch of model.channels){port('OSC'+ch.id.slice(2)+':tip','Oscilloscopio '+ch.id+' · puntale',canonical(ch.node),false,[ch.hole]);if(ch.ground)port('OSC'+ch.id.slice(2)+':ground','Oscilloscopio '+ch.id+' · massa',canonical(-1),false,[ch.ground]);}
-  const sourceVoltages=Object.fromEntries(model.sources.filter(s=>s.wave?.kind==='dc').map(s=>['AFG'+(model.sources.indexOf(s)+1)+':signal',s.wave.level*(s.wave.polarity??1)]));
+  const constant=w=>!w?undefined:w.kind==='dc'?w.level:['sine','square','triangle'].includes(w.kind)&&w.vpp===0?w.offset:['step','pulse'].includes(w.kind)&&w.level===(w.low??0)?w.level:w.kind==='pwl'&&w.points.every(p=>p[1]===w.points[0][1])?w.points[0][1]:undefined;
+  const sourceVoltages=Object.fromEntries(model.sources.flatMap((s,i)=>{const value=constant(s.wave);return Number.isFinite(value)?[['AFG'+(i+1)+':signal',value*(s.wave.polarity??1)]]:[];}));
   const ref={units,ports,netNames,sourceVoltages,rows:model.modules[0]?.rows||30,proposedWires:clone(model.wires||[])};
   ref.signature='physical-ref-v1-'+digest({units:units.map(({id,kind,value,pins})=>({id,kind,value,pins})),ports:ports.map(({id,node,required,voltage})=>({id,node,required,voltage})),sources:model.sources.map(s=>s.wave)});return ref;
  }
@@ -103,7 +104,7 @@
   const reach=start=>{const seen=new Set([start]),queue=[start];for(let i=0;i<queue.length;i++)for(const n of adjacency.get(queue[i])||[])if(!seen.has(n)){seen.add(n);queue.push(n);}return seen;};
   const signals=sources.filter(s=>/^AFG[12]:signal$/.test(s.port)),powered=new Set();
   for(const source of sources)for(const r of reach(root(source.hole)))powered.add(r);
-  for(const signal of signals){const channel=signal.port.split(':')[0],returns=sources.filter(s=>s.port===channel+':ground'),seen=reach(root(signal.hole)),input=chips.some(p=>['2','3','5','6'].some(pin=>seen.has(root(p.holes[pin]))));
+  for(const signal of signals){const channel=signal.port.split(':')[0],returns=sources.filter(s=>s.port.endsWith(':ground')),seen=reach(root(signal.hole)),input=chips.some(p=>['2','3','5','6'].some(pin=>seen.has(root(p.holes[pin]))));
    if(!returns.length)errors.push(diag('missing-return','Manca il ritorno del '+channel,'Collega il ritorno GND del generatore: il solo cavo del segnale non completa il collegamento.',[{kind:'port',id:channel+':ground'}],[signal.hole]));
    else if(!returns.some(s=>seen.has(root(s.hole)))&&!input)errors.push(diag('open','Percorso del segnale interrotto · '+channel,'Il segnale non raggiunge né un percorso di ritorno attraverso i componenti né un ingresso dell’integrato. Controlla i capi liberi e i ponticelli.',passives.filter(p=>seen.has(root(p.holes.a))||seen.has(root(p.holes.b))).map(p=>({kind:'part',id:p.id})),[signal.hole,...passives.flatMap(p=>[p.holes.a,p.holes.b]).filter(h=>seen.has(root(h)))]));
   }

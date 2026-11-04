@@ -84,3 +84,11 @@ test('DC supply continuity and known zero-volt generator are evaluated from actu
  const dc=P.edit(handBoard(),b=>{b.leads=[{id:'L1',port:'PSU:positive',hole:'M1:b1'},{id:'L2',port:'PSU:ground',hole:'M1:b2'}];b.supply.positive=5;});assert.equal(P.check(dc,simple).correct,true);dc.parts[0].holes.b='M1:a4';assert.ok(P.check(dc,simple).errors.some(e=>e.code==='open'));
  const zeroRef={...simple,sourceVoltages:{'AFG1:signal':0}},zero=P.edit(handBoard(),b=>b.wires.push({id:'W1',a:'M1:c1',b:'M1:c2',color:'#28734d'}));assert.ok(!P.check(zero,zeroRef).errors.some(e=>e.code==='short'));assert.ok(P.check(zero,simple).errors.some(e=>e.code==='short'));
 });
+
+test('a shared return through another grounded instrument is valid without the exact reference ground cable',()=>{
+ for(const port of ['OSC1:ground','PSU:ground','AFG2:ground']){const b=P.edit(handBoard(),b=>b.leads[1].port=port),r=P.check(b,simple);assert.equal(r.correct,true,port);assert.ok(r.differences.length);assert.equal(r.errors.length,0);}
+});
+test('a zero-amplitude waveform is a known DC potential for source conflict checks',()=>{
+ const doc=L.network(L.defaults('rc')),s=doc.components.find(c=>c.type==='V');s.wave={...s.wave,kind:'sine',vpp:0,offset:0};const ref=P.reference(B.create(doc));assert.equal(ref.sourceVoltages['AFG1:signal'],0);
+ const b=P.proposed(ref),free=P.holes(b.rows).filter(h=>!P.occupied(b).has(h)),g=P.graph(b),hot=b.leads.find(l=>l.port==='AFG1:signal').hole,cold=b.leads.find(l=>l.port==='AFG1:ground').hole;b.wires.push({id:'WTEST',a:free.find(h=>g.find(h)===g.find(hot)),b:free.find(h=>g.find(h)===g.find(cold)),color:'#28734d'});assert.ok(!P.check(b,ref).errors.some(e=>e.code==='short'));
+});

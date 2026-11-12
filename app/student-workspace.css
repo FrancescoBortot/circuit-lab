@@ -234,3 +234,30 @@ body[data-student-contrast=high] :is(.plot-area,.free-plot-area,.comparison-plot
  .student-workbench .workbench[data-workbench-view=plot] .plot-area,
  .student-workbench .free-center[data-workbench-view=plot] .free-plot-area{height:220px}
 }
+
+/* On desktop the panes scroll inside the viewport, including when the header wraps. */
+html{overscroll-behavior-y:none}
+@media(min-width:761px){
+ body.student-workbench{height:100dvh;display:flex;flex-direction:column;overflow:clip}
+ .student-workbench > :is(.topbar,.workbench-flow,.student-quantity-feedback,.student-error-bar){flex:none}
+ .student-workbench > :is(.app-layout,.free-workspace){flex:1 1 0;height:auto;min-height:0;grid-template-rows:minmax(0,1fr)}
+ .student-workbench :is(.workbench,.free-center,.library,.free-library,.inspector-scroll,.free-inspector){overscroll-behavior-y:contain}
+}
+
+.plot-scope-controls,.plot-scope-controls [data-trace-axes],.plot-time-controls{
+ display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0
+}
+.cursor-toolbar:has(> .plot-scope-controls:not([hidden])){flex-wrap:wrap}
+.plot-scope-controls{flex:1 0 100%;padding-top:4px}
+.plot-scope-controls[hidden],.plot-scope-controls [hidden]{display:none}
+.plot-scope-controls [data-trace-axes]{flex:1 1 280px}
+.plot-scope-controls [data-trace-axes] label{
+ display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;overflow-wrap:anywhere
+}
+.plot-scope-controls select{
+ padding:3px 6px;border:1px solid #c8d6ed;border-radius:6px;background:white;color:#36547b
+}
+.plot-time-controls{flex:1 0 100%}
+.plot-time-controls label{display:flex;align-items:center;gap:8px;flex:1 1 180px;font-size:12px}
+.plot-time-controls input{flex:1;min-width:48px;accent-color:#3456df}
+.plot-scope-controls button[aria-pressed=true]{background:#eaf0ff;color:#3154d2;border-color:#a8bafa}

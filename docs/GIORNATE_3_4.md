@@ -1,6 +1,6 @@
 # Giornate 3 e 4 · catena elettronica
 
-Il catalogo delle quattro giornate comprende sette circuiti dedicati al preamplificatore, al formatore e alla catena elettronica completa. Ogni circuito mantiene componenti modificabili, schema, breadboard, analisi, prove guidate e salvataggio della sessione.
+Le giornate 3 e 4 comprendono sette circuiti dedicati al preamplificatore, al formatore e alla catena elettronica completa. Ogni circuito mantiene componenti modificabili, schema, breadboard, analisi, prove guidate e salvataggio della sessione.
 
 ## Circuiti e prove
 

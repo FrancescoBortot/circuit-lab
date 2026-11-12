@@ -4,11 +4,11 @@
   const STORAGE='circuit-lab-v2',format=M.format,copy=M.clone,esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const store=window.LocalProjects.createStore({getItem:k=>localStorage.getItem(k),setItem:(k,v)=>localStorage.setItem(k,v)},STORAGE,M.parse);
   let storageState={ok:false},calculating=false,calculationReady=false,calculationRevision=0;const tasks=new window.CircuitTasks();
-  const unitSets={slew:[[1,'V/s'],[1e6,'V/µs']],current:[[1e-6,'µA'],[1e-3,'mA'],[1,'A']],res:[[1,'Ω'],[1e3,'kΩ'],[1e6,'MΩ']],cap:[[1e-12,'pF'],[1e-9,'nF'],[1e-6,'µF'],[1e-3,'mF'],[1,'F']],time:[[1e-9,'ns'],[1e-6,'µs'],[1e-3,'ms'],[1,'s']],freq:[[1,'Hz'],[1e3,'kHz'],[1e6,'MHz']],voltage:[[.001,'mVpp'],[1,'Vpp']]};
+  const unitSets={smallCurrent:[[1e-12,'pA'],[1e-9,'nA'],[1e-6,'µA'],[1e-3,'mA']],conductanceFactor:[[1e-6,'µA/V²'],[1e-3,'mA/V²'],[1,'A/V²']],slew:[[1,'V/s'],[1e6,'V/µs']],current:[[1e-6,'µA'],[1e-3,'mA'],[1,'A']],res:[[1,'Ω'],[1e3,'kΩ'],[1e6,'MΩ']],cap:[[1e-12,'pF'],[1e-9,'nF'],[1e-6,'µF'],[1e-3,'mF'],[1,'F']],time:[[1e-9,'ns'],[1e-6,'µs'],[1e-3,'ms'],[1,'s']],freq:[[1,'Hz'],[1e3,'kHz'],[1e6,'MHz']],voltage:[[.001,'mVpp'],[1,'Vpp']]};
   let project={name:'Il mio laboratorio',experiment:'rc',analysis:'time',circuits:{rc:M.defaults('rc')},layouts:{}};
-  let lastSimulationResult=null;let derivedMetrics=[];let panel='components',selected=null,quantity='voltage',data=[],valid=true,debounce,timer;
+  let lastSimulationResult=null,diagramFitPending=false;let derivedMetrics=[];let panel='components',selected=null,quantity='voltage',data=[],valid=true,debounce,timer;
   const units={},visible={vin:true,vin2:true,out:true,source:false,linear:true,current:true,db:true,phase:true};
-  const networkDiagram=p=>M.real(p)||M.isRadiation(p), chargeAnalysis=p=>M.isRadiation(p)&&M.radiation.hasPre(p);
+  const S=M.semiconductor,networkDiagram=M.usesNetwork,secondInput=p=>p.type==='difference'||S.twoInputs(p), chargeAnalysis=p=>M.isRadiation(p)&&M.radiation.hasPre(p);
   const current=()=>M.CATALOG.find(c=>c.id===project.experiment),params=()=>project.circuits[current().type];
   const get=(object,path)=>path.split('.').reduce((v,k)=>v[k],object);
   const set=(object,path,value)=>{const keys=path.split('.'),last=keys.pop();keys.reduce((v,k)=>v[k],object)[last]=value;};
@@ -18,7 +18,7 @@
   function trialLabel(){const t=window.GuidedTrials.current(project,M.CATALOG);$('guidedTrialBadge').hidden=!t.label;$('guidedTrialName').textContent=t.label;$('guidedTrialChanged').hidden=!t.modified;$('sheetPreset').value=t.preset;}
   function sessionState(withResult=false){
     if(window.circuitEditor?.active)return;const detail={text:M.serialize(project)};
-    if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
+    if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,...(lastSimulationResult?.values?.truth?{truthCsv:S.truthCsv(params(),lastSimulationResult.values.truth)}:{}),points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
     return detail;
   }
   function emitState(withResult=false){const detail=sessionState(withResult);if(detail)document.dispatchEvent(new CustomEvent('guided-lab-state',{detail}));}
@@ -29,9 +29,17 @@
     renderNavigation();renderInspector();fitDiagram();calculate();persist();
   }
   function renderNavigation(){
-    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[1,2,3,4].map(day=>`<section class="library-group"><h2>${['','Prima','Seconda','Terza','Quarta'][day]} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step}</small></span></button>`).join('')}</section>`).join('');
+    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[...new Set(M.CATALOG.map(c=>c.day))].map(day=>`<section class="library-group"><h2>${['','Prima','Seconda','Terza','Quarta','Quinta','Sesta'][day]} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step}</small></span></button>`).join('')}</section>`).join('');
     const c=current();$('guidedRCAnalysis').hidden=c.type!=='rc';$('circuitKicker').textContent=`GIORNATA ${c.day} · ESPERIENZA ${c.step}`;$('circuitTitle').textContent=c.name;$('circuitDescription').textContent=c.description;
-    $$('[data-analysis]').forEach(b=>{if(['vtc','charge'].includes(b.dataset.analysis)){b.dataset.analysis=chargeAnalysis(params())?'charge':'vtc';b.textContent=chargeAnalysis(params())?'Linearità · Q':'VTC';}b.setAttribute('aria-pressed',String(b.dataset.analysis===project.analysis));b.disabled=(c.type==='rc'||M.isRadiation(c.type)&&!M.radiation.hasFinal(params())&&!chargeAnalysis(params()))&&b.dataset.analysis==='vtc';b.title=b.disabled?'VTC prevista per gli amplificatori':({time:'Segnali nel tempo: carica, scarica e forma d’onda.',bode:'Risposta in frequenza: guadagno e fase.',vtc:'Ampiezza di uscita al variare dell’ampiezza in ingresso.',charge:'Picco d’uscita rispetto alla carica iniettata.'})[b.dataset.analysis];});
+    const p=params(),options=M.analyses(p),tabs=S.is(p)?options:[['time','Transitorio'],['bode','Bode'],chargeAnalysis(p)?['charge','Linearità · Q']:['vtc','VTC']];
+    $$('[data-analysis]').forEach((button,index)=>{
+      const [key,label]=tabs[index]||['',''];button.dataset.analysis=key;
+      button.hidden=!key;button.textContent=label;
+      button.disabled=!options.some(([option])=>option===key);
+      button.setAttribute('aria-pressed',String(key===project.analysis));
+    });
+    $('guidedBenchMode').closest('.bench-mode-strip').hidden=S.isCharacteristic(project.analysis);
+
   }
   function field(path,label,unit='',hint='',disabled=false,override){
     const value=override??get(params(),path)??M.physical(params())[path]??(path==='sweepPoints'?41:0),options=unitSets[unit];let factor=1;
@@ -43,14 +51,16 @@
   function sourceFields(channel,label){
     const p=params(),w=p['wave'+channel],periodic=['sine','square','triangle'].includes(w.kind),k='wave'+channel;
     const waves=[...(M.isRadiation(p)?[['pulse','Impulso rettangolare']]:[]),['sine','Sinusoidale'],['square','Quadra'],['triangle','Triangolare'],['dc','Continua'],['ground','A massa']];
+    if(p.type==='mos-iv')return '<section class="signal-card"><h3>Generatore di gate</h3>'+field('wave1.level','Tensione a monte di R₁','V')+'</section>';
+    if(p.type==='diode-iv')return '<p class="field-hint">La sorgente continua viene regolata dalla scansione I–V.</p>';
     if(p.type==='rc'&&channel===1)waves.unshift(['cycle','Carica e scarica'],['charge','Carica'],['discharge','Scarica']);
     return `<section class="signal-card"><h3><span class="channel-dot ${channel===2?'teal':''}"></span>${label}</h3>${select(k+'.kind','Forma del segnale',waves)}${w.kind==='pulse'?(p.type==='preamp'?field(k+'.level','V_in · impulso rispetto all’offset','V','Inserisci un valore negativo per l’impulso della scheda.',false,w.level-w.low)+field(k+'.low','Offset · livello di riposo','V','Il livello durante l’impulso è offset + V_in.'):field(k+'.level','Livello durante l’impulso','V')+field(k+'.low','Livello di riposo','V'))+field(k+'.width','Durata dell’impulso T','time')+field(k+'.delay','Ritardo iniziale','time')+field(k+'.period','Periodo di ripetizione','time')+field(k+'.rise','Tempo del fronte iniziale','time')+field(k+'.fall','Tempo del fronte finale','time'):periodic?field(k+'.vpp','Ampiezza picco-picco','voltage')+field(k+'.frequency','Frequenza','freq')+`<div class="form-grid">${field(k+'.offset','Offset','V')}${field(k+'.phase','Fase','°')}</div>`+(w.kind==='square'?field(k+'.duty','Duty cycle','%'):''):!['discharge','ground'].includes(w.kind)?field(k+'.level','Tensione della sorgente','V'):''}${p.type==='rc'?field('initial','Tensione iniziale su C','V','Condizione del condensatore a t = 0.'):''}</section>`;
   }
   const presets=window.GuidedTrials.PRESETS;
   function advancedFields(html){
-    const p=params(),mode=p.baselineMode||'auto',open=$('inspectorContent').querySelector('[data-baseline-settings]')?.open;
+    const p=params();if(S.isCharacteristic(project.analysis))return '';const mode=p.baselineMode||'auto',open=$('inspectorContent').querySelector('[data-baseline-settings]')?.open;
     let inputs='';
-    for(const i of p.type==='difference'&&p.drive==='independent'?[1,2]:[1]){
+    for(const i of p.type==='difference'&&p.drive==='independent'||S.twoInputs(p)?[1,2]:[1]){
       const k='wave'+i,w=p[k],periodic=['sine','square','triangle'].includes(w.kind),path=w.kind==='discharge'?'initial':k+(periodic?'.vpp':'.level');
       if(html.includes(`data-field="${path}"`))continue;
       inputs+=field(path,(i===2?'V₂':'V_in')+(periodic?' · ampiezza picco-picco':w.kind==='pulse'?' · impulso rispetto al riposo':w.kind==='discharge'?' · tensione iniziale su C':' · livello della sorgente'),periodic?'voltage':'V',w.kind==='ground'?'Ingresso a massa: scegli un’altra forma in Segnali per applicare una tensione.':w.kind==='pulse'?'Il livello durante l’impulso è livello di riposo + V_in.':'Valore condiviso con il pannello Segnali.',w.kind==='ground',w.kind==='pulse'?w.level-w.low:undefined);
@@ -64,6 +74,14 @@
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';
+      if(S.is(p)){
+        const checkbox=(key,label)=>`<label class="field-checkbox">${label}<input data-check="${key}" type="checkbox" ${p[key]?'checked':''}></label>`;
+        html+=S.fields(p).map(([key,label,unit])=>field(key,label,unit)).join('');
+        if(p.type==='half-wave-rc')html+=checkbox('externalLoad','Inserisci il carico esterno Rᴸ')+field('initial','Tensione iniziale su C₁','V');
+        if(p.type==='mos-iv')html+=checkbox('gateMeter','Collega il voltmetro da 10 MΩ al gate');
+        html+='<p class="field-hint">Parametri di esempio a 27 °C. Inserisci i valori ricavati dai tuoi dati per confrontare il modello con il banco.</p>';
+        if(p.type==='nmos-nand')html+='<p class="field-hint">M3 è rappresentato con corpo al source locale e senza effetto body. Rleak (100 MΩ) fissa il potenziale del nodo intermedio a canali spenti.</p>';
+      }else{
       html+=M.isRadiation(p)?M.radiation.fields(p).map(([key,label,unit])=>field(key,label,unit)).join(''):p.type==='rc'?field('R','Resistenza R','res')+field('C','Condensatore C','cap'):field('R1','Resistenza d’ingresso R₁','res')+field('Rf','Resistenza di feedback Rf','res');
       if(M.isRadiation(p)){
         const checkbox=(key,label)=>`<label class="field-checkbox">${label}<input data-check="${key}" type="checkbox" ${p[key]?'checked':''}></label>`;
@@ -76,16 +94,24 @@
       if(p.type==='difference')html+=field('R3','Resistenza d’ingresso R₃','res')+field('R4','Resistenza verso massa R₄','res')+'<button class="text-button" id="balanceResistors">Bilancia: R₃ = R₁ e R₄ = Rf <svg><use href="#i-arrow"/></svg></button>';
       if(p.type==='rc'&&!M.real(p))html+=`<section class="form-section">${select('instrument','Generatore e oscilloscopio',[['ideal','Circuito ideale'],['generator','Solo generatore'],['direct','Oscilloscopio · senza sonde'],['probe','Oscilloscopio · sonde 10×'],['custom','Valori personalizzati']])}${p.instrument==='ideal'?'<p class="field-hint">Scegli una configurazione per aggiungere le impedenze degli strumenti allo schema.</p>':`<details class="details-settings" ${['Rg','CH1','CH2'].includes(selected)?'open':''}><summary>Modifica le impedenze degli strumenti</summary>${field('rg','R del generatore','res')}${p.instrument==='generator'?'':field('scopeR','R d’ingresso di ogni canale','res')+field('scopeC','C d’ingresso di ogni canale','cap','Cavi e sonde inclusi: i valori iniziali sono esempi modificabili.')}</details>`}</section>`;
       else if(p.type!=='rc')html+=`<section class="form-section">${select('opamp','Operazionale',[['limited','Banda e saturazione'],['physical','Fisico semplificato'],['ideal','Ideale']])}<details class="details-settings" ${selected==='U1'?'open':''}><summary>Alimentazione, guadagno e banda</summary>${p.opamp==='physical'?field('positive','Alimentazione V+','V')+field('negative','Alimentazione V−','V')+field('slew','Slew rate interno','slew')+field('rout','Resistenza di uscita','res')+field('ilimit','Corrente massima erogata/assorbita','current'):field('rail','Alimentazione simmetrica ±','V')}${field('headroom','Margine rispetto alle alimentazioni','V')}${field('a0','Guadagno ad anello aperto A₀','V/V')}${field('gbw','Prodotto guadagno-banda','freq','Modello generico a polo dominante. I limiti aggiuntivi si attivano con Fisico semplificato; i valori sono esempi regolabili.')}</details></section>`;
+      }
     }else if(panel==='signals'){
       if(p.type==='difference')html+=select('drive','Come sono pilotati gli ingressi',[['independent','Due segnali indipendenti'],['v1','V₁ attivo · V₂ a massa'],['v2','V₂ attivo · V₁ a massa'],['common','Modo comune · V₁ = V₂'],['differential','Differenziale · V₂ = −V₁']]);
       const label=p.type==='difference'?(p.drive==='v2'?'Ingresso V₂':p.drive==='common'?'Segnale comune V₁ = V₂':p.drive==='differential'?'Differenza V₂ − V₁':'Ingresso V₁'):'Ingresso V₁';
-      html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent')html+=sourceFields(2,'Ingresso V₂');
-      if(M.real(p))html+='<p class="field-hint">Ampiezze delle sorgenti ideali, prima di R_G. IN/OUT sono le letture dei canali collegati; V₂ è il nodo fisico d’ingresso.</p>';else if(p.type!=='rc')html+='<p class="field-hint">Ampiezze impostate nel punto V₁/V₂ della scheda, non a vuoto sul generatore.</p>';
+      html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent'||S.twoInputs(p))html+=sourceFields(2,'Ingresso V₂');
+      if(M.real(p))html+='<p class="field-hint">Ampiezze delle sorgenti ideali, prima di R_G. IN/OUT sono le letture dei canali collegati; V₂ è il nodo fisico d’ingresso.</p>';else if(p.type!=='rc'&&!S.is(p))html+='<p class="field-hint">Ampiezze impostate nel punto V₁/V₂ della scheda, non a vuoto sul generatore.</p>';
     }else{
       const descriptions={time:p.type==='rc'?'Segui la carica e la scarica del condensatore e misura quanto tempo impiega l’uscita a cambiare.':p.type==='derivative'?'Confronta la forma dell’ingresso con l’uscita per verificare la derivazione del segnale.':'Confronta ingressi e uscita nel tempo: osserva guadagno, inversione e possibili limiti di uscita.',bode:'Scopri come cambiano guadagno e sfasamento al variare della frequenza. Utile per studiare filtri e banda passante.',charge:'Varia la durata di impulsi negativi, calcola Qin = |Vin|·T/Rin e confronta i massimi rispetto alla baseline con un fit lineare.',vtc:'Aumenta l’ampiezza di una sinusoide a frequenza fissa e osserva dove l’uscita smette di crescere linearmente.'};
-      html=`<section class="guided-analysis-choice"><label for="guidedAnalysis">Che cosa vuoi studiare?</label><select class="form-select" id="guidedAnalysis" aria-describedby="guidedAnalysisPurpose">${[['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],...(chargeAnalysis(p)?[['charge','Linearità · carica iniettata']]:p.type==='rc'||M.isRadiation(p)&&!M.radiation.hasFinal(p)?[]:[['vtc','Ampiezza · VTC']])].map(([value,label])=>`<option value="${value}" ${project.analysis===value?'selected':''}>${label}</option>`).join('')}</select><p id="guidedAnalysisPurpose">${descriptions[project.analysis]}</p></section>`;
+      html=`<section class="guided-analysis-choice"><label for="guidedAnalysis">Che cosa vuoi studiare?</label><select class="form-select" id="guidedAnalysis" aria-describedby="guidedAnalysisPurpose">${M.analyses(p).map(([value,label])=>`<option value="${value}" ${project.analysis===value?'selected':''}>${label}</option>`).join('')}</select><p id="guidedAnalysisPurpose">${descriptions[project.analysis]||S.characteristic(project.analysis)?.status||''}</p></section>`;
       if(p.type==='difference'&&project.analysis!=='time')html+=select('bodeInput','Quale ingresso confrontare con OUT',[['differential','Differenza V₂ − V₁'],['v1','V₁ · V₂ a massa'],['v2','V₂ · V₁ a massa'],['common','Modo comune V₁ = V₂']],'Questa scelta vale per Bode e VTC. I segnali del Transitorio si impostano in Segnali.');
       let reading='';
+      if(S.isCharacteristic(project.analysis)){
+        html+=field('dcPoints','Punti della scansione','punti','Da 8 a 201.');
+        if(p.type==='mos-iv')html+=field('wave1.level','Tensione a monte di R₁','V')+field('drainBias','Polarizzazione Vᴅₛ','V');
+        reading=project.analysis==='diodeIV'
+          ?'Corrente in ampere su scala logaritmica. Fit non pesato di ln(Iᴅ) contro Vᴅ, da 1 µA a 10 mA se raggiungibili con la sorgente fino a 20 V. Il CSV include la corrente prevista dal fit e il residuo in ampere.'
+          :'L’asse verticale mostra Iᴅ in ampere. La stima usa due punti attorno al punto di lavoro in saturazione. La scansione di gate si ferma al primo limite fra 4,5 V di generatore e 4 mA di drain.';
+      }
       if(project.analysis==='time'){
         html+=`<div class="guided-analysis-settings"><h3>Intervallo del grafico</h3><label class="field-checkbox" for="autoTime">Durata automatica<input id="autoTime" data-check="autoTime" type="checkbox" ${p.autoTime?'checked':''}></label><p class="field-hint">Disattiva per scegliere il tempo da visualizzare.</p>${field('duration','Tempo visualizzato','time','Asse orizzontale del grafico.',p.autoTime)}${p.type==='rc'&&p.wave1.kind==='cycle'?field('switchTime','Inizio della scarica','time','',p.autoTime):''}</div><details class="details-settings" data-analysis-precision${precisionOpen?' open':''}><summary>Risoluzione del grafico</summary>${field('samples','Punti minimi','punti','Da 400 a 10 000. Il calcolo aggiunge fronti e vertici e aumenta la risoluzione quando serve. Maggiori valori possono richiedere più tempo.')}</details>`;
         reading='L’asse orizzontale mostra il tempo.'+(p.type==='rc'?' Dal menu sopra il grafico scegli Tensioni oppure Corrente in R; l’asse verticale mostra la grandezza scelta.':' L’asse verticale mostra le tensioni di ingresso e uscita.')+' Attiva Due cursori per leggere valori e differenze tra due istanti.';
@@ -100,11 +126,11 @@
       }
       if(project.analysis==='vtc'){
         html+=`<div class="guided-analysis-settings"><h3>Sinusoide della prova</h3>${field('sweepMax','Ampiezza massima in ingresso','voltage','La scansione parte da 0 Vpp.')}${field('wave1.frequency','Frequenza fissa','freq')}${field('wave1.offset','Offset','V')}</div><details class="details-settings" data-analysis-precision${precisionOpen?' open':''}><summary>Risoluzione e calcolo</summary>${field('sweepPoints','Ampiezze da provare','punti','Da 11 a 101. Per ogni ampiezza si calcola la risposta a regime.')}<p class="field-hint">Il regime è verificato confrontando due periodi; Vpp,OUT è misurata sull’ultimo. Puoi annullare il calcolo dal pulsante sopra il grafico.</p></details>`;
-        reading='L’asse orizzontale mostra l’ampiezza in ingresso (Vpp), quello verticale l’ampiezza di uscita (Vpp). La linea tratteggiata è la previsione lineare. Per osservare la saturazione scegli un operazionale con limiti in Componenti.';
+        reading='L’asse orizzontale mostra l’ampiezza in ingresso (Vpp), quello verticale l’ampiezza di uscita (Vpp). La linea tratteggiata è la previsione lineare. '+(S.is(p)?'Osserva dove il rapporto OUT/IN si discosta dal guadagno a piccolo segnale.':'Per osservare la saturazione scegli un operazionale con limiti in Componenti.');
       }
       html+=`<details class="details-settings guided-analysis-reading" data-analysis-reading${readingOpen?' open':''}><summary>Come leggere il grafico</summary><p>${reading}</p></details><p class="guided-analysis-auto">Le modifiche avviano il calcolo del grafico in basso.</p>`;
     }
-    const measureButton=p.type==='rc'?'<button class="rc-launch rc-launch-panel" data-open-rc><span>Misura τ</span><small>Tempo e frequenza</small></button>':'<button class="rc-launch rc-launch-panel" data-open-opamp><span>Misure operazionali</span><small>VTC · banda · CMRR</small></button>';
+    const measureButton=S.is(p)?'<button class="rc-launch rc-launch-panel" data-open-comparison><span>I miei dati ↔ modello</span><small>Importa e confronta le misure</small></button>':p.type==='rc'?'<button class="rc-launch rc-launch-panel" data-open-rc><span>Misura τ</span><small>Tempo e frequenza</small></button>':'<button class="rc-launch rc-launch-panel" data-open-opamp><span>Misure operazionali</span><small>VTC · banda · CMRR</small></button>';
     html=panel==='analysis'?html+'<section class="guided-analysis-measures"><h3>Hai misure di laboratorio?</h3><p>Importa i dati e confrontali con il modello.</p>'+measureButton+'</section>':measureButton+html;
     if(p.type==='rc'&&panel==='components')html+='<details class="details-settings component-help" data-rc-help'+(helpOpen?' open':'')+'><summary>Come R e C cambiano la risposta</summary><p>R limita la corrente; C accumula carica. Nel circuito RC ideale, τ = R·C = <strong>'+format(p.R*p.C,'s',4)+'</strong>. Raddoppiare R oppure C raddoppia il tempo caratteristico.</p><p>Dopo una τ resta il 36,8% della differenza dal valore finale. Generatore, sonde e oscilloscopio possono modificare la risposta: nel pannello Misura τ trovi i riferimenti distinti.</p></details>';
     html+=advancedFields(html);
@@ -124,9 +150,16 @@
   function selectComponent(id){
     if(!applyFields())return;
     selected=id;panel=id==='V1'||id==='V2'?'signals':'components';setInspector(true);
-    const source=id==='V1'||id==='V2',wave=source&&id==='V2'&&params().drive==='independent'?'wave2':'wave1';
+    const source=id==='V1'||id==='V2',wave=source&&id==='V2'&&(params().drive==='independent'||S.twoInputs(params()))?'wave2':'wave1';
     const kind=source?params()[wave].kind:null;
     const inactive=params().type==='difference'&&((id==='V1'&&params().drive==='v2')||(id==='V2'&&params().drive==='v1'));
+    if(S.is(params())){
+      const path=S.fields(params()).find(([, , , , ,part])=>part===id)?.[0];
+      renderInspector(source?wave+(['sine','square','triangle'].includes(kind)?'.vpp':'.level'):path);
+      drawDiagram();globalThis.StudentSelection?.notify(id);
+      $('rotateComponent').disabled=!realDiagram.doc.components.some(part=>part.id===id&&!part.benchRole&&['R','C','L'].includes(part.type));
+      return;
+    }
     renderInspector((M.isRadiation(params())&&M.radiation.fields(params()).some(([k])=>k===id)||['R','C','R1','Rf','R3','R4','C1'].includes(id))?id:id==='Vbias'?'wave2.level':id.startsWith('U')?'rail':id==='Rg'?'rg':id==='CH1'||id==='CH2'?'scopeR':inactive?'drive':source?(kind==='discharge'?'initial':kind==='ground'?wave+'.kind':wave+(['dc','charge','cycle','pulse'].includes(kind)?'.level':'.vpp')):undefined);
     drawDiagram();globalThis.StudentSelection?.notify(id);
     $('rotateComponent').disabled=!(M.isRadiation(params())?M.radiation.fields(params()).some(([k])=>k===id):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(id));
@@ -160,54 +193,65 @@
   }
   function syncAutomaticFields(){for(const path of ['duration','switchTime']){const input=$('inspectorContent').querySelector(`[data-field="${path}"]`);if(input&&input.disabled){const factor=Number(input.parentElement.querySelector('[data-unit]').value);input.value=Number((get(params(),path)/factor).toPrecision(12));}}}
   const primaryMetric=r=>r.primary||/CMRR|taglio|Taglio|Banda|Costante di tempo|Guadagno/.test(r.label);
-  function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics,...(M.isRadiation(p)&&project.analysis==='time'?M.radiation.timeMetrics(p,data,format,lastSimulationResult?.baselineDC):[])];if(project.analysis==='charge'&&data.length)rows.push({label:'Pendenza fit simulato',value:format(data[0].slope*1e-12,'V/pC'),primary:true},{label:'Intercetta fit simulato',value:format(data[0].intercept,'V')});if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(p.type==='difference')rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
+  function measurements(){const p=params();let rows=[...M.summary(p),...derivedMetrics,...(M.isRadiation(p)&&project.analysis==='time'?M.radiation.timeMetrics(p,data,format,lastSimulationResult?.baselineDC):[])];if(project.analysis==='charge'&&data.length)rows.push({label:'Pendenza fit simulato',value:format(data[0].slope*1e-12,'V/pC'),primary:true},{label:'Intercetta fit simulato',value:format(data[0].intercept,'V')});if(project.analysis==='time'&&data.length){const pp=key=>{let min=Infinity,max=-Infinity;for(const d of data){min=Math.min(min,d[key]);max=Math.max(max,d[key]);}return max-min;};rows.push({label:'V₁ picco-picco',value:format(pp('vin'),'V')});if(secondInput(p))rows.push({label:'V₂ picco-picco',value:format(pp('vin2'),'V')});rows.push({label:'OUT picco-picco',value:format(pp('out'),'V')});}
     rows.sort((a,b)=>Number(Boolean(primaryMetric(b)))-Number(Boolean(primaryMetric(a))));$('summary').innerHTML=rows.map(r=>`<div class="summary-item ${primaryMetric(r)?'metric':''}" ${r.note?'title="'+esc(r.note)+'"':''}><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong></div>`).join('')+(M.real(p)&&project.analysis==='bode'?'<p class="field-hint metric-note">I tagli a −3 dB sono riferiti al massimo della curva nell’intervallo visualizzato.</p>':'');
+    const table=$('guidedTruthTable'),truth=lastSimulationResult?.values?.truth;
+    table.hidden=!truth;table.innerHTML=truthTable(p,truth);
+  }
+  function truthTable(p,rows){
+    if(!rows)return '';
+    const two=S.twoInputs(p),head=two?'<th scope="col">IN1</th><th scope="col">IN2</th>':'<th scope="col">IN</th>';
+    return '<table><caption>Tabella di verità simulata · DC</caption><thead><tr>'+head+'<th scope="col">OUT</th><th scope="col">VOUT</th></tr></thead><tbody>'+rows.map(row=>'<tr><td>'+row.a+'</td>'+(two?'<td>'+row.b+'</td>':'')+'<td>'+row.level+'</td><td>'+format(row.out,'V',4)+'</td></tr>').join('')+'</tbody></table><p class="field-hint">Basso sotto 1 V, alto sopra 4 V. Il trattino indica un livello intermedio.</p>';
   }
   const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
   function series(){const p=params();let s;
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
+    else if(S.isCharacteristic(project.analysis))s=[{key:'out',label:'Corrente Iᴅ',points:project.analysis==='diodeIV'},...(project.analysis==='diodeIV'?[{key:'linear',label:'Fit semilogaritmico',dash:'5 5'}]:[])];
     else if(project.analysis==='charge')s=[{key:'out',label:'Picco rispetto alla baseline',points:true},{key:'linear',label:'Fit lineare',dash:'5 5'}];
-    else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:'Senza saturazione',dash:'5 5'}];
+    else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:S.is(p)?'Piccolo segnale':'Senza saturazione',dash:'5 5'}];
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
-    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(p.type==='difference')s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
+    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
     return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]!==false}));
   }
   function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}" aria-label="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${esc(d.label)}</span></button>`).join('');}
 
   function quantityControls(){const p=params(),select=$('plotQuantity');if(project.analysis==='bode')select.innerHTML='<option value="db">Modulo (dB)</option><option value="phase">Fase (°)</option>';else select.innerHTML='<option value="voltage">Tensioni</option><option value="current">Corrente in R</option>';
     if(project.analysis==='bode'&&!['db','phase'].includes(quantity))quantity='db';if(project.analysis==='time'&&!['voltage','current'].includes(quantity))quantity='voltage';
-    select.value=quantity;select.hidden=['vtc','charge'].includes(project.analysis)||(project.analysis==='time'&&p.type!=='rc');
+    select.value=quantity;select.hidden=S.isCharacteristic(project.analysis)||['vtc','charge'].includes(project.analysis)||(project.analysis==='time'&&p.type!=='rc');
   }
   async function calculate(){
     const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;studentCalculationError='';stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;lastSimulationResult=null;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.data=[];plot.series=[];$('plot').replaceChildren();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
-      const result=await tasks.run('guidedResult',{params:p,analysis},fraction=>{if(revision===calculationRevision){const message='Calcolo locale · '+(Math.floor(Math.max(0,Math.min(1,fraction))*20)*5)+'%';if($('calculationStatus').textContent!==message)$('calculationStatus').textContent=message;}});if(revision!==calculationRevision)return;lastSimulationResult=result;data=result.data;calculating=false;calculationReady=true;derivedMetrics=M.metrics(p,analysis==='time'?null:p.bodeInput);if((M.real(p)||M.isRadiation(p))&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
+      const result=await tasks.run('guidedResult',{params:p,analysis},fraction=>{if(revision===calculationRevision){const message='Calcolo locale · '+(Math.floor(Math.max(0,Math.min(1,fraction))*20)*5)+'%';if($('calculationStatus').textContent!==message)$('calculationStatus').textContent=message;}});if(revision!==calculationRevision)return;lastSimulationResult=result;data=result.data;calculating=false;calculationReady=true;derivedMetrics=S.is(p)?S.metrics(p,analysis,result.values,format):M.metrics(p,analysis==='time'?null:p.bodeInput);if(M.usesNetwork(p)&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
       quantityControls();renderLegend();
-      plot.set({data,baselineSettings:copy(p),dcBaseline:result.baselineDC,pulse:analysis==='time'&&p.wave1.kind==='pulse'?copy(p.wave1):null,series:series(),logX:project.analysis==='bode',xUnit:project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:project.analysis==='bode',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
+      const characteristic=S.characteristic(analysis);
+      plot.set({data,baselineSettings:copy(p),dcBaseline:result.baselineDC,pulse:analysis==='time'&&p.wave1.kind==='pulse'?copy(p.wave1):null,series:series(),logX:analysis==='bode',logY:analysis==='diodeIV',yLabel:characteristic?'Iᴅ':undefined,xUnit:characteristic?'V':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:characteristic?characteristic.xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:characteristic?'A':project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:analysis==='bode'||analysis==='diodeIV',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
       drawDiagram(p);measurements();
       $('timeline').hidden=project.analysis!=='time';$('timelineDuration').textContent=format(p.duration,'s');
-      $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='charge'?'Linearità in carica · '+data.length+' impulsi':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
+      $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='charge'?'Linearità in carica · '+data.length+' impulsi':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':characteristic?characteristic.status:S.is(p)?'Transitorio · '+data.length.toLocaleString('it-IT')+' punti':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
       const clipped=project.analysis!=='bode'&&data.some(d=>d.clipped);
       const zeroCommon=!M.real(p)&&p.type==='difference'&&project.analysis!=='time'&&p.bodeInput==='common'&&!Number.isFinite(M.coefficients(p).cmrr);
-      $('resultNotice').hidden=!clipped&&!zeroCommon;
-      $('resultNotice').textContent=clipped?(p.opamp==='physical'?'Uno o più limiti fisici sono attivi (alimentazione, slew rate o corrente). I valori si modificano nell’operazionale.':'Saturazione nella retroazione: escursione ±'+format(p.rail-p.headroom,'V')+'.'):zeroCommon?'Rapporti resistivi bilanciati: il modo comune si annulla nel modello. Introduci una differenza tra R₄/R₃ e Rf/R₁ per misurare un CMRR finito.':'';
-      $('rotateComponent').disabled=!(M.isRadiation(p)?M.radiation.fields(p).some(([k])=>k===selected):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected));
+      const settling=p.type==='half-wave-rc'&&analysis==='time'&&result.values?.settled===false;
+      $('resultNotice').hidden=!clipped&&!zeroCommon&&!settling;
+      $('resultNotice').textContent=settling?'I massimi o minimi degli ultimi due periodi differiscono. Aumenta la durata per misurare il ripple a regime.':clipped?(p.opamp==='physical'?'Uno o più limiti fisici sono attivi (alimentazione, slew rate o corrente). I valori si modificano nell’operazionale.':'Saturazione nella retroazione: escursione ±'+format(p.rail-p.headroom,'V')+'.'):zeroCommon?'Rapporti resistivi bilanciati: il modo comune si annulla nel modello. Introduci una differenza tra R₄/R₃ e Rf/R₁ per misurare un CMRR finito.':'';
+      $('rotateComponent').disabled=S.is(p)?!realDiagram.doc.components.some(part=>part.id===selected&&!part.benchRole&&['R','C','L'].includes(part.type)):!(M.isRadiation(p)?M.radiation.fields(p).some(([k])=>k===selected):['R','C','R1','Rf','R3','R4','C1','Rg'].includes(selected));
       showErrors({});emitState(true);
     }catch(error){if(revision!==calculationRevision)return;calculating=false;$('exportCSV').disabled=true;$('exportSVG').disabled=true;studentCalculationError=error.name==='AbortError'?'':error.message;$('calculationStatus').textContent=error.name==='AbortError'?'Calcolo annullato':'Calcolo non disponibile';if(error.name!=='AbortError')toast('Calcolo non disponibile: '+error.message,true);}
     finally{if(revision===calculationRevision)$('guidedCancel').textContent='Ricalcola';}
   }
   function cursor(d,fraction,cursors){
     $('timeCursor').value=Math.round(fraction*10000);if(playback.running&&playback.mode==='continuous'&&performance.now()-lastContinuousReadout<200)return;lastContinuousReadout=performance.now();const p=params();let rows;
-    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(p.type==='difference')rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);if(ref)rows.push([ref.label,format(ref.value,'V',4)],['OUT − baseline',format(d.out-ref.value,'V',4)]);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
+    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(secondInput(p))rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);if(ref)rows.push([ref.label,format(ref.value,'V',4)],['OUT − baseline',format(d.out-ref.value,'V',4)]);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
     else if(project.analysis==='bode')rows=[['Frequenza',format(d.x,'Hz',4)],['Guadagno',d.magnitude===0?'0 V/V':format(d.magnitude,'',4)+' V/V','primary-value'],['Modulo',d.magnitude===0?'−∞ dB':format(d.db,'dB',4)],['Fase',format(d.phase,'°',4)]];
+    else if(S.isCharacteristic(project.analysis))rows=[[S.characteristic(project.analysis).xLabel,format(d.x,'V',4)],['Corrente Iᴅ',format(d.out,'A',4),'primary-value'],...(project.analysis==='diodeIV'?[['Fit',format(d.linear,'A',4)],['Residuo',format(d.residual,'A',4)]]:[])];
     else if(project.analysis==='charge')rows=[['Qin nominale',format(d.x,'C',4)],['Durata impulso',format(d.width,'s',4)],['Baseline',format(d.baseline,'V',4)],['V_max assoluto',format(d.maximum,'V',4)],['Picco − baseline',format(d.out,'V',4)],['Residuo dal fit',format(d.residual,'V',4)]];
     else rows=[['Ingresso',format(d.x,'V',4)+'pp'],['Uscita',format(d.out,'V',4)+'pp','primary-value'],['Risposta lineare',format(d.linear,'V',4)+'pp']];
-    if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':project.analysis==='charge'?'Q':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
+    if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':S.isCharacteristic(project.analysis)?'V':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':project.analysis==='charge'?'Q':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'||S.isCharacteristic(project.analysis)?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
     $('readout').innerHTML=rows.map(([label,value,cls=''])=>`<div class="${cls}"><span>${label}</span><strong>${value}</strong></div>`).join('');
     $('timeCursor').setAttribute('aria-valuetext',project.analysis==='time'?format(d.x,'s',4):format(d.x,''));
   }
   function presetCandidate(key,base=project){
     const next=copy(base);let p=copy(next.circuits[M.CATALOG.find(c=>c.id===next.experiment).type]);const w=p.wave1;
-    if(M.isRadiation(p)){const trial=M.radiation.applyPreset(p,key);p=trial.parameters;next.analysis=trial.analysis;}else if(p.type==='rc'){
+    if(M.semiconductor.is(p)){const trial=M.semiconductor.applyPreset(p,key);p=trial.parameters;next.analysis=trial.analysis;}else if(M.isRadiation(p)){const trial=M.radiation.applyPreset(p,key);p=trial.parameters;next.analysis=trial.analysis;}else if(p.type==='rc'){
       if(['cycle','charge','discharge'].includes(key)){w.kind=key;p.initial=key==='discharge'?w.level:0;}
       if(['square','ideal','direct','probe'].includes(key)){Object.assign(w,{kind:'square',frequency:50,vpp:4,offset:2,phase:0});p.initial=0;}
       if(['ideal','direct','probe'].includes(key)){if(p.bench){p.bench=window.BenchModel.config(p.bench);p.bench.mode=key==='ideal'?'ideal':'real';for(const ch of p.bench.channels){ch.enabled=true;ch.kind=key==='probe'?'probe10':'direct';ch.coupling='dc';}}p.instrument=key;if(key==='direct'){p.scopeR=1e6;p.scopeC=120e-12;}if(key==='probe'){p.scopeR=10e6;p.scopeC=12e-12;}p.rg=50;}
@@ -246,13 +290,18 @@
   function drawDiagram(p=params()){
     const real=networkDiagram(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
     if(!networkDiagram(p)){diagram.render(p,project.layouts[p.type]||{},selected);return;}
-    const d=M.network(p,project.analysis==='time'?null:p.bodeInput);d.settings.analysis=project.analysis==='bode'?'bode':'time';
+    const d=M.network(p,S.is(p)?project.analysis:project.analysis==='time'?null:p.bodeInput);d.settings.analysis=project.analysis==='bode'?'bode':S.isCharacteristic(project.analysis)?'dc':'time';
     for(const c of d.components)if(project.layouts[p.type]?.[c.id])Object.assign(c,project.layouts[p.type][c.id]);
     const id=p.type==='rc'&&selected==='R'?'R1':p.type==='rc'&&selected==='C'?'C1':selected;
     realDiagram.render(d,id?{kind:'component',id}:null,'select',null,false);if(wasHidden)requestAnimationFrame(()=>realDiagram.fit());
   }
   const activeDiagram=()=>networkDiagram(params())?realDiagram:diagram;
-  function fitDiagram(){drawDiagram();activeDiagram().fit();}
+  function fitDiagram(){
+    drawDiagram();
+    const size=$('schematicStage').getBoundingClientRect();
+    diagramFitPending=size.width<1||size.height<1;
+    if(!diagramFitPending)activeDiagram().fit();
+  }
   function selectReal(kind,id){if(kind!=='component'){clearSelection();return;}const c=realDiagram.doc.components.find(c=>c.id===id);if(c?.benchRole){selected=id;drawDiagram();document.dispatchEvent(new CustomEvent('open-bench',{detail:{part:id}}));return;}selectComponent(params().type==='rc'&&id==='R1'?'R':params().type==='rc'&&id==='C1'?'C':id);}
   const realDiagram=new window.FreeCanvas($('realSchematic'),{select:selectReal,pin:ref=>selectReal('component',ref.split(':')[0]),move:(id,x,y)=>{const c=realDiagram.doc.components.find(c=>c.id===id);(project.layouts[params().type]??={})[id]={x,y,rotation:c.rotation};drawDiagram();persist();},moveWire:()=>drawDiagram(),moveGroup:()=>drawDiagram(),region:()=>clearSelection(),add:()=>toast('Aggiungi componenti dall’editor libero.'),zoom:value=>{if(networkDiagram(params()))$('diagramZoom').textContent=value+'%';}});
   const diagram=new window.LabDiagram($('schematic'),{select:selectComponent,deselect:clearSelection,move:(id,value)=>{const type=params().type;(project.layouts[type]??={})[id]=value;persist();},zoom:value=>$('diagramZoom').textContent=value+'%'});
@@ -271,7 +320,7 @@
 
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));
-  function changeAnalysis(value){if(!['time','bode','vtc','charge'].includes(value)||(value==='vtc'&&params().type==='rc')||(value==='charge'&&!chargeAnalysis(params())))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
+  function changeAnalysis(value){if(!M.analyses(params()).some(([key])=>key===value))return;if(!applyFields()){const select=$('guidedAnalysis');if(select)select.value=project.analysis;return;}project.analysis=value;panel='analysis';quantity=value==='bode'?'db':'voltage';renderNavigation();renderInspector();$('inspectorContent').parentElement.scrollTop=0;calculate();persist();}
   $$('[data-analysis]').forEach(b=>b.addEventListener('click',()=>changeAnalysis(b.dataset.analysis)));
   $('editButton').addEventListener('click',()=>{setInspector(true);panel='components';renderInspector();const input=$('inspectorContent').querySelector('input');if(input){input.focus({preventScroll:true});input.select();}});
   $('closeInspector').addEventListener('click',()=>setInspector(false));
@@ -292,7 +341,7 @@
   function setWorkspaceView(view){
     const main=$('appLayout').querySelector('.workbench');main.dataset.workbenchView=view;
     for(const b of $$('[data-guided-view]'))b.setAttribute('aria-pressed',String(b.dataset.guidedView===view));
-    document.dispatchEvent(new Event('circuit-lab-view'));if(view==='circuit')stopPlayback();requestAnimationFrame(()=>{if(view!=='plot'){const d=activeDiagram();d.transform?d.transform():d.draw();}if(view!=='circuit')plot.draw();});
+    document.dispatchEvent(new Event('circuit-lab-view'));if(view==='circuit')stopPlayback();requestAnimationFrame(()=>{if(view!=='plot'){if(diagramFitPending)fitDiagram();else{const d=activeDiagram();d.transform?d.transform():d.draw();}}if(view!=='circuit')plot.draw();});
   }
   $$('[data-guided-view]').forEach(b=>b.addEventListener('click',()=>setWorkspaceView(b.dataset.guidedView)));
   $('toggleSchematic').addEventListener('click',()=>setWorkspaceView('plot'));$('hideGuidedPlot').addEventListener('click',()=>setWorkspaceView('circuit'));

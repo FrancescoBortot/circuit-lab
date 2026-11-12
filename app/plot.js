@@ -70,24 +70,28 @@
     draw(){
       if(!this.data.length)return;const rect=this.svg.parentElement.getBoundingClientRect(),w=Math.max(250,rect.width),h=Math.max(140,rect.height),left=60,right=24,top=21,bottom=35,pw=w-left-right,ph=h-top-bottom;
       const x=value=>left+(this.toDomain(value)-this.view[0])/(this.view[1]-this.view[0])*pw;
+      const logY=this.config.logY,domainY=logY?Math.log10:v=>v;
+      const validY=v=>Number.isFinite(v)&&(!logY||v>0);
       let min=Infinity,max=-Infinity;const visible=this.data.filter(d=>this.toDomain(d.x)>=this.view[0]&&this.toDomain(d.x)<=this.view[1]);
-      for(const d of visible)for(const s of this.series)if(Number.isFinite(d[s.key])){const sigma=s.sigmaKey&&Number.isFinite(d[s.sigmaKey])?d[s.sigmaKey]:0;min=Math.min(min,d[s.key]-sigma);max=Math.max(max,d[s.key]+sigma);}
-      if(!Number.isFinite(min)){min=-1;max=1;}if(!this.config.noZero){min=Math.min(min,0);max=Math.max(max,0);}
-      if(max-min<1e-15){min-=1;max+=1;}const gap=(max-min)*.1;min-=gap;max+=gap;
-      const y=v=>top+(max-v)/(max-min)*ph,yScale=this.config.plainY||['dB','°'].includes(this.config.yUnit)?{factor:1,unit:this.config.yUnit}:RCModel.scale(Math.max(Math.abs(min),Math.abs(max)),this.config.yUnit);
-      this.geometry={w,h,left,right,top,bottom,pw,ph,x,y};
+      for(const d of visible)for(const s of this.series)if(validY(d[s.key])){const sigma=s.sigmaKey&&Number.isFinite(d[s.sigmaKey])?d[s.sigmaKey]:0;const lo=d[s.key]-sigma;min=Math.min(min,domainY(validY(lo)?lo:d[s.key]));max=Math.max(max,domainY(d[s.key]+sigma));}
+      if(!Number.isFinite(min)){min=-1;max=1;}if(!logY&&!this.config.noZero){min=Math.min(min,0);max=Math.max(max,0);}
+      if(max-min<1e-15){const padding=logY?.25:1;min-=padding;max+=padding;}const gap=(max-min)*.1;min-=gap;max+=gap;
+      const y=v=>top+(max-domainY(v))/(max-min)*ph,yScale=logY||this.config.plainY||['dB','°'].includes(this.config.yUnit)?{factor:1,unit:this.config.yUnit}:RCModel.scale(Math.max(Math.abs(min),Math.abs(max)),this.config.yUnit);
+      this.geometry={w,h,left,right,top,bottom,pw,ph,x,y,validY};
       const num=v=>new Intl.NumberFormat('it-IT',{maximumSignificantDigits:4}).format(v);
       let html=`<defs><clipPath id="${this.svg.id}-clip"><rect x="${left}" y="${top}" width="${pw}" height="${ph}"/></clipPath></defs>`;
-      for(const v of ticks(min,max,4))html+=`<path d="M${left},${y(v)}H${w-right}" stroke="${v===0?'#dce3ed':'#edf1f6'}"/><text x="${left-12}" y="${y(v)+4}" text-anchor="end">${num(v/yScale.factor)}</text>`;
+      const decades=logY?Array.from({length:Math.max(0,Math.floor(max)-Math.ceil(min)+1)},(_,i)=>10**(Math.ceil(min)+i)):[];
+      const yticks=logY?(decades.length>=2?decades:ticks(min,max,4).map(v=>10**v)):ticks(min,max,4);
+      for(const v of yticks)html+=`<path d="M${left},${y(v)}H${w-right}" stroke="${v===0?'#dce3ed':'#edf1f6'}"/><text x="${left-12}" y="${y(v)+4}" text-anchor="end">${logY?Number(v.toPrecision(2)).toExponential().replace('e-','e−'):num(v/yScale.factor)}</text>`;
       let xticks=this.config.logX?Array.from({length:Math.ceil(this.view[1])-Math.floor(this.view[0])+1},(_,i)=>10**(Math.floor(this.view[0])+i)).filter(v=>this.toDomain(v)>=this.view[0]&&this.toDomain(v)<=this.view[1]):ticks(...this.view,Math.max(3,Math.floor(pw/100)));
       if(this.config.logX&&xticks.length<2)xticks=ticks(this.fromDomain(this.view[0]),this.fromDomain(this.view[1]),5);
       const timeScale=RCModel.scale(this.view[1]-this.view[0],this.config.xUnit);
       for(const v of xticks){html+=`<path d="M${x(v)},${top}V${h-bottom}" stroke="#f0f3f7"/><text x="${x(v)}" y="${h-bottom+22}" text-anchor="middle">${this.config.logX?M.format(v,this.config.xUnit):num(v/timeScale.factor)}</text>`;}
-      html+=`<text x="${left-11}" y="12" text-anchor="end" class="axis-unit">${yScale.unit}</text><text x="${w-right}" y="${h-2}" text-anchor="end" class="axis-unit">${this.config.logX?'Frequenza':this.config.xLabel} ${!this.config.logX?'('+timeScale.unit+')':''}</text><g clip-path="url(#${this.svg.id}-clip)">`;
+      html+=`<text x="${left-11}" y="12" text-anchor="end" class="axis-unit">${this.config.yLabel?this.config.yLabel+' ('+yScale.unit+')':yScale.unit}</text><text x="${w-right}" y="${h-2}" text-anchor="end" class="axis-unit">${this.config.logX?'Frequenza':this.config.xLabel} ${!this.config.logX?'('+timeScale.unit+')':''}</text><g clip-path="url(#${this.svg.id}-clip)">`;
       for(const guide of this.config.guides||[]){if(this.toDomain(guide.x)>this.view[0]&&this.toDomain(guide.x)<this.view[1])html+=`<path d="M${x(guide.x)},${top+13}V${h-bottom}" stroke="#bcc9e5" stroke-dasharray="3 5"/><text x="${x(guide.x)+5}" y="${top+10}" class="guide-text">${guide.label}</text>`;}
-      for(const s of this.series){let path='',started=false;for(let i=0;i<this.data.length;i++){const d=this.data[i];if(!Number.isFinite(d[s.key])){started=false;continue;}const domain=this.toDomain(d.x);if(domain<this.view[0]&&i+1<this.data.length&&this.toDomain(this.data[i+1].x)<this.view[0])continue;if(domain>this.view[1]&&i>0&&this.toDomain(this.data[i-1].x)>this.view[1])continue;path+=(started?'L':'M')+x(d.x).toFixed(2)+','+y(d[s.key]).toFixed(2);started=true;}
+      for(const s of this.series){let path='',started=false;for(let i=0;i<this.data.length;i++){const d=this.data[i];if(!validY(d[s.key])){started=false;continue;}const domain=this.toDomain(d.x);if(domain<this.view[0]&&i+1<this.data.length&&this.toDomain(this.data[i+1].x)<this.view[0])continue;if(domain>this.view[1]&&i>0&&this.toDomain(this.data[i-1].x)>this.view[1])continue;path+=(started?'L':'M')+x(d.x).toFixed(2)+','+y(d[s.key]).toFixed(2);started=true;}
         if(s.line!==false)html+=`<path d="${path}" stroke="${s.color}" stroke-width="${s.key==='out'?2.4:1.7}" fill="none" stroke-linejoin="round" stroke-linecap="round"${s.dash?' stroke-dasharray="'+s.dash+'"':''}/>`;
-        if(s.points||s.sigmaKey)for(const d of visible){if(!Number.isFinite(d[s.key]))continue;const px=x(d.x),py=y(d[s.key]),sigma=d[s.sigmaKey];if(s.sigmaKey&&Number.isFinite(sigma)&&sigma>0){const a=y(d[s.key]-sigma),b=y(d[s.key]+sigma);html+=`<path d="M${px},${a}V${b}M${px-3},${a}h6M${px-3},${b}h6" stroke="${s.color}" stroke-width="1" fill="none"/>`;}if(s.points)html+=`<circle cx="${px}" cy="${py}" r="2.6" fill="${s.color}" stroke="white" stroke-width=".7"/>`;}
+        if(s.points||s.sigmaKey)for(const d of visible){if(!validY(d[s.key]))continue;const px=x(d.x),py=y(d[s.key]),sigma=d[s.sigmaKey];if(s.sigmaKey&&Number.isFinite(sigma)&&sigma>0&&validY(d[s.key]-sigma)){const a=y(d[s.key]-sigma),b=y(d[s.key]+sigma);html+=`<path d="M${px},${a}V${b}M${px-3},${a}h6M${px-3},${b}h6" stroke="${s.color}" stroke-width="1" fill="none"/>`;}if(s.points)html+=`<circle cx="${px}" cy="${py}" r="2.6" fill="${s.color}" stroke="white" stroke-width=".7"/>`;}
       }
       html+=`<g id="${this.svg.id}-cursor"></g></g>`;
       this.svg.setAttribute('viewBox',`0 0 ${w} ${h}`);this.svg.innerHTML=html;this.drawCursor();
@@ -99,7 +103,7 @@
       const markers=this.dual?[['A',this.cursorA,'#4264ef'],['B',this.cursorB,'#d48b22']]:[['',this.cursorA,'#8394b7']];
       root.innerHTML=markers.map(([label,d,color])=>{
         if(this.toDomain(d.x)<this.view[0]||this.toDomain(d.x)>this.view[1])return'';
-        const x=g.x(d.x);return`<path d="M${x},${g.top}V${g.h-g.bottom}" stroke="${color}" stroke-dasharray="3 4"/><text x="${x+5}" y="${g.top+12}" style="fill:${color};font-weight:600">${label}</text>`+this.series.filter(s=>Number.isFinite(d[s.key])).map(s=>`<circle cx="${x}" cy="${g.y(d[s.key])}" r="3.4" fill="${s.color}" stroke="white" stroke-width="1.5"/>`).join('');
+        const x=g.x(d.x);return`<path d="M${x},${g.top}V${g.h-g.bottom}" stroke="${color}" stroke-dasharray="3 4"/><text x="${x+5}" y="${g.top+12}" style="fill:${color};font-weight:600">${label}</text>`+this.series.filter(s=>g.validY(d[s.key])).map(s=>`<circle cx="${x}" cy="${g.y(d[s.key])}" r="3.4" fill="${s.color}" stroke="white" stroke-width="1.5"/>`).join('');
       }).join('');
       this.onCursor(this.cursor,(this.toDomain(this.cursor.x)-this.domain[0])/(this.domain[1]-this.domain[0]),this.dual?{a:this.cursorA,b:this.cursorB,active:this.activeCursor}:null);
     }

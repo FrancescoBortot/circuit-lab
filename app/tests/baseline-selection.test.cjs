@@ -20,7 +20,7 @@ test('manual and interval pulse references preserve absolute peaks and support a
 });
 test('baseline validation and project roundtrip cover every guided circuit and old files',()=>{
  for(const type of new Set(L.CATALOG.map(c=>c.type))){
-  const p=L.defaults(type),project={experiment:L.CATALOG.find(c=>c.type===type).id,circuits:{[type]:p},analysis:'time',layouts:{}};
+  const p=L.defaults(type),project={experiment:L.CATALOG.find(c=>c.type===type).id,circuits:{[type]:p},analysis:L.analyses(p)[0][0],layouts:{}};
   assert.equal(L.parse(L.serialize(project)).circuits[type].baselineMode,undefined);
   for(const mode of ['manual','interval']){
    Object.assign(p,{baselineMode:mode,baselineValue:-.2,baselineStart:0,baselineEnd:p.duration/10});

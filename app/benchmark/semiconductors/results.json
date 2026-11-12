@@ -1,7 +1,7 @@
 {
   "hashes": {
     "free-model.js": "4f942d9b0c7beb64031fc8408985705d471b99e77ffc7c700fb473c9b86e61ea",
-    "semiconductors.js": "aecc64de8c1524bec78866f0c91e811d26e43abbb0cf982f6301c9df77d4c02a",
+    "semiconductors.js": "2879594668bf92cfe100a99a565e34ce8a5a310034c104d11900f594bdde73e5",
     "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
   },
   "reference": "Official locally compiled ngspice 47, native D/Q/M Level 1, 27 °C",

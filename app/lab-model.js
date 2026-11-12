@@ -1,7 +1,7 @@
 (function(root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'),require('./guided-trials.js'),require('./bench-model.js'),require('./radiation-model.js'),require('./measurements.js'));
-  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects,root.GuidedTrials,root.BenchModel,root.RadiationModel,root.LabMeasurements);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files,Trials,Bench,Radiation,Measures) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rc-model.js'),require('./free-model.js'),require('./local-projects.js'),require('./guided-trials.js'),require('./bench-model.js'),require('./radiation-model.js'),require('./measurements.js'),require('./semiconductor-lab.js'));
+  else root.LabModel = factory(root.RCModel,root.FreeModel,root.LocalProjects,root.GuidedTrials,root.BenchModel,root.RadiationModel,root.LabMeasurements,root.SemiconductorLab);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(RC,Free,Files,Trials,Bench,Radiation,Measures,Semiconductor) {
   'use strict';
   const clone = x => JSON.parse(JSON.stringify(x));
   const signal = (kind, vpp, frequency) => ({kind, vpp, frequency, offset:0, phase:0, duty:50, level:5});
@@ -16,9 +16,16 @@
     {id:'bandwidth',type:'inverting',day:2,step:'2',name:'Invertente · VTC e banda',short:'↗',page:'5',description:'Linearità e banda passante dello stesso circuito.'},
     {id:'derivative',type:'derivative',day:2,step:'3',name:'Derivatore',short:'d/dt',page:'6',description:'Derivatore invertente con resistenza in serie.'},
     {id:'difference',type:'difference',day:2,step:'4',name:'Amplificatore delle differenze',short:'Δ',page:'7–8',description:'Due ingressi, modo comune e CMRR.'},
-    ...Radiation.CATALOG
+    ...Radiation.CATALOG,...Semiconductor.CATALOG
   ];
+  const types=[...new Set(CATALOG.map(c=>c.type))];
+  const usesNetwork=p=>Bench.real(p)||Radiation.is(p)||Semiconductor.is(p);
+  function analyses(p){
+    if(Semiconductor.is(p))return Semiconductor.analysisOptions(p);
+    return [['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],...(Radiation.hasPre(p)?[['charge','Linearità · carica iniettata']]:p.type==='rc'||Radiation.is(p)&&!Radiation.hasFinal(p)?[]:[['vtc','Ampiezza · VTC']])];
+  }
   function defaults(type='rc') {
+    if(Semiconductor.is(type))return Semiconductor.defaults(type,base);
     if(Radiation.is(type))return Radiation.defaults(type,base);
     const p={...clone(base),type,wave1:signal(type==='rc'?'cycle':type==='derivative'?'triangle':'sine',1,type==='rc'?50:type==='derivative'?500:1000),wave2:signal('square',2,100)};
     if(type==='difference')p.duration=.02;
@@ -34,13 +41,15 @@
         for(const [predicate,keys]of [[Radiation.hasPre,['Rin','Rfpre','Cfpre']],[Radiation.hasSh,['Rsh1','Rsh2','Csh1','Csh2']],[Radiation.hasFinal,['Ri','Rgain','Rbias','biasEnabled']]])if(predicate(p)){const seed=seeds.find(predicate);if(seed)for(const key of keys)p[key]=seed[key];}
         p.Rpz=p.Rfpre*p.Cfpre/p.Csh1;
       }
-      if(previous&&previous.type!=='rc'&&experiment.type!=='rc'&&!Radiation.is(previous)&&!Radiation.is(p)){p.R1=previous.R1;p.Rf=previous.Rf;if(experiment.type==='difference'){p.R3=p.R1;p.R4=p.Rf;}}
+      if(Semiconductor.is(p))Semiconductor.inherit(p,[previous,...Object.values(next.circuits)]);
+      if(previous&&!Semiconductor.is(previous)&&!Semiconductor.is(p)&&previous.type!=='rc'&&experiment.type!=='rc'&&!Radiation.is(previous)&&!Radiation.is(p)){p.R1=previous.R1;p.Rf=previous.Rf;if(experiment.type==='difference'){p.R3=p.R1;p.R4=p.Rf;}}
       next.circuits[experiment.type]=normalizeTime(p);
     }
-    next.experiment=id;next.analysis=id==='bandwidth'?'vtc':'time';return next;
+    next.experiment=id;next.analysis=id==='bandwidth'?'vtc':analyses(next.circuits[experiment.type])[0][0];return next;
   }
-  function activeWaves(p) {return p.type==='difference' && p.drive==='independent'?[p.wave1,p.wave2]:[p.wave1];}
+  function activeWaves(p) {return p.type==='difference'&&p.drive==='independent'||Semiconductor.twoInputs(p)?[p.wave1,p.wave2]:[p.wave1];}
   function normalizeTime(p) {
+    if(Semiconductor.is(p))return Semiconductor.normalizeTime(p);
     if(Radiation.is(p))return Radiation.normalizeTime(p);
     p=clone(p);
     if(p.autoTime){
@@ -59,8 +68,8 @@
     if(p.benchReference!==undefined&&!['source','input'].includes(p.benchReference))e.benchReference='Riferimento Bode non valido.';
     if(typeof p.autoTime!=='boolean')e.autoTime='Impostazione del tempo automatico non valida.';
     if(!['differential','v1','v2','common'].includes(p.bodeInput))e.bodeInput='Ingresso dell’analisi non valido.';
-    if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(p.type))e.type='Circuito non valido.';
-    for(const k of (Radiation.is(p)?[]:p.type==='rc'?['R','C']:p.type==='derivative'?['R1','Rf','C1']:p.type==='difference'?['R1','Rf','R3','R4']:['R1','Rf'])){
+    if(!types.includes(p.type))e.type='Circuito non valido.';
+    for(const k of (Radiation.is(p)||Semiconductor.is(p)?[]:p.type==='rc'?['R','C']:p.type==='derivative'?['R1','Rf','C1']:p.type==='difference'?['R1','Rf','R3','R4']:['R1','Rf'])){
       if(!Number.isFinite(p[k])||p[k]<=0)e[k]='Inserisci un valore maggiore di zero.';
       else if(p[k]>(k.startsWith('C')?1:1e10)||p[k]<(k.startsWith('C')?1e-14:.01))e[k]='Valore fuori dall’intervallo del modello didattico.';
     }
@@ -93,10 +102,12 @@
     if(!Number.isFinite(p.sweepMax)||p.sweepMax<=0||p.sweepMax>200)e.sweepMax='Ampiezza massima ammessa: 0–200 Vpp.';
     if(activeWaves(p).some(w=>['sine','square','triangle'].includes(w.kind)&&w.frequency*p.duration>400))e.duration='Riduci durata o frequenza: massimo 400 periodi visibili.';
     if(Radiation.is(p))Object.assign(e,Radiation.validate(p));
+    if(Semiconductor.is(p))Object.assign(e,Semiconductor.validate(p));
     return e;
   }
   function assert(p){const e=validate(p);if(Object.keys(e).length)throw new Error(Object.values(e)[0]);}
   function network(p,drive=null){
+    if(Semiconductor.is(p))return Semiconductor.network(p,drive);
     if(Radiation.is(p))return Radiation.network(p);
     const q={...clone(p),instrument:'ideal',...(drive?{drive}:{})},d=Free.example(p.type,q),b=Bench.config(p.bench);d.probes.input='R1:a';
     if(p.type==='difference'&&['v1','v2'].includes(q.drive))b.sourceIds=(b.sourceIds||['V1','V2']).filter(id=>id===(q.drive==='v1'?'V1':'V2'));
@@ -207,6 +218,7 @@
   }
   function simulate(p,options={}){
     assert(p);
+    if(Semiconductor.is(p))return Semiconductor.simulate(p,options);
     if(Radiation.is(p))return Radiation.simulate(p,options);
     if(Bench.real(p)){const d=network(p),result=Free.simulate(d,options),t=Free.topology(d),node=t.nodes['R3:a'];options.capture?.(result);return result.data.map((row,i)=>({...row,source:inputs(p,row.x,i+1<result.data.length&&result.data[i+1].x===row.x?'left':'right')[0],vin2:node>=0?row.values['N'+(node+1)]:0,linear:p.type==='rc'||p.opamp==='ideal'?row.out:NaN,current:row.currents.R1}));}
     if(p.type==='rc'||p.opamp==='ideal')return simulateLinear(p,options);
@@ -220,7 +232,7 @@
   const complex=(r=0,i=0)=>({r,i}),ca=(a,b)=>complex(a.r+b.r,a.i+b.i),cm=(a,b)=>complex(a.r*b.r-a.i*b.i,a.r*b.i+a.i*b.r),cd=(a,b)=>{const d=b.r*b.r+b.i*b.i;return complex((a.r*b.r+a.i*b.i)/d,(a.i*b.r-a.r*b.i)/d);};
   const scale=(a,b)=>complex(a.r*b,a.i*b);
   function response(p,frequency,input='default'){
-    if(Radiation.is(p))return Free.bode(network(p),{frequencies:[frequency]}).data[0];
+    if(Radiation.is(p)||Semiconductor.is(p))return Free.bode(network(p),{frequencies:[frequency]}).data[0];
     if(Bench.real(p)){const d=network(p,p.type==='difference'?(input==='default'?p.bodeInput:input):null);if(p.type==='rc'&&input==='generator')d.settings.acReference='source';return Free.bode(d,{frequencies:[frequency],ignoreBias:true}).data[0];}
     if(p.opamp==='physical'&&p.type!=='rc'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(input==='default'?p.bodeInput:input);return Free.bode(d,{frequencies:[frequency],ignoreBias:true}).data[0];}
     const s=system(p),w=2*Math.PI*frequency;
@@ -236,7 +248,7 @@
     const magnitude=Math.hypot(H.r,H.i);
     return{real:H.r,imag:H.i,magnitude,db:magnitude===0?-Infinity:20*Math.log10(magnitude),phase:magnitude===0?NaN:Math.atan2(H.i,H.r)*180/Math.PI};
   }
-  function bode(p,options={}){const n=options.points||601;assert(p);if(Radiation.is(p))return Free.bode(network(p),{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}const data=[];let previous;for(let i=0;i<n;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/(n-1)),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
+  function bode(p,options={}){const n=options.points||601;assert(p);if(Radiation.is(p)||Semiconductor.is(p))return Free.bode(network(p),{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}const data=[];let previous;for(let i=0;i<n;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/(n-1)),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
   const drives=mode=>({v1:{V1:1,V2:0},v2:{V1:0,V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}})[mode]||{V1:1};
   function vtc(p,options={}){
     assert(p);if(p.type==='rc')throw new Error('La VTC in ampiezza richiede un amplificatore.');
@@ -245,7 +257,7 @@
     for(let i=0;i<count;i++){
       if(options.cancelled?.())throw new Error('Calcolo annullato.');const x=p.sweepMax*i/(count-1),q=clone(p);q.drive=p.type==='difference'?p.bodeInput:'v1';Object.assign(q.wave1,{kind:'sine',vpp:x,phase:0});let settled=false,result,cycles,state=null,delta=0;
       for(cycles=8;cycles<=128;cycles+=8){
-        const d=Bench.real(q)||Radiation.is(q)?network(q,q.drive):Free.example(p.type,q);d.settings.duration=8*period;if(d.settings.duration>100)throw new Error('Per la VTC scegli una frequenza di almeno 0,08 Hz.');d.settings.samples=1024;d.settings.integration='fixed';
+        const d=usesNetwork(q)?network(q,q.drive):Free.example(p.type,q);d.settings.duration=8*period;if(d.settings.duration>100)throw new Error('Per la VTC scegli una frequenza di almeno 0,08 Hz.');d.settings.samples=1024;d.settings.integration='fixed';
         const sampleTimes=[];for(let n=0;n<=128;n++)sampleTimes.push((6+n/64)*period);
         result=Free.simulate(d,{sampleTimes,steps:4096,initialState:state});options.capture?.(result);state=result.finalState;delta=0;let scale=1;
         for(let n=0;n<=64;n++){const a=interpolate(result.data,(6+n/64)*period),b=interpolate(result.data,(7+n/64)*period);for(const k of Object.keys(a)){delta=Math.max(delta,Math.abs(a[k]-b[k]));scale=Math.max(scale,Math.abs(a[k]),Math.abs(b[k]));}}
@@ -258,6 +270,7 @@
     return data;
   }
   function summary(p){
+    if(Semiconductor.is(p))return Semiconductor.summary(p);
     if(Radiation.is(p))return Radiation.summary(p,format);
     if(Bench.real(p)){const b=Bench.config(p.bench);return[...(p.type==='rc'?[{label:'τ nominale R·C',value:format(p.R*p.C,'s'),primary:true},{label:'f_taglio nominale RC',value:format(1/(2*Math.PI*p.R*p.C),'Hz'),primary:true}]:[]),{label:'Montaggio',value:'Reale · R/C espliciti'},{label:'R_G per generatore attivo',value:format(b.rg,'Ω')},{label:'R per collegamento',value:format(b.wireR,'Ω')},{label:'Riferimento Bode',value:p.type==='rc'&&p.benchReference!=='source'?'CH2 / CH1':'Uscita / generatore ideale'}];}
     if(p.type==='rc'){const r=rcSummary(p);return[{label:'Costante di tempo',value:RC.format(r.tau,'s')},{label:'Frequenza di taglio Vout/V1',value:RC.format(r.cutoff,'Hz')},{label:'Carico di misura',value:p.instrument==='ideal'?'Nessuno':p.instrument==='generator'?'Solo generatore':p.instrument==='probe'?'Sonde 10×':'Oscilloscopio'}];}
@@ -265,7 +278,7 @@
     if(p.type==='difference')return[{label:'Guadagno differenziale Aᴅ',value:format(c.ad)+' V/V'},{label:'Guadagno di modo comune Aᴄ',value:format(c.ac)+' V/V'},{label:'CMRR dei rapporti resistivi',value:Number.isFinite(c.cmrr)?format(c.cmrr)+' dB':'∞ · rapporti bilanciati'}];
     return[{label:p.type==='derivative'?'Guadagno HF ideale':'Guadagno a bassa frequenza',value:RC.format(p.type==='derivative'?-p.Rf/p.R1:gain,'')+' V/V'},{label:p.type==='derivative'?'Taglio della rete R₁C₁':'Banda del modello',value:p.type==='derivative'?RC.format(1/(2*Math.PI*p.R1*p.C1),'Hz'):p.opamp==='ideal'?'Infinita':RC.format(p.gbw*(p.a0+1+p.Rf/p.R1)/(p.a0*(1+p.Rf/p.R1)),'Hz')},{label:'Escursione di uscita',value:p.opamp==='ideal'?'Illimitata (ideale)':p.opamp==='physical'?format(Free.physical(p).negative+p.headroom,'V')+' … '+format(Free.physical(p).positive-p.headroom,'V')+' · prima del carico':'±'+RC.format(p.rail-p.headroom,'V')}];
   }
-  function csv(p,analysis,data){if(analysis==='time'&&p.baselineMode&&p.baselineMode!=='auto'){const raw=csv({...p,baselineMode:'auto'},analysis,data).split('\r\n'),header=raw[0].split(','),keep=header.map((h,i)=>/OUT_baseline|OUT_meno_baseline/.test(h)?-1:i).filter(i=>i>=0),ref=Measures.baseline(data,'out',p);return keep.map(i=>header[i]).join(',')+',OUT_baseline_V,OUT_meno_baseline_V\r\n'+data.map((row,i)=>{return keep.map(j=>raw[i+1].split(',')[j]).concat([ref?.value,ref?row.out-ref.value:null].map(v=>Number.isFinite(v)?v.toExponential(12):'')).join(',');}).join('\r\n');}if(Radiation.is(p)&&analysis==='time'){const columns=[['x','tempo_s'],['source','Vg_V'],['vin','IN_V'],...(Radiation.hasPre(p)?[['pre','PRE_V']]:[]),...(Radiation.hasSh(p)?[['shaper','SHAPER_V']]:[]),['out','OUT_V'],...(Radiation.hasPre(p)?[['current','I_Rin_A']]:[])];const m=Radiation.pulseSummary(p,data);if(m){columns.push(['baseline','OUT_baseline_V'],['relative','OUT_meno_baseline_V']);const byCycle=new Map();data=data.map(row=>{const cycle=Math.max(0,Math.floor((row.x-p.wave1.delay)/p.wave1.period+1e-12));if(!byCycle.has(cycle))byCycle.set(cycle,Radiation.pulseSummary(p,data,'out',row.x));const ref=byCycle.get(cycle);return{...row,baseline:ref?.baseline??NaN,relative:ref?row.out-ref.baseline:NaN};});}else if(['sine','square','triangle','dc'].includes(p.wave1.kind)){let baseline=NaN;try{baseline=Free.operatingPoint(Radiation.network(p)).data[0].out;}catch{}columns.push(['dcBaseline','OUT_baseline_DC_V'],['relativeDC','OUT_meno_baseline_DC_V']);data=data.map(row=>({...row,dcBaseline:baseline,relativeDC:row.out-baseline}));}return '\uFEFF'+columns.map(c=>c[1]).join(',')+'\r\n'+data.map(r=>columns.map(([k])=>Number.isFinite(r[k])?r[k].toExponential(12):'').join(',')).join('\r\n');}if(analysis==='charge')return '\uFEFFQin_C,Vout_picco_V,T_s,baseline_V,fit_V,residuo_V,Vmax_assoluto_V\r\n'+data.map(r=>[r.x,r.out,r.width,r.baseline,r.linear,r.residual,r.maximum].map(v=>Number.isFinite(v)?v.toExponential(12):'').join(',')).join('\r\n');const keys=analysis==='time'?['x','source','vin','vin2','out','linear','current']:analysis==='bode'?['x','magnitude','db','phase']:['x','out','linear'];const headers=analysis==='time'?(Bench.real(p)?'tempo_s,Vg_V,IN_lettura_V,V2_nodo_V,OUT_lettura_V,Vout_lineare_V,corrente_R1_A':'tempo_s,Vg_V,V1_V,V2_V,Vout_V,Vout_lineare_V,corrente_R_A'):analysis==='bode'?'frequenza_Hz,guadagno_V_V,guadagno_dB,fase_gradi':'Vin_Vpp,Vout_Vpp,Vout_lineare_Vpp';return '\uFEFF'+headers+'\r\n'+data.map(d=>keys.map(k=>Number.isFinite(d[k])?d[k].toExponential(12):'').join(',')).join('\r\n');}
+  function csv(p,analysis,data){if(analysis==='time'&&p.baselineMode&&p.baselineMode!=='auto'){const raw=csv({...p,baselineMode:'auto'},analysis,data).split('\r\n'),header=raw[0].split(','),keep=header.map((h,i)=>/OUT_baseline|OUT_meno_baseline/.test(h)?-1:i).filter(i=>i>=0),ref=Measures.baseline(data,'out',p);return keep.map(i=>header[i]).join(',')+',OUT_baseline_V,OUT_meno_baseline_V\r\n'+data.map((row,i)=>{return keep.map(j=>raw[i+1].split(',')[j]).concat([ref?.value,ref?row.out-ref.value:null].map(v=>Number.isFinite(v)?v.toExponential(12):'')).join(',');}).join('\r\n');}if(Semiconductor.is(p)&&!['bode','vtc'].includes(analysis))return Semiconductor.csv(p,analysis,data);if(Radiation.is(p)&&analysis==='time'){const columns=[['x','tempo_s'],['source','Vg_V'],['vin','IN_V'],...(Radiation.hasPre(p)?[['pre','PRE_V']]:[]),...(Radiation.hasSh(p)?[['shaper','SHAPER_V']]:[]),['out','OUT_V'],...(Radiation.hasPre(p)?[['current','I_Rin_A']]:[])];const m=Radiation.pulseSummary(p,data);if(m){columns.push(['baseline','OUT_baseline_V'],['relative','OUT_meno_baseline_V']);const byCycle=new Map();data=data.map(row=>{const cycle=Math.max(0,Math.floor((row.x-p.wave1.delay)/p.wave1.period+1e-12));if(!byCycle.has(cycle))byCycle.set(cycle,Radiation.pulseSummary(p,data,'out',row.x));const ref=byCycle.get(cycle);return{...row,baseline:ref?.baseline??NaN,relative:ref?row.out-ref.baseline:NaN};});}else if(['sine','square','triangle','dc'].includes(p.wave1.kind)){let baseline=NaN;try{baseline=Free.operatingPoint(Radiation.network(p)).data[0].out;}catch{}columns.push(['dcBaseline','OUT_baseline_DC_V'],['relativeDC','OUT_meno_baseline_DC_V']);data=data.map(row=>({...row,dcBaseline:baseline,relativeDC:row.out-baseline}));}return '\uFEFF'+columns.map(c=>c[1]).join(',')+'\r\n'+data.map(r=>columns.map(([k])=>Number.isFinite(r[k])?r[k].toExponential(12):'').join(',')).join('\r\n');}if(analysis==='charge')return '\uFEFFQin_C,Vout_picco_V,T_s,baseline_V,fit_V,residuo_V,Vmax_assoluto_V\r\n'+data.map(r=>[r.x,r.out,r.width,r.baseline,r.linear,r.residual,r.maximum].map(v=>Number.isFinite(v)?v.toExponential(12):'').join(',')).join('\r\n');const keys=analysis==='time'?['x','source','vin','vin2','out','linear','current']:analysis==='bode'?['x','magnitude','db','phase']:['x','out','linear'];const headers=analysis==='time'?(Bench.real(p)?'tempo_s,Vg_V,IN_lettura_V,V2_nodo_V,OUT_lettura_V,Vout_lineare_V,corrente_R1_A':'tempo_s,Vg_V,V1_V,V2_V,Vout_V,Vout_lineare_V,corrente_R_A'):analysis==='bode'?'frequenza_Hz,guadagno_V_V,guadagno_dB,fase_gradi':'Vin_Vpp,Vout_Vpp,Vout_lineare_Vpp';return '\uFEFF'+headers+'\r\n'+data.map(d=>keys.map(k=>Number.isFinite(d[k])?d[k].toExponential(12):'').join(',')).join('\r\n');}
   function metrics(p,excitation=null){if(!Bench.real(p)||p.type!=='difference')return[];const f=p.wave1.frequency,base=network(p,excitation),read=drive=>{const d=clone(base);d.settings.acWeights=drives(drive);return Free.bode(d,{frequencies:[f]}).data[0].magnitude;},ad=read('differential'),ac=read('common'),limited=ac<=Math.max(1e-15,ad*1e-12);return[{label:'A_D a '+format(f,'Hz'),value:format(ad,'V/V'),primary:true},{label:'A_C a '+format(f,'Hz'),value:format(ac,'V/V'),primary:true},{label:'CMRR a '+format(f,'Hz'),value:ad<=1e-15?'Non definito · A_D nullo':limited?'Cancellazione entro risoluzione':format(20*Math.log10(ad/ac),'dB'),primary:true,note:'Stesso montaggio e punto di lavoro per A_D e A_C. Comprende gli strumenti; il CMRR intrinseco del chip non è modellato.'}];}
   function curveMetrics(data){if(!data?.length)return[];let peak=-1,index=-1;for(let i=0;i<data.length;i++)if(Number.isFinite(data[i].magnitude)&&data[i].magnitude>peak){peak=data[i].magnitude;index=i;}if(!(peak>0))return[];const level=peak/Math.SQRT2,cross=(a,b)=>Math.exp(Math.log(a.x)+(Math.log(level)-Math.log(a.magnitude))/(Math.log(b.magnitude)-Math.log(a.magnitude))*(Math.log(b.x)-Math.log(a.x)));let low=null,high=null;for(let i=1;i<=index;i++)if(data[i-1].magnitude<level&&data[i].magnitude>=level)low=cross(data[i-1],data[i]);for(let i=index+1;i<data.length;i++)if(data[i-1].magnitude>level&&data[i].magnitude<=level){high=cross(data[i-1],data[i]);break;}return[...(low?[{label:'f bassa −3 dB',value:format(low,'Hz'),primary:true}]:[]),{label:'f alta −3 dB',value:high?format(high,'Hz'):'Fuori intervallo',primary:true,note:'Rispetto al massimo della risposta nell’intervallo visualizzato; interpolazione logaritmica.'}];}
   function serialize(project){return JSON.stringify({application:'Circuit Lab',version:2,...project},null,2);}
@@ -273,13 +286,14 @@
     if(!d||typeof d!=='object')throw new Error('Il file non contiene un progetto.');
     if(d.application==='RC Studio'&&d.version===1){const old=RC.readProject(text).parameters,p=defaults('rc');Object.assign(p,{R:old.resistance,C:old.capacitance,initial:old.initial,duration:old.duration,switchTime:old.switchTime,samples:old.samples,autoTime:old.autoTime});p.wave1.kind=old.mode;p.wave1.level=old.voltage;return{experiment:'rc',analysis:'time',circuits:{rc:p},layouts:{},name:'Circuito RC importato'};}
     if(d.application!=='Circuit Lab'||d.version!==2||!d.circuits||!CATALOG.some(c=>c.id===d.experiment))throw new Error('Progetto non compatibile.');
-    for(const [key,p]of Object.entries(d.circuits)){if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(key)||!p||p.type!==key)throw new Error('Circuito non valido nel progetto.');assert(p);}
+    for(const [key,p]of Object.entries(d.circuits)){if(!types.includes(key)||!p||p.type!==key)throw new Error('Circuito non valido nel progetto.');assert(p);}
     if(!d.circuits[CATALOG.find(c=>c.id===d.experiment).type])throw new Error('Il circuito attivo manca nel progetto.');
-    if(!['time','bode','vtc','charge'].includes(d.analysis)||d.analysis==='charge'&&!Radiation.hasPre(d.circuits[CATALOG.find(c=>c.id===d.experiment).type]))throw new Error('Analisi non valida.');
+    const active=d.circuits[CATALOG.find(c=>c.id===d.experiment).type];
+    if(Semiconductor.is(active)?!analyses(active).some(([key])=>key===d.analysis):!['time','bode','vtc','charge'].includes(d.analysis)||d.analysis==='charge'&&!Radiation.hasPre(active))throw new Error('Analisi non valida.');
     Files.checkNotebook(d.notebookStudy);Files.checkComparison(d.comparisonStudy);Files.checkAssembly(d.assemblyStudy);const layouts=d.layouts??{};
     if(!layouts||typeof layouts!=='object'||Array.isArray(layouts))throw new Error('Disposizione dei componenti non valida.');
     for(const [type,items]of Object.entries(layouts)){
-      if(!['rc','inverting','derivative','difference',...Radiation.TYPES].includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>40)throw new Error('Disposizione dei componenti non valida.');
+      if(!types.includes(type)||!items||typeof items!=='object'||Array.isArray(items)||Object.keys(items).length>40)throw new Error('Disposizione dei componenti non valida.');
       for(const [id,at]of Object.entries(items))if(!/^[A-Za-z][A-Za-z0-9]{0,10}$/.test(id)||!at||!Number.isFinite(at.x)||!Number.isFinite(at.y)||Math.abs(at.x)>10000||Math.abs(at.y)>10000||(at.rotation!==undefined&&![0,90,180,270].includes(at.rotation)))throw new Error('Posizione del componente '+id+' non valida.');
     }
     Files.checkRCStudy(d.rcStudy);Files.checkACStudy(d.acStudy);Files.checkOpampStudy(d.opampStudy);Files.checkMetrologyStudy(d.metrologyStudy);Files.checkParameterStudy(d.parameterStudy);
@@ -288,7 +302,7 @@
   }
   function circuit(project){
     const p=project.circuits[CATALOG.find(c=>c.id===project.experiment)?.type];if(!p)throw new Error('Esperienza non disponibile.');assert(p);
-    const d=Bench.real(p)||Radiation.is(p)?network(p,p.type==='difference'&&project.analysis!=='time'?p.bodeInput:null):Free.example(p.type,p);if(Bench.real(p)||Radiation.is(p))for(const part of d.components)Object.assign(part,project.layouts?.[p.type]?.[part.id]||{});d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':'time';
+    const d=usesNetwork(p)?network(p,Semiconductor.is(p)?project.analysis:p.type==='difference'&&project.analysis!=='time'?p.bodeInput:null):Free.example(p.type,p);if(usesNetwork(p))for(const part of d.components)Object.assign(part,project.layouts?.[p.type]?.[part.id]||{});d.name=(project.name||d.name).slice(0,80);d.settings.analysis=project.analysis==='bode'?'bode':d.settings.analysis==='dc'?'dc':'time';
     if(p.type==='rc'){if(!Bench.real(p)){d.probes.input='R1:a';d.settings.acReference='input';}for(const key of ['rcStudy','acStudy'])if(project[key])d[key]=clone(project[key]);if(d.acStudy?.reference==='after-generator')d.acStudy.reference='input';}
     if(project.notebookStudy)d.notebookStudy=clone(project.notebookStudy);if(project.metrologyStudy)d.metrologyStudy=clone(project.metrologyStudy);if(project.parameterStudy)d.parameterStudy=clone(project.parameterStudy);if(project.assemblyStudy)d.assemblyStudy=clone(project.assemblyStudy);if(project.comparisonStudy)d.comparisonStudy=clone(project.comparisonStudy);
     if(p.type!=='rc'&&project.opampStudy)d.opampStudy=clone(project.opampStudy);
@@ -297,5 +311,5 @@
     return Free.parse(Free.serialize(d));
   }
   const format=(value,unit='',digits=3)=>!Number.isFinite(value)?'—':value!==0&&(Math.abs(value)<1e-12||Math.abs(value)>=1e15)?Number(value.toPrecision(digits)).toExponential().replace('.',',')+(unit?' '+unit:''):!unit||['dB','°'].includes(unit)?new Intl.NumberFormat('it-IT',{maximumSignificantDigits:digits}).format(Object.is(value,-0)?0:value)+(unit?' '+unit:''):RC.format(Number(value.toPrecision(digits)),unit,digits);
-  return{radiation:Radiation,isRadiation:Radiation.is,charge:(p,options)=>{assert(p);return Radiation.charge(p,options);},physical:Free.physical,network,real:Bench.real,metrics,curveMetrics,circuit,CATALOG,defaults,selectExperience,normalizeTime,validate,system,simulate,response,bode,vtc,summary,coefficients,rcSummary,instrument,inputs,csv,serialize,parse,format,clone};
+  return{semiconductor:Semiconductor,usesNetwork,analyses,radiation:Radiation,isRadiation:Radiation.is,charge:(p,options)=>{assert(p);return Radiation.charge(p,options);},physical:Free.physical,network,real:Bench.real,metrics,curveMetrics,circuit,CATALOG,defaults,selectExperience,normalizeTime,validate,system,simulate,response,bode,vtc,summary,coefficients,rcSummary,instrument,inputs,csv,serialize,parse,format,clone};
 });

@@ -15,7 +15,19 @@
  }
  function evaluate(system,x){const current=Array(x.length).fill(0),jacobian=Array.from({length:x.length},()=>Array(x.length).fill(0)),terminals={},regions={};for(const c of system.nonlinear||[]){const ns=pins[c.type].map(p=>system.node(c,p)),d=device(c,ns.map(n=>n<0?0:x[n]));terminals[c.id]=d.currents;regions[c.id]=d.region;for(let i=0;i<ns.length;i++){if(ns[i]<0)continue;current[ns[i]]+=d.currents[i];for(let j=0;j<ns.length;j++)if(ns[j]>=0)jacobian[ns[i]][ns[j]]+=d.jacobian[i][j];}}return{current,jacobian,terminals,regions};}
  function solve(system,A,b,factor,seed=null){
-  if(!system.nonlinear?.length)return factor(A)(b);const n=A.length;let x=seed?Array.from({length:n},(_,i)=>seed[i]||0):Array(n).fill(0),previousStep=Infinity;
+  if(!system.nonlinear?.length)return factor(A)(b);
+  try{return newton(system,A,b,factor,seed);}
+  catch(error){
+   // Stacked MOS channels can trap a zero or previous-state guess at a region
+   // boundary. Retry with the passive network's source voltages as the seed.
+   if(system.nonlinear.length<2||system.nonlinear.some(c=>c.type!=='M'))throw error;
+   let passive;
+   try{passive=factor(A)(b);}catch{throw error;}
+   return newton(system,A,b,factor,passive);
+  }
+ }
+ function newton(system,A,b,factor,seed){
+  const n=A.length;let x=seed?Array.from({length:n},(_,i)=>seed[i]||0):Array(n).fill(0),previousStep=Infinity;
   const scales=A.map((row,i)=>Math.max(i<system.topo.count?1e-6:1,Math.abs(b[i]),row.reduce((s,v)=>s+Math.abs(v),0))),residual=(v)=>{const nl=evaluate(system,v),f=A.map((row,i)=>row.reduce((s,a,j)=>s+a*v[j],-b[i])+nl.current[i]);return{nl,f,merit:f.reduce((s,v,i)=>s+(v/scales[i])**2,0),norm:Math.max(...f.map((v,i)=>Math.abs(v)/(1e-13+1e-10*scales[i])))};};
   for(let iteration=0;iteration<120;iteration++){
    const r=residual(x);if(r.norm<=1&&previousStep<=1e-8){system.newton??={solves:0,maxIterations:0};system.newton.solves++;system.newton.maxIterations=Math.max(system.newton.maxIterations,iteration);return x;}

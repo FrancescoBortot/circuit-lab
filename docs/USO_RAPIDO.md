@@ -2,7 +2,7 @@
 
 Apri [Circuit Lab online](https://francescobortot.github.io/circuit-lab/), oppure estrai lo ZIP offline e apri `Circuit Lab.html` nel browser. Se hai scaricato i sorgenti, usa `app/dist/Circuit Lab.html`. Il file HTML include codice, stili e worker. Slide e schede di laboratorio non fanno parte del pacchetto. Non richiede account, installazione o Internet. I calcoli non inviano dati.
 
-1. **Esperienze guidate**: scegli RC, invertente, derivatore o differenze; modifica componenti e strumenti cliccandoli o dal pannello a destra.
+1. **Esperienze guidate**: scegli un circuito dalle sei giornate e modifica componenti e strumenti dal pannello a destra. Per diodi e MOSFET consulta la [guida alle giornate 5 e 6](GIORNATE_5_6.md).
 2. **Circuito da zero**: “Nuovo circuito”, aggiungi componenti, collega i terminali, massa e OUT. Rotella/pulsanti per zoom, trascina lo sfondo per spostarti. Gli incroci fra fili non creano connessioni.
 3. **Simulazione**: Transitorio, Bode, Punto DC o Scansione DC. Le impostazioni si modificano nella scheda Simulazione; le sorgenti hanno polarizzazione DC separata dal segnale nel tempo.
 4. **Misure**: sonde, cursori A/B, correnti, potenze ed energie. I pannelli RC e Operazionali importano dati sperimentali e mostrano fit/residui con ipotesi esplicite.

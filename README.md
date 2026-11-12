@@ -36,7 +36,7 @@ Sulla breadboard clicca un componente, poi **A/B** o un **pin**: scegli una dest
 
 | Dove | A cosa serve |
 | --- | --- |
-| **Elenco a sinistra** | Scegli i circuiti delle quattro giornate oppure l’editor libero. |
+| **Elenco a sinistra** | Scegli i circuiti delle sei giornate oppure l’editor libero. |
 | **Schema al centro** | Clicca i valori sottolineati per modificarli; trascina i componenti per disporli. |
 | **Pannello a destra** | Imposta componenti, segnali e analisi. **Prova guidata** propone configurazioni già pronte. |
 | **Grafico** | Cambia analisi, usa zoom e cursori, leggi le grandezze ed esporta i risultati. |
@@ -55,7 +55,11 @@ In **Analisi → Che cosa vuoi studiare?** scegli **Tempo · Transitorio**, **Fr
 
 ## Giornate 3 e 4 · catena elettronica
 
-Il menu delle esperienze è diviso nelle quattro giornate. I sette nuovi circuiti coprono preamplificatore di carica, shaper CR–RC, buffer finale facoltativo, undershoot, compensazione polo-zero, amplificatore non invertente e catena completa. Ogni voce offre situazioni selezionabili da **Prova guidata**, parametri modificabili, schema e breadboard. Preamplificatore e catena includono la linearità rispetto alla carica iniettata, con fit e residui nel CSV. I valori iniziali sono esempi da sostituire con i componenti del proprio gruppo. [Guida alle giornate 3 e 4](docs/GIORNATE_3_4.md).
+I sette circuiti delle giornate 3 e 4 coprono preamplificatore di carica, shaper CR–RC, buffer finale facoltativo, undershoot, compensazione polo-zero, amplificatore non invertente e catena completa. Ogni voce offre situazioni selezionabili da **Prova guidata**, parametri modificabili, schema e breadboard. Preamplificatore e catena includono la linearità rispetto alla carica iniettata, con fit e residui nel CSV. I valori iniziali sono esempi da sostituire con i componenti del proprio gruppo. [Guida alle giornate 3 e 4](docs/GIORNATE_3_4.md).
+
+## Giornate 5 e 6 · diodi e MOSFET
+
+Le esperienze guidate includono la caratteristica del diodo, i raddrizzatori a semionda, le curve e il punto di lavoro del MOSFET, l’amplificatore nMOS e le porte logiche nMOS e CMOS. Puoi cambiare i parametri del dispositivo, confrontare le misure e salvare le analisi e le tabelle di verità nella sessione. [Guida alle giornate 5 e 6](docs/GIORNATE_5_6.md).
 
 ## Prima prova: carica e scarica di una RC
 

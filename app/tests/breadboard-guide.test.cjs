@@ -40,7 +40,7 @@ test('unknown framing is rejected without changing the view or saved preference'
 });
 
 test('construction covers each physical part and cable once in increasing phases without changing the model',()=>{
- for(const c of L.CATALOG){const model=B.create(L.network(L.defaults(c.type))),before=JSON.stringify(model),steps=R.assemblySteps(model),expected=[...model.parts.map(p=>'part:'+p.id),...R.connections(model).map(c=>c.key)].sort();
+ for(const c of L.CATALOG.filter(c=>!L.semiconductor.is(c.type))){const model=B.create(L.network(L.defaults(c.type))),before=JSON.stringify(model),steps=R.assemblySteps(model),expected=[...model.parts.map(p=>'part:'+p.id),...R.connections(model).map(c=>c.key)].sort();
  assert.deepEqual(steps.map(s=>s.kind+':'+s.id).sort(),expected);assert.equal(new Set(expected).size,expected.length);assert.ok(steps.every((s,i)=>s.text.length>10&&(!i||s.phase>=steps[i-1].phase)));assert.equal(JSON.stringify(model),before);
  }
 });
@@ -62,7 +62,7 @@ test('reference schematic zoom changes both dimensions, zooms out and fits insid
 });
 
 test('assembly instructions and markers use the actual holes and instrument endpoints for every circuit',()=>{
- for(const circuit of L.CATALOG){const model=B.create(L.network(L.defaults(circuit.type))),before=JSON.stringify(model),g=R.geometry(model),connections=R.connections(model);
+ for(const circuit of L.CATALOG.filter(c=>!L.semiconductor.is(c.type))){const model=B.create(L.network(L.defaults(circuit.type))),before=JSON.stringify(model),g=R.geometry(model),connections=R.connections(model);
  for(const step of R.assemblySteps(model)){
   assert.ok(step.purpose.length>15);assert.equal(step.endpoints.length,step.kind==='part'&&model.parts.find(p=>p.id===step.id).type==='U'?8:2);
   for(const e of step.endpoints){assert.ok(Number.isFinite(e.point.x)&&Number.isFinite(e.point.y));if(e.hole)assert.deepEqual(e.point,g.point(e.hole));}

@@ -31,8 +31,18 @@ Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova da caricare*
 
 In **I miei dati ↔ modello** scegli l’analisi e indica le colonne. Per le caratteristiche usa Vᴅ, Vᴅₛ o Vɢₛ sull’asse X e corrente in A, mA o µA sull’asse Y. Il confronto conserva il CSV originale e mostra i residui in ampere. Per la VTC importa coppie di ampiezze picco-picco alla frequenza impostata. Per il transitorio importa i campioni OUT rispetto a GND.
 
-Il JSON riapre il circuito guidato, la prova, i componenti e i dati. Lo ZIP della sessione include anche i CSV calcolati e le tabelle di verità delle prove logiche. Puoi aprire lo schema nell’editor libero ed esportarlo in SPICE. Questi circuiti si consultano nella vista Schema. La breadboard del progetto supporta R, C, L e TL082.
+Il JSON riapre il circuito guidato, la prova, i componenti e i dati. Lo ZIP della sessione include anche i CSV calcolati e le tabelle di verità delle prove logiche. Puoi aprire lo schema nell’editor libero ed esportarlo in SPICE.
+
+## Breadboard
+
+Passa da **Schema** a **Breadboard** per vedere il cablaggio di riferimento o montare la prova nella vista **Verifica il mio montaggio**. **Montaggio e misure dalla scheda** riporta i collegamenti e le impostazioni del banco per la prova corrente.
+
+Il 1N4148 ha la fascia sul catodo. Nel raddrizzatore con filtro il positivo dell’elettrolitico va a OUT. I MOSFET delle prove guidate condividono un CD4007UB a 14 pin, da inserire sul canale centrale. I body sono collegati a VSS (pin 7) e VDD (pin 14). Nella NAND M1 è dalla parte di GND e il nodo fra i due transistor resta separato da massa. Nell’inverter CMOS della figura 8 i pin 8 e 13 sono uniti a OUT.
+
+Per la caratterizzazione nMOS il montaggio proposto usa un riferimento ausiliario fisso a 9 V sul pin 14, da verificare in base alle sorgenti disponibili al banco. La scansione di Vᴅₛ agisce sul pin 8. Il montaggio mostra separatamente alimentatore DC, generatore di funzioni e sonde. Il carico equivalente delle sonde, la resistenza del voltmetro e il ramo numerico della NAND appartengono al modello. La guida indica dove inserire gli strumenti reali; i multimetri sono descritti nelle istruzioni di misura.
 
 ## Verifiche
 
 Le verifiche automatiche coprono le curve e il punto di lavoro, il ripple, il guadagno, i livelli logici nel transitorio e in DC, il confronto con CSV e la riapertura della sessione. I confronti con ngspice 47 usano parametri equivalenti. Con Rᴸ = 4,7 kΩ a 1 kHz, lo scarto del ripple nell’ultimo periodo è circa 10 µV. A 3 kHz il modulo del guadagno a piccolo segnale è 13,768 V/V in entrambi i calcoli.
+
+Nelle prove I–V si usano multimetri. Per il MOSFET il carico del voltmetro da 10 MΩ si seleziona in **Componenti**. Nell’amplificatore e nell’inverter CMOS il carico nominale da 10 MΩ rappresenta la lettura in modalità ideale. In modalità reale vale il carico delle sonde configurate. Un carico esterno dell’amplificatore di valore diverso resta in parallelo. Se l’uscita dell’amplificatore o dell’inverter CMOS non ha un ritorno DC, il modello la riferisce a massa tramite 10 GΩ.

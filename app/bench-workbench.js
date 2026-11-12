@@ -10,7 +10,11 @@
  const options=(pairs,value)=>pairs.map(([k,v])=>`<option value="${esc(k)}" ${k===value?'selected':''}>${esc(v)}</option>`).join('');
  const field=(key,label,factor,unit)=>`<label class="bench-field" for="bench-${key}"><span>${label}</span><div><input id="bench-${key}" type="number" step="any" value="${Number((config[key]/factor).toPrecision(12))}" inputmode="decimal"><span>${unit}</span></div></label>`;
  function show(detail={}){try{
-   source=snapshot();const free=source.mode==='free',p=free?null:source.circuits[L.CATALOG.find(c=>c.id===source.experiment).type];config=B.config(free?source.benchSetup?.config:p.bench||{});base=B.remove(free?source:L.circuit(source));
+   source=snapshot();const free=source.mode==='free',p=free?null:source.circuits[L.CATALOG.find(c=>c.id===source.experiment).type];
+   if(!free&&L.semiconductor.isCharacteristic(source.analysis)){
+    note(p.type==='mos-iv'?'Misure in continua. Il carico del voltmetro da 10 MΩ si imposta nella scheda Componenti.':'Misure in continua con voltmetro e amperometro.');return;
+   }
+   config=B.config(free?source.benchSetup?.config:p.bench||{});base=B.remove(free?source:L.circuit(source));
    const targets=free?M.topology(base).groups.filter(n=>n.index>=0).map(n=>[n.pins[0],(n.label||n.name)+' · '+n.pins.join(', ')]):[['input','Ingresso del circuito'],['output','Uscita del circuito'],...(p.type==='difference'?[['input2','Secondo ingresso del circuito']]:[])];
    // Existing explicit pin targets remain selectable after a JSON import.
    for(const ch of config.channels)if(!targets.some(([id])=>id===ch.target)&&M.validPin(base,ch.target))targets.push([ch.target,ch.target]);

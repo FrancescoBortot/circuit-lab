@@ -33,6 +33,9 @@
   const logic=p=>['nmos-inverter','nmos-nor','nmos-nand','cmos-inverter'].includes(p.type);
   const twoInputs=p=>['nmos-nor','nmos-nand'].includes(p.type);
   const mos=p=>p.type==='mos-iv'||p.type==='mos-amplifier'||logic(p);
+  const nominalScopeLoad=10e6;
+  const outputDcReference=10e9;
+  const outputChannel=(channel,pin)=>channel.enabled&&['output',pin,'RL:a'].includes(channel.target);
   const wave=(kind,vpp,frequency,offset=0,level=0)=>({kind,vpp,frequency,offset,level,phase:0,duty:50});
   const range=(count,start,stop)=>Array.from({length:count},(_,i)=>start+(stop-start)*i/(count-1));
   const dc=(doc,overrides)=>Free.operatingPoint(doc,overrides).data[0];
@@ -128,6 +131,7 @@
       const id='G'+(doc.components.filter(c=>c.type==='G').length+1);
       add('G',id,x,y);
       link(pin,id+':g');
+      return id;
     };
     const voltage=(id,x,y,w)=>{
       const source=add('V',id,x,y);
@@ -187,19 +191,24 @@
   function activeNetwork(p){
     const {doc,add,link,ground,voltage,label}=build(p);
     const amplifier=p.type==='mos-amplifier',cmos=p.type==='cmos-inverter',nand=p.type==='nmos-nand';
+    const config=Bench.config(p.bench),real=config.mode==='real';
+    const loadIsScope=real&&(cmos||amplifier&&p.RL===nominalScopeLoad);
     voltage('V1',120,nand?400:290,p.wave1);
     voltage('VDD',735,85,wave('dc',0,50,0,p.VDD));
     add('M','M1',465,nand?375:290,mosModel(p));
     ground('M1:s',480,nand?505:425);
-    let output='M1:d';
+    let output='M1:d',loadGround;
     if(amplifier){
       add('C','C1',265,225,{value:p.C1});
       add('C','C2',605,210,{value:p.C2});
       add('R','RG',265,345,{value:p.gateR});
-      add('R','RL',735,325,{value:p.RL,rotation:90});
       voltage('VG',120,475,wave('dc',0,50,0,p.gateBias));
       link('V1:p','C1:a');link('C1:b','M1:g');link('VG:p','RG:a');link('RG:b','M1:g');
-      link('M1:d','C2:a');link('C2:b','RL:a');ground('RL:b',735,450);
+      link('M1:d','C2:a');
+      // The AC-coupled output needs a DC reference until a DC-coupled probe is attached.
+      const load=loadIsScope?'Rref':'RL';
+      add('R',load,735,325,{value:loadIsScope?outputDcReference:p.RL,rotation:90});
+      link('C2:b',load+':a');loadGround=ground(load+':b',735,450);
       output='C2:b';
       label('M1:g','GATE');label('M1:d','DRAIN');
     }else{
@@ -207,8 +216,9 @@
       if(cmos){
         add('M','M2',465,125,{polarity:'p',kp:p.pKp,vto:p.pVto,lambda:p.pLambda,rotation:180});
         link('V1:p','M2:g');link('M2:s','VDD:p');link('M2:d','M1:d');
-        add('R','RL',640,285,{value:10e6,rotation:90});
-        link('M1:d','RL:a');ground('RL:b',640,425);
+        const load=loadIsScope?'Rref':'RL';
+        add('R',load,640,285,{value:loadIsScope?outputDcReference:nominalScopeLoad,rotation:90});
+        link('M1:d',load+':a');loadGround=ground(load+':b',640,425);
       }
       if(twoInputs(p)){
         voltage('V2',120,105,p.wave2);
@@ -234,7 +244,21 @@
       const bias=dc(doc),topology=Free.topology(doc);
       for(const part of doc.components.filter(c=>c.type==='C'))part.initial=nodeVoltage(topology,bias,part.id+':a')-nodeVoltage(topology,bias,part.id+':b');
     }
-    const config=Bench.config(p.bench);
+    if(loadIsScope){
+      // Keep imported channel selections that named the old implicit shunt.
+      const legacyTargets={'RL:a':output,'RL:b':'G1:g',[loadGround+':g']:'G1:g'};
+      for(const channel of config.channels)channel.target=legacyTargets[channel.target]??channel.target;
+      if(config.channels.some(channel=>outputChannel(channel,output)&&channel.coupling==='dc')){
+        if(amplifier){
+          // Give the open output a terminal while Bench initializes the probe.
+          add('J','Jout',735,210);
+          link(output,'Jout:j');
+        }
+        const temporary=new Set(['Rref',loadGround]);
+        doc.components=doc.components.filter(c=>!temporary.has(c.id));
+        doc.wires=doc.wires.filter(w=>![w.a,w.b].some(pin=>temporary.has(pin.split(':')[0])));
+      }
+    }
     config.sourceIds=twoInputs(p)?['V1','V2']:['V1'];
     return Bench.apply(doc,config);
   }
@@ -427,7 +451,11 @@
     const gm=saturated?2*id/(vgs-p.mosVto):undefined;
     const ro=saturated&&p.mosLambda>0?(1+p.mosLambda*vds)/(p.mosLambda*id):Infinity;
     const ac=Free.bode(doc,{frequencies:[p.wave1.frequency]}).data[0];
-    const values={vgs,vds,id,gm,gain:gm===undefined?undefined:-gm/(1/p.RD+1/ro+1/p.RL),acGain:ac.magnitude,region:q.regions.M1};
+    const config=doc.benchSetup?.config,probeConductance=config?.channels
+      .filter(channel=>outputChannel(channel,'C2:b'))
+      .reduce((sum,channel)=>sum+1/(channel.kind==='probe10'?config.probeR:config.scopeR),0)??0;
+    const loadConductance=(!config||p.RL!==nominalScopeLoad?1/p.RL:0)+probeConductance;
+    const values={vgs,vds,id,gm,gain:gm===undefined?undefined:-gm/(1/p.RD+1/ro+loadConductance),acGain:ac.magnitude,region:q.regions.M1};
     if(p.wave1.kind==='sine'&&data?.at(-1)?.x>=1/p.wave1.frequency){
       const end=data.at(-1).x,start=end-1/p.wave1.frequency;
       const input=periodStats(data,'vin',start,end),output=periodStats(data,'out',start,end);

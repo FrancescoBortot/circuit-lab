@@ -330,7 +330,7 @@
       $('freeExample').addEventListener('change',()=>{const kind=$('freeExample').value;if(!kind)return;if(!this.readFields()){$('freeExample').value='';return;}try{const next=kind==='current'?window.GuidedLab.exportCircuit():M.example(kind);if(next){this.replace(next);if(kind==='current')this.note('Esperienza trasferita con componenti, carichi, segnali e dati pertinenti. Annulla recupera il foglio precedente.');}}catch(e){this.note(e.message,true);}$('freeExample').value='';});
       $('projectName').addEventListener('change',()=>{if(this.active){this.doc.name=$('projectName').value.trim()||'Circuito senza titolo';this.persist();$('freeProjectTitle').textContent=this.doc.name;}});
       $('freeCSV').addEventListener('click',()=>{if(this.result)this.download(M.csv(this.doc,this.result),'text/csv;charset=utf-8','circuito-libero-'+this.doc.settings.analysis+'.csv');});
-      $('freeSVG').addEventListener('click',()=>{if(!this.result)return;const svg=$('freePlot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Arial,sans-serif;font-size:10px;fill:#7185a1}';svg.prepend(style);this.download(svg.outerHTML,'image/svg+xml','circuito-libero.svg');});
+
       for(const id of ['freeHelp','freeHelpClose','freeHelpDone'])$(id).addEventListener('click',()=>id==='freeHelp'?this.showHelp():$('freeHelpDialog').close());
       document.addEventListener('keydown',e=>{
         if(!this.active||e.defaultPrevented||e.target.closest('dialog')||document.querySelector('dialog[open]:not(.student-tool)'))return;const key=e.key.toLowerCase(),mod=e.metaKey||e.ctrlKey;

@@ -50,6 +50,8 @@ Nelle esperienze guidate apri **Analisi → Che cosa vuoi studiare?**. La scelta
 
 In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e confrontarli con il modello. Il pulsante degli operazionali mostra **Misure operazionali** e **VTC · banda · CMRR** su due righe. In Analisi il riepilogo dei risultati scorre con il contenuto, lasciando più spazio ai controlli. Cambiare sezione riporta il pannello all’inizio; gli errori nei parametri restano visibili e vanno corretti prima di cambiare analisi.
 
+Negli schemi guidati delle giornate 5 e 6, generatori, diodi, transistor e carichi seguono la disposizione delle schede quando è disponibile. **Modello completo** mostra anche i componenti equivalenti degli strumenti e i rami interni del simulatore, se presenti. La vista scelta agisce solo sul disegno.
+
 ## Dare spazio al circuito o al grafico
 
 Sopra l’area centrale, **Circuito e grafico**, **Solo circuito** e **Solo grafico** cambiano la visualizzazione nelle esperienze guidate e nell’editor libero. I pulsanti restano disponibili per riaprire il riquadro nascosto. Con entrambi aperti, il circuito mantiene un’altezza leggibile e l’area centrale scorre; il separatore consente di variare l’altezza dello schema. **Nascondi circuito** e **Nascondi grafico** aprono direttamente la vista complementare. I passaggi **1 · Costruisci** e **2 · Simula** scelgono rispettivamente circuito e grafico.
@@ -70,7 +72,7 @@ In **Costruzione guidata** ogni Avanti mostra un pezzo o un collegamento alla vo
 
 La legenda distingue **Ingresso · V₁** (tratteggio) e **Uscita · OUT** (linea continua); i campioni di linea hanno gli stessi colori e tratteggi del grafico. Un clic nasconde o mostra la curva; il nome barrato indica una curva nascosta. Deve restarne visibile almeno una. Nell’editor libero le etichette principali sono **Ingresso · IN** e **Uscita · OUT**.
 
-Nel **Transitorio guidato**, il selettore **Lettura** sotto il grafico offre **A passi** e **Continua**. A passi sposta il cursore dell’1% dell’intervallo visibile e mantiene i numeri fermi per il tempo scelto (0,25–2 s). Continua sposta il cursore senza scatti, con velocità regolabile: **1% in** indica quanto impiega a percorrere l’1% del tratto visibile. Le letture numeriche si aggiornano fino a cinque volte al secondo. **Pausa** ferma il cursore e mostra subito i valori dell’istante esatto selezionato. **← Passo**, **Passo →**, **Inizio** e il cursore manuale restano disponibili in entrambe le modalità. Un clic sul grafico riprende il posizionamento libero. Il tempo fisico e i campioni calcolati non cambiano; zoom, cambio analisi e scheda nascosta fermano la riproduzione.
+Nel **Transitorio guidato**, apri **Misure e controlli del grafico** per trovare il selettore **Lettura**, che offre **A passi** e **Continua**. A passi sposta il cursore dell’1% dell’intervallo visibile e mantiene i numeri fermi per il tempo scelto (0,25–2 s). Continua sposta il cursore senza scatti, con velocità regolabile: **1% in** indica quanto impiega a percorrere l’1% del tratto visibile. Le letture numeriche si aggiornano fino a cinque volte al secondo. **Pausa** ferma il cursore e mostra subito i valori dell’istante esatto selezionato. **← Passo**, **Passo →**, **Inizio** e il cursore manuale restano disponibili in entrambe le modalità. Un clic sul grafico riprende il posizionamento libero. Il tempo fisico e i campioni calcolati non cambiano; zoom, cambio analisi e scheda nascosta fermano la riproduzione.
 
 ## Percorso consigliato per studiare
 
@@ -159,7 +161,7 @@ In **Montaggio** puoi salvare fino a 20 **profili di strumentazione**, con speci
 Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento, riquadri e posizione della tabella. Il file completo include queste scelte; il blocco CircuitikZ conserva dimensioni e riquadri, mentre larghezza e orientamento dipendono dalla relazione che lo ospita.
 
 
-**Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono sopra il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.
+**Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono subito sotto il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.
 
 ### Grafico, parametri e misure del banco
 

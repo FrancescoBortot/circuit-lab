@@ -10,7 +10,7 @@ function harness(file){
   class Plot{constructor(){this.controls={};}}
   const globals={window:{LabModel:Lab,RCAnalysis:RC,ACAnalysis:AC,LocalProjects:Files,LabPlot:Plot},document,clearTimeout,setTimeout,matchMedia:()=>({matches:false})};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),globals);
-  return{bench:file==='rc-workbench.js'?globals.window.rcWorkbench:globals.window.acWorkbench,get:id=>document.getElementById(id)};
+  return{bench:file==='rc-workbench.js'?globals.window.rcWorkbench:globals.window.acWorkbench,get:id=>document.getElementById(id),window:globals.window};
 }
 test('a transient IC failure does not discard a valid AC response',()=>{
   const d=Free.example('rc');d.components=d.components.filter(c=>c.type!=='R');d.wires=d.wires.filter(w=>!w.a.startsWith('R1:')&&!w.b.startsWith('R1:'));d.wires.push({id:'Wdirect',a:'V1:p',b:'C1:a'});
@@ -81,8 +81,20 @@ test('AC summary neutralizes spreadsheet formulas and retains reference and unce
   const d=fixture(),{bench}=harness('ac-workbench.js');bench.state=d.acStudy;bench.state.dataset.name='=HYPERLINK("unsafe")';bench.result=AC.analyze(d.acStudy.dataset.points,d.acStudy);bench.ctx={notice:'Modello dichiarato'};bench.rows=[['fc',bench.result.fit.frequency,bench.result.fit.uFrequency,'Hz','Fit RC']];
   const rows=RC.rows(bench.summaryCSV(),',').rows;assert.ok(rows.every(r=>r.length===5));assert.ok(rows.some(r=>r[0]==='origine_dati'&&r[4].startsWith("'=")));assert.ok(rows.some(r=>r[0]==='ipotesi_incertezze'));assert.ok(rows.some(r=>r[0]==='riferimento_ingresso'));assert.ok(rows.some(r=>r[0]==='gradi_liberta_fit'&&Number(r[1])===9));
 });
-test('SVG export escapes dataset text and carries vector plots with unique clip references',()=>{
-  const d=fixture(),{bench,get}=harness('ac-workbench.js');bench.state=d.acStudy;bench.state.dataset.name='A & B <misure>';bench.result=AC.analyze(d.acStudy.dataset.points,d.acStudy);
-  for(const id of ['acMagnitudePlot','acPhasePlot'])get(id).innerHTML=`<defs><clipPath id="${id}-clip"><rect width="100" height="50"/></clipPath></defs><path clip-path="url(#${id}-clip)" d="M0 0L100 50"/>`;
-  let artifact;bench.download=(text,mime,name)=>artifact={text,mime,name};bench.exportSVG();assert.equal(artifact.mime,'image/svg+xml');assert.match(artifact.text,/A &amp; B &lt;misure&gt;/);assert.match(artifact.text,/<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);assert.equal((artifact.text.match(/id="acMagnitudePlot-clip"/g)||[]).length,1);assert.equal((artifact.text.match(/id="acPhasePlot-clip"/g)||[]).length,1);
+test('AC exports use the current plot series and include phase only when visible',()=>{
+  const d=fixture(),{bench,get,window}=harness('ac-workbench.js');
+  bench.state=d.acStudy;bench.state.dataset.name='A & B <misure>';
+  bench.result=AC.analyze(d.acStudy.dataset.points,d.acStudy);
+  Object.assign(bench.magnitudePlot,{svg:get('acMagnitudePlot'),series:[{label:'Misure originali'}]});
+  Object.assign(bench.phasePlot,{svg:get('acPhasePlot'),series:[{label:'Fase misurata'}]});
+  let args,artifact;
+  window.PlotExport={source:(...values)=>{args=values;return '<svg/>';}};
+  bench.download=(text,mime,name)=>{artifact={text,mime,name};};
+  bench.exportSVG();
+  assert.equal(artifact.mime,'image/svg+xml');
+  assert.match(args[1],/A & B <misure>/);
+  assert.deepEqual(Array.from(args[0],p=>p.series[0].label),['Misure originali','Fase misurata']);
+  get('acPhaseSection').hidden=true;
+  bench.exportSVG();
+  assert.equal(args[0].length,1);
 });

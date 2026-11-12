@@ -65,6 +65,22 @@ test('actual fault decisions are independent of reference labels, values, identi
 test('shared instrument returns expose an actual short introduced by a scope ground',()=>{
  const b=P.edit(handBoard(),b=>b.leads.push({id:'L3',port:'OSC1:ground',hole:'M1:d1'})),r=P.check(b,simple);assert.equal(r.correct,false);assert.ok(r.errors.some(e=>e.code==='short'&&e.items.some(i=>i.id==='L3')));
 });
+test('direct TL082 output shorts identify the endpoints and the added jumper',()=>{
+ for(const [type,target]of [['inverting','PSU:ground'],['inverting','PSU:positive'],['shaper-buffer','second-output']]){
+  const ref=P.reference(B.create(L.network(L.defaults(type)),{sectionsPerChip:2})),board=P.proposed(ref),chip=board.parts.find(p=>p.kind==='DIP8'),g=P.graph(board);
+  const destination=target==='second-output'?chip.holes[7]:board.leads.find(l=>l.port===target).hole;
+  const free=P.holes(board.rows).filter(h=>!P.occupied(board).has(h)),pick=h=>free.find(candidate=>g.find(candidate)===g.find(h));
+  const a=pick(chip.holes[1]),b=pick(destination),result=P.check(P.edit(board,n=>n.wires.push({id:'Wfault',a,b,color:'#28734d'})),ref);
+  assert.equal(result.correct,false,target);
+  assert.ok(result.errors.some(e=>e.code==='short'&&e.holes.includes(chip.holes[1])&&e.holes.includes(destination)&&e.items.some(i=>i.id==='Wfault')),target);
+ }
+});
+test('an interrupted amplifier feedback branch is a suggestion based on the selected reference',()=>{
+ const ref=P.reference(B.create(L.network(L.defaults('inverting')))),board=P.proposed(ref),open=P.edit(board,n=>n.parts=n.parts.filter(p=>p.id!=='Rf'));
+ assert.ok(P.check(open,ref).suggestions.some(e=>e.code==='missing-feedback'));
+ const comparator={...ref,units:ref.units.filter(p=>p.id!=='Rf')};
+ assert.ok(!P.check(open,comparator).suggestions.some(e=>e.code==='missing-feedback'));
+});
 test('multiple generator outputs shorted together are errors; equal DC power rails are not a source conflict',()=>{
  const b=P.edit(handBoard(),b=>b.leads.push({id:'L3',port:'AFG2:signal',hole:'M1:d1'},{id:'L4',port:'AFG2:ground',hole:'M1:d2'}));assert.ok(P.check(b,simple).errors.some(e=>e.code==='short'));
  const dc=P.edit(handBoard(),b=>{b.leads=[{id:'L1',port:'PSU:positive',hole:'M1:b1'},{id:'L2',port:'PSU:negative',hole:'M1:c1'},{id:'L3',port:'PSU:ground',hole:'M1:b2'}];b.supply={positive:5,negative:5};});assert.equal(P.check(dc,simple).correct,true);

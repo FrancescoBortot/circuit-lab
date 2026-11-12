@@ -14,3 +14,17 @@ test('derived observation export uses named SI columns and preserves blank unkno
 test('small signal comparisons use the actual network and declared excitation, without fabricating missing sources',()=>{const d=M.example('difference'),r=A.compare(A.analyze([point('v1',4.7,-180),point('v2',4.71,0),point('common',.01,0)]),d,M);close(r.rows[0].modelGain,L.response(L.defaults('difference'),1000,'v1').magnitude);close(r.rows[2].modelGain,0);close(r.rows[0].residualGain,r.rows[0].gain-r.rows[0].modelGain);const absent=A.compare(A.analyze([point('v2',4.7,0)]),M.example('inverting'),M);assert.equal(absent.rows[0].modelGain,undefined);assert.match(absent.comparisonNotice,/Alcuni confronti/);});
 
 test('amplifier comparison phases are relative to the declared input, regardless of a project AC phase',()=>{const d=M.example('inverting');d.settings.acPhases={V1:90};const r=A.compare(A.analyze([point('v1',4.7,-180)]),d,M);assert.ok(r.rows[0].modelPhase<-180&&r.rows[0].modelPhase>-181);});
+
+test('saturated Bode keeps the DC prediction and a selectable linear reference',()=>{
+  const d=M.example('inverting');
+  d.components.find(c=>c.id==='V1').wave.dc=5;
+  const r=A.compare(A.analyze([point('bandwidth',4.7,-180)]),d,M);
+  const [row]=r.rows;
+  assert.equal(A.prediction(row).gain,0);
+  close(A.prediction(row,'linear').gain,4.7,.001);
+  assert.match(r.warnings.join(' '),/polarizzazione/i);
+  assert.match(A.csv(r),/punto_di_lavoro/);
+  assert.match(A.csv(r,'linear'),/riferimento_lineare/);
+  d.opampStudy={...study(),modelReference:'linear'};
+  assert.equal(M.parse(M.serialize(d)).opampStudy.modelReference,'linear');
+});

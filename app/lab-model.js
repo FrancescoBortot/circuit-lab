@@ -248,7 +248,27 @@
     const magnitude=Math.hypot(H.r,H.i);
     return{real:H.r,imag:H.i,magnitude,db:magnitude===0?-Infinity:20*Math.log10(magnitude),phase:magnitude===0?NaN:Math.atan2(H.i,H.r)*180/Math.PI};
   }
-  function bode(p,options={}){const n=options.points||601;assert(p);if(Radiation.is(p)||Semiconductor.is(p))return Free.bode(network(p),{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;if(Bench.real(p)){const d=network(p,p.type==='difference'?p.bodeInput:null);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}if(p.type!=='rc'&&p.opamp!=='ideal'){const d=Free.example(p.type,p);if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);return Free.bode(d,{frequencies:Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)))}).data;}const data=[];let previous;for(let i=0;i<n;i++){const f=p.fmin*(p.fmax/p.fmin)**(i/(n-1)),h=response(p,f);if(previous===undefined&&h.phase>90)h.phase-=360;if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous < -180)h.phase+=360;}previous=h.phase;data.push({x:f,...h});}return data;}
+  function bode(p,options={}){
+    assert(p);
+    const n=options.points||601,frequencies=options.frequencies||Array.from({length:n},(_,i)=>p.fmin*(p.fmax/p.fmin)**(i/(n-1)));
+    if(usesNetwork(p)){
+      const d=network(p,p.type==='difference'?p.bodeInput:null);
+      return Free.bode(d,{frequencies}).data;
+    }
+    if(p.type!=='rc'&&p.opamp!=='ideal'){
+      const d=Free.example(p.type,p);
+      if(p.type==='difference')d.settings.acWeights=drives(p.bodeInput);
+      return Free.bode(d,{frequencies}).data;
+    }
+    let previous;
+    return frequencies.map(f=>{
+      const h=response(p,f);
+      if(previous===undefined&&h.phase>90)h.phase-=360;
+      if(previous!==undefined){while(h.phase-previous>180)h.phase-=360;while(h.phase-previous< -180)h.phase+=360;}
+      previous=h.phase;
+      return {x:f,...h};
+    });
+  }
   const drives=mode=>({v1:{V1:1,V2:0},v2:{V1:0,V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}})[mode]||{V1:1};
   function vtc(p,options={}){
     assert(p);if(p.type==='rc')throw new Error('La VTC in ampiezza richiede un amplificatore.');

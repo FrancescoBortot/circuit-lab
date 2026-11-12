@@ -5,7 +5,7 @@
     "measurements.js": "3ad51f8da4e181459e87e3fcf6c77bb6d713c046f757a258d3fba6db4505abaf",
     "free-model.js": "4f942d9b0c7beb64031fc8408985705d471b99e77ffc7c700fb473c9b86e61ea",
     "radiation-model.js": "8ddbe6ea310ea1ba10e58137a15c27a7fc8887e688e7a4f156f25389baf5f63c",
-    "lab-model.js": "67baabd36d71af9e6d523d120d6675b868ef36de2f50fb02ffa8dc8569e923d5",
+    "lab-model.js": "a2a903692e4105c730cddc817b010d94bcd191e1d4a9afdbaf899c50a0a842a6",
     "bench-model.js": "60d1b624c2028b623a21c566fae6043b5a2bdd813e1e2fb1dcdb4eb211d78814",
     "spice-netlist.js": "940d54f947329c14acc5a7cc25b97d27de7a34130c35f8eb7e3a062f439145d3"
   },

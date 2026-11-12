@@ -156,11 +156,21 @@
   for(const l of board.leads){add({kind:'lead',id:l.id,hole:l.hole});const ground=l.port.endsWith(':ground'),supply=l.port.startsWith('PSU:')&&!ground,dc=ref.sourceVoltages?.[l.port]??ref.ports.find(p=>p.id===l.port)?.voltage;if(ground||supply||l.port.startsWith('AFG')||/^DC[1-3]:positive$/.test(l.port))sources.push({...l,potential:ground?'dc:0':supply?'dc:'+board.supply[l.port.split(':')[1]]:Number.isFinite(dc)?'dc:'+dc:l.port});}
   const at=h=>terminals.get(root(h))||[],others=(h,id)=>at(h).some(t=>t.kind!=='part'||t.id!==id);
   const passives=board.parts.filter(p=>!dipSize(p.kind)),chips=board.parts.filter(p=>p.kind==='DIP8'),mosChips=board.parts.filter(p=>p.kind==='DIP14');
+  const sections=chips.flatMap(chip=>[['1','2','3','A'],['7','6','5','B']].flatMap(([out,minus,plus,name])=>
+   [out,minus,plus].some(pin=>at(chip.holes[pin]).some(t=>t.id!==chip.id||t.kind!=='part'||t.pin!==pin))?[{chip,out,minus,plus,name}]:[]));
+  const driverPins=sections.map(({chip,out})=>({kind:'part',id:chip.id,hole:chip.holes[out],port:chip.id+' pin '+out,opampOutput:true}));
+  const powerPins=chips.flatMap(chip=>['4','8'].map(pin=>({kind:'part',id:chip.id,hole:chip.holes[pin],port:chip.id+' pin '+pin,powerPin:true})));
   const conflicts=(a,b)=>a.potential!==b.potential;
+  const conflictOnNet=(a,b)=>a.opampOutput||b.opampOutput||(!a.powerPin&&!b.powerPin&&conflicts(a,b));
   // A real short joins incompatible source outputs, not merely differently named nets.
-  for(const [r,terms]of terminals){const outputs=sources.filter(s=>root(s.hole)===r);if(!outputs.some((a,i)=>outputs.slice(i+1).some(b=>conflicts(a,b))))continue;
-   const wires=board.wires.filter(w=>root(w.a)===r),culprits=wires.filter(w=>{const split=graph(board,w.id);return outputs.some((a,i)=>outputs.slice(i+1).some(b=>conflicts(a,b)&&split.find(a.hole)!==split.find(b.hole)));});
-   errors.push(diag('short','Corto fra uscite o alimentazioni',outputs.map(s=>s.port+' ('+short(s.hole)+')').join('; ')+': queste uscite sono collegate direttamente ma impongono tensioni diverse.'+(culprits.length?' Controlla '+culprits.map(w=>w.id).join(', ')+'.':''),[...terms.map(item),...(culprits.length?culprits:wires).map(w=>({kind:'wire',id:w.id}))],terms.map(t=>t.hole)));
+  const driven=[...sources,...driverPins,...powerPins];
+  for(const [r,terms]of terminals){
+   const endpoints=driven.filter(s=>root(s.hole)===r),pairs=endpoints.flatMap((a,i)=>endpoints.slice(i+1).filter(b=>conflictOnNet(a,b)).map(b=>[a,b]));
+   if(!pairs.length)continue;
+   const outputs=[...new Set(pairs.flat())],wires=board.wires.filter(w=>root(w.a)===r);
+   const culprits=wires.filter(w=>{const split=graph(board,w.id);return pairs.some(([a,b])=>split.find(a.hole)!==split.find(b.hole));});
+   const message=outputs.some(s=>s.opampOutput)?'Un’uscita del TL082 è collegata direttamente a un’altra uscita, a massa o a un’alimentazione.':'Queste uscite sono collegate direttamente ma impongono tensioni diverse.';
+   errors.push(diag('short','Corto fra uscite o alimentazioni',outputs.map(s=>s.port+' ('+short(s.hole)+')').join(', ')+'. '+message+(culprits.length?' Controlla '+culprits.map(w=>w.id).join(', ')+'.':''),[...terms.map(item),...(culprits.length?culprits:wires).map(w=>({kind:'wire',id:w.id}))],[...outputs.map(t=>t.hole),...culprits.flatMap(w=>[w.a,w.b])]));
   }
   // Reachability through the *actual* passive network. No expected node or part ID is used.
   const adjacency=new Map(),dcPaths=new Map();
@@ -170,7 +180,7 @@
    edge(adjacency,a,b);
    if(['R','L'].includes(p.kind))edge(dcPaths,a,b);
   }
-  const reach=(start,links=adjacency)=>{const seen=new Set([start]),queue=[start];for(let i=0;i<queue.length;i++)for(const n of links.get(queue[i])||[])if(!seen.has(n)){seen.add(n);queue.push(n);}return seen;};
+  const reach=(start,blocked=new Set(),links=adjacency)=>{const seen=new Set([start]),queue=[start];for(let i=0;i<queue.length;i++)for(const n of links.get(queue[i])||[])if(!seen.has(n)&&!blocked.has(n)){seen.add(n);queue.push(n);}return seen;};
   const signals=sources.filter(s=>/^AFG[12]:signal$/.test(s.port)),powered=new Set();
   for(const source of sources)for(const r of reach(root(source.hole)))powered.add(r);
   for(const signal of signals){const channel=signal.port.split(':')[0],returns=sources.filter(s=>s.port.endsWith(':ground')),seen=reach(root(signal.hole)),input=chips.some(p=>['2','3','5','6'].some(pin=>seen.has(root(p.holes[pin]))))||mosChips.some(p=>['3','6','10'].some(pin=>seen.has(root(p.holes[pin]))));
@@ -183,11 +193,6 @@
    const high=supplied(p.holes[8]),low=supplied(p.holes[4]);
    if(high===null||low===null)errors.push(diag('missing-power','Alimentazione incompleta · '+p.id,'Il TL082 richiede una tensione continua ai pin 8 (V+) e 4 (V−). Controlla anche eventuali interruzioni delle barre.',[{kind:'part',id:p.id}],[p.holes[8],p.holes[4]]));
    else if(high<=low)errors.push(diag('reversed-power','Alimentazione invertita o nulla · '+p.id,'Il potenziale al pin 8 deve essere maggiore di quello al pin 4. Attualmente: '+high+' V e '+low+' V.',[{kind:'part',id:p.id}],[p.holes[8],p.holes[4]]));
-   for(const [out,minus,plus,name]of [['1','2','3','A'],['7','6','5','B']]){const usedSection=[out,minus,plus].some(pin=>others(p.holes[pin],p.id));if(!usedSection)continue;
-    for(const pin of [minus,plus])if(at(p.holes[pin]).length===1)errors.push(diag('floating-input','Ingresso non collegato · '+p.id+' '+name,'Il pin '+pin+' dell’operazionale in uso è lasciato flottante. Collegalo alla rete prevista dal tuo circuito.',[{kind:'part',id:p.id}],[p.holes[pin]]));
-    // A direct output/+ connection alone is positive feedback; passive feedback needs analysis.
-    if(root(p.holes[out])===root(p.holes[plus])&&root(p.holes[out])!==root(p.holes[minus]))suggestions.push(diag('positive-feedback','Controlla la retroazione · '+p.id+' '+name,'L’uscita è collegata direttamente all’ingresso +. Può essere intenzionale per un comparatore; per un amplificatore lineare verifica la retroazione negativa.',[{kind:'part',id:p.id}],[p.holes[out],p.holes[plus]]));
-   }
   }
   for(const p of mosChips){
    const high=supplied(p.holes[14]),low=supplied(p.holes[7]);
@@ -197,7 +202,7 @@
    else if(high-low>20)errors.push(diag('supply-limit','Limite di alimentazione del CD4007UB superato','VDD − VSS supera il massimo assoluto di 20 V.',item,pins));
    else if(high-low<3||high-low>18)suggestions.push(diag('supply-range','Alimentazione fuori dall’intervallo raccomandato','Per il CD4007UB il produttore raccomanda 3–18 V fra i pin 14 e 7.',item,pins));
    for(const pin of [3,6,10]){
-    const gate=p.holes[pin],node=root(gate),reachable=reach(node,dcPaths);
+    const gate=p.holes[pin],node=root(gate),reachable=reach(node,new Set(),dcPaths);
     const direct=sources.filter(s=>root(s.hole)===node);
     const upstream=sources.filter(s=>reachable.has(root(s.hole)));
     if(!upstream.length){
@@ -222,6 +227,18 @@
    const part=board.parts.find(p=>p.id===fault.items[0].id);
    if(part.kind==='CP'&&!errors.some(d=>d.code==='reversed-capacitor'&&d.items.some(i=>i.id===part.id)))errors.push(fault);
    if(part.kind==='D')suggestions.push(fault);
+  }
+  const fixedNodes=new Set([...sources,...powerPins].map(s=>root(s.hole)));
+  const referenceChips=new Map(ref.units.filter(u=>u.kind==='DIP8').map(u=>[u.id,u]));
+  for(const {chip,out,minus,plus,name}of sections){
+   const {id,holes}=chip,output=root(holes[out]),negative=root(holes[minus]);
+   for(const pin of [minus,plus])if(at(holes[pin]).length===1)errors.push(diag('floating-input','Ingresso non collegato · '+id+' '+name,'Il pin '+pin+' dell’operazionale in uso è lasciato flottante. Collegalo alla rete prevista dal tuo circuito.',[{kind:'part',id}],[holes[pin]]));
+   if(output===root(holes[plus])&&output!==negative)suggestions.push(diag('positive-feedback','Controlla la retroazione · '+id+' '+name,'L’uscita è collegata direttamente all’ingresso +. Può essere intenzionale per un comparatore. Per un amplificatore lineare verifica la retroazione negativa.',[{kind:'part',id}],[holes[out],holes[plus]]));
+   const pins=referenceChips.get(id)?.pins;
+   if(!pins)continue;
+   const expectedOutput=pins[out].node,expectedNegative=pins[minus].node;
+   const expectsFeedback=expectedOutput===expectedNegative||ref.units.some(u=>u.pins.a&&u.pins.b&&[u.pins.a.node,u.pins.b.node].includes(expectedOutput)&&[u.pins.a.node,u.pins.b.node].includes(expectedNegative));
+   if(expectsFeedback&&!reach(output,fixedNodes).has(negative))suggestions.push(diag('missing-feedback','Controlla il ramo di retroazione · '+id+' '+name,'Lo schema della prova collega l’uscita all’ingresso − tramite un ramo di retroazione. Controlla il percorso tra i due pin.',[{kind:'part',id}],[holes[out],holes[minus]]));
   }
   if(board.parts.length&&!signals.length&&!sources.some(s=>/^(PSU|DC[1-3]):/.test(s.port)&&!s.port.endsWith(':ground')))errors.push(diag('missing-source','Montaggio senza alimentazione o segnale','Collega il generatore o l’alimentatore per completare il circuito.',ref.ports.filter(p=>p.required&&!p.id.endsWith(':ground')).map(p=>({kind:'port',id:p.id}))));
   if(!board.parts.length)errors.push(diag('missing-circuit','Montaggio da costruire','Inserisci i componenti del tuo circuito prima di verificarlo.'));

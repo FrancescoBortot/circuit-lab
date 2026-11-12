@@ -14,7 +14,7 @@
     if(rows[0].length!==8||rows[0].some((v,i)=>v.trim()!==headers[i]))throw new Error('Usa le otto intestazioni indicate nel modello CSV.');
     return validatePoints(rows.slice(1).map((r,i)=>{try{const p={mode:r[0].trim(),frequency:RC.number(r[1],decimal),input:RC.number(r[2],decimal),output:RC.number(r[3],decimal)};for(const [j,k]of [[4,'phase'],[5,'uInput'],[6,'uOutput'],[7,'uPhase']])if(r[j].trim())p[k]=RC.number(r[j],decimal);return p;}catch(e){throw new Error('Riga '+(i+2)+': '+e.message);}}));
   }
-  function validateStudy(s){if(s===undefined)return;try{if(!s||s.version!==1||typeof s.name!=='string'||s.name.length>120||typeof s.raw!=='string'||new TextEncoder().encode(s.raw).length>200000||![';',',','\t'].includes(s.delimiter)||!['.',','].includes(s.decimal)||s.delimiter===','&&s.decimal===','||!finite(s.g0)||s.g0<=0||s.g0>1e12||!['vtc','bandwidth'].includes(s.plot)||s.reference!==undefined&&!['v1','v2','common','differential'].includes(s.reference)||s.quantity!==undefined&&!['db','phase'].includes(s.quantity)||s.plotFrequency!==undefined&&s.plotFrequency!==null&&(!finite(s.plotFrequency)||s.plotFrequency<=0)||typeof s.stamp!=='string'||s.stamp.length>80)throw Error();validatePoints(s.points);}catch{throw new Error('I dati o le impostazioni degli operazionali non sono validi.');}}
+  function validateStudy(s){if(s===undefined)return;try{if(!s||s.version!==1||typeof s.name!=='string'||s.name.length>120||typeof s.raw!=='string'||new TextEncoder().encode(s.raw).length>200000||![';',',','\t'].includes(s.delimiter)||!['.',','].includes(s.decimal)||s.delimiter===','&&s.decimal===','||!finite(s.g0)||s.g0<=0||s.g0>1e12||!['vtc','bandwidth'].includes(s.plot)||s.reference!==undefined&&!['v1','v2','common','differential'].includes(s.reference)||s.quantity!==undefined&&!['db','phase'].includes(s.quantity)||s.modelReference!==undefined&&!['bias','linear'].includes(s.modelReference)||s.plotFrequency!==undefined&&s.plotFrequency!==null&&(!finite(s.plotFrequency)||s.plotFrequency<=0)||typeof s.stamp!=='string'||s.stamp.length>80)throw Error();validatePoints(s.points);}catch{throw new Error('I dati o le impostazioni degli operazionali non sono validi.');}}
   const complex=(g,phase)=>({r:g*Math.cos(phase*Math.PI/180),i:g*Math.sin(phase*Math.PI/180)}),norm=z=>Math.hypot(z.r,z.i);
   function analyze(points,{g0=1,rhoChannels=0}={}){
     validatePoints(points);if(!finite(rhoChannels)||Math.abs(rhoChannels)>1)throw Error('Correlazione dei canali non valida.');if(!finite(g0)||g0<=0)throw new Error('Indica il guadagno G₀ di riferimento, positivo.');const warnings=[],rows=points.map(p=>{const gain=p.input?p.output/p.input:null,uGain=p.input&&p.uInput!==undefined?Math.sqrt(Math.max(0,(p.uOutput/p.input)**2+(p.output*p.uInput/(p.input*p.input))**2-2*rhoChannels*p.uOutput*p.output*p.uInput/(p.input**3))):null;return{...p,gain,uGain,db:gain>0?20*Math.log10(gain):null};}),cmrr=[];
@@ -36,14 +36,50 @@
     return{rows,cmrr,cutoff,warnings:[...new Set(warnings)],assumptions:'Ampiezze Vpp e incertezze standard, propagate al primo ordine; osservazioni indipendenti, correlazione Vin/Vout per osservazione = '+rhoChannels+'. AD riferito a V2−V1, AC al medesimo segnale sui due ingressi. Nessun fit RC imposto alla banda del derivatore.'};
   }
   function compare(result,doc,Free,{reference='v1'}={}){
-    const cache=new Map(),weights={v1:{V1:1},v2:{V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}};
-    let unavailable=false;
-    for(const row of result.rows){const mode=['vtc','bandwidth'].includes(row.mode)?reference:row.mode,key=mode+'|'+row.frequency;if(!cache.has(key)){try{const d=Free.clone(doc);d.settings.acReference='source';d.settings.acWeights=weights[mode];d.settings.acPhases={};d.settings.acSource=Object.keys(weights[mode])[0];if(Object.keys(weights[mode]).some(id=>!d.components.some(c=>c.id===id&&c.type==='V')))throw Error();cache.set(key,Free.bode(d,{frequencies:[row.frequency],ignoreBias:true}).data[0]);}catch{cache.set(key,null);}}
-      const h=cache.get(key);if(h){row.modelGain=h.magnitude;row.modelPhase=h.phase;row.modelOutput=h.magnitude*row.input;row.residualGain=row.gain===null?null:row.gain-h.magnitude;}else unavailable=true;
+    const groups=new Map(),weights={v1:{V1:1},v2:{V2:1},common:{V1:1,V2:1},differential:{V1:-.5,V2:.5}};
+    for(const row of result.rows){
+      const mode=['vtc','bandwidth'].includes(row.mode)?reference:row.mode;
+      if(!groups.has(mode))groups.set(mode,[]);
+      groups.get(mode).push(row);
     }
-    result.comparisonNotice='Previsione lineare del circuito aperto, con eccitazioni su V1/V2 e OUT rispetto a massa. Saturazione, slew rate e corrente possono far differire le misure in ampiezza.'+(unavailable?' Alcuni confronti richiedono i generatori di tensione V1/V2 e una rete AC risolvibile.':'');return result;
+    const biasWarnings=new Set();
+    let unavailable=false;
+    for(const [mode,rows] of groups){
+      const ids=Object.keys(weights[mode]||{});
+      const frequencies=[...new Set(rows.map(row=>row.frequency).filter(f=>f<=1e9))].sort((a,b)=>a-b);
+      if(!frequencies.length||!ids.length||ids.some(id=>!doc.components.some(c=>c.id===id&&c.type==='V'))){unavailable=true;continue;}
+      const d=Free.clone(doc);
+      Object.assign(d.settings,{acReference:'source',acWeights:weights[mode],acPhases:{},acSource:ids[0]});
+      function predict(ignoreBias){
+        try{
+          const response=Free.bode(d,{frequencies,ignoreBias});
+          if(!ignoreBias)for(const warning of response.warnings||[])biasWarnings.add(warning);
+          return new Map(response.data.map(h=>[h.x,h]));
+        }catch{unavailable=true;return new Map();}
+      }
+      const biased=predict(false),linear=predict(true);
+      for(const row of rows){
+        const h=biased.get(row.frequency),ref=linear.get(row.frequency);
+        if(h)Object.assign(row,{modelGain:h.magnitude,modelPhase:h.phase,modelOutput:h.magnitude*row.input,residualGain:row.gain===null?null:row.gain-h.magnitude});
+        if(ref)row.linearPrediction={gain:ref.magnitude,phase:ref.phase,output:ref.magnitude*row.input,residual:row.gain===null?null:row.gain-ref.magnitude};
+        if(!h||!ref)unavailable=true;
+      }
+    }
+    result.biasWarnings=[...biasWarnings];
+    result.warnings=[...new Set([...result.warnings,...biasWarnings])];
+    result.comparisonNotice='Riferimento V1/V2 e uscita rispetto a massa. Il modello al punto di lavoro applica i limiti attivi in DC. Il riferimento lineare esclude questi limiti.'+(unavailable?' Alcuni confronti richiedono i generatori V1/V2, frequenze fino a 1 GHz e una rete AC risolvibile.':'');
+    return result;
   }
-  function csv(result){return RC.csv([['modo','frequenza_Hz','Vin_Vpp','Vout_Vpp','fase_gradi','uVin_V','uVout_V','uFase_gradi','guadagno_V_V','uGuadagno_V_V','guadagno_dB','modello_lineare_V_V','modello_fase_gradi','scarto_guadagno_V_V'],...result.rows.map(p=>[p.mode,p.frequency,p.input,p.output,p.phase,p.uInput,p.uOutput,p.uPhase,p.gain,p.uGain,p.db,p.modelGain,p.modelPhase,p.residualGain])]);}
+  function prediction(row,model='bias'){
+    return model==='linear'?(row.linearPrediction||{}):{gain:row.modelGain,phase:row.modelPhase,output:row.modelOutput,residual:row.residualGain};
+  }
+  function csv(result,model='bias'){
+    const source=model==='linear'?'riferimento_lineare':'punto_di_lavoro';
+    return RC.csv([['modo','frequenza_Hz','Vin_Vpp','Vout_Vpp','fase_gradi','uVin_V','uVout_V','uFase_gradi','guadagno_V_V','uGuadagno_V_V','guadagno_dB','modello_'+source+'_V_V','fase_'+source+'_gradi','scarto_guadagno_V_V'],...result.rows.map(p=>{
+      const h=prediction(p,model);
+      return [p.mode,p.frequency,p.input,p.output,p.phase,p.uInput,p.uOutput,p.uPhase,p.gain,p.uGain,p.db,h.gain,h.phase,h.residual];
+    })]);
+  }
   const demo=()=>headers.join(';')+'\n'+[['v1',1000,1,4.7,-180,.002,.005,.05],['v2',1000,1,4.71,0,.002,.005,.05],['differential',1000,1,4.705,0,.002,.005,.05],['common',1000,1,.01,0,.002,.0002,.1],...[10,1000,10000,30000,100000,300000,500000,700000,1e6,3e6].map(f=>['bandwidth',f,1,4.7/Math.hypot(1,f/700000),-180-Math.atan(f/700000)*180/Math.PI,.002,.005,.05]),...[0,.5,1,2,4,8,10].map(v=>['vtc',1000,v,Math.min(v*4.7,27),'',.002,.01,''])].map(r=>r.join(';')).join('\n');
-  return{headers,modes,validatePoints,validateStudy,parse,analyze,compare,csv,demo};
+  return{headers,modes,validatePoints,validateStudy,parse,analyze,compare,prediction,csv,demo};
 });

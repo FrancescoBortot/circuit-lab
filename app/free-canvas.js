@@ -18,15 +18,17 @@
       });
       svg.addEventListener('dragover',e=>e.preventDefault());svg.addEventListener('drop',e=>{e.preventDefault();const type=e.dataTransfer.getData('application/circuit-component');if(Object.hasOwn(M.PINS,type))this.callbacks.add(type,this.point(e));});
     }
-    port(ref){const[id,pin]=ref.split(':'),c=this.doc.components.find(c=>c.id===id),p=local[c.type][pin],a=c.rotation*Math.PI/180;const x=c.x+p[0]*Math.cos(a)-p[1]*Math.sin(a),y=c.y+p[0]*Math.sin(a)+p[1]*Math.cos(a);let dx=0,dy=0;
+    port(ref){const[id,pin]=ref.split(':'),c=this.doc.components.find(c=>c.id===id),flipX=c.schematicFlipX?-1:1,flipY=c.schematicFlipY?-1:1,p=local[c.type][pin].map((v,i)=>v*(i?flipY:flipX)),a=c.rotation*Math.PI/180;const x=c.x+p[0]*Math.cos(a)-p[1]*Math.sin(a),y=c.y+p[0]*Math.sin(a)+p[1]*Math.cos(a);let dx=0,dy=0;
       if(c.type==='Q'||c.type==='M'){if(['b','g'].includes(pin))dx=-1;else dy=['c','d'].includes(pin)?-1:1;}
       else if(c.type==='V'||c.type==='I'||c.type==='G'){dy=pin==='n'?1:-1;}
       else if(c.type!=='J')dx=['a','plus','minus','g'].includes(pin)?-1:1;
+      dx*=flipX;dy*=flipY;
       return{x,y,dx:Math.round(dx*Math.cos(a)-dy*Math.sin(a)),dy:Math.round(dx*Math.sin(a)+dy*Math.cos(a))};
     }
     render(doc,selection,mode,pending,labels=false){this.doc=doc;this.selection=selection;this.mode=mode;this.pending=pending;this.labels=labels;this.draw();}
     route(w){
       const a=this.port(w.a),b=this.port(w.b),s={x:a.x+a.dx*20,y:a.y+a.dy*20},t={x:b.x+b.dx*20,y:b.y+b.dy*20},points=[a,s],offset=Number.isFinite(w.offset)?w.offset:0;
+      if(this.doc.sheetSchematic&&(Math.abs(a.x-b.x)<1e-6||Math.abs(a.y-b.y)<1e-6))return `M${a.x},${a.y}L${b.x},${b.y}`;
       if((!w.route||w.route==='auto')&&!offset&&((a.dx&&b.dx&&a.y===b.y)||(a.dy&&b.dy&&a.x===b.x)))return`M${a.x},${a.y}L${b.x},${b.y}`;
       if(w.route==='horizontal')points.push({x:(s.x+t.x)/2+offset,y:s.y},{x:(s.x+t.x)/2+offset,y:t.y});
       else if(w.route==='vertical')points.push({x:s.x,y:(s.y+t.y)/2+offset},{x:t.x,y:(s.y+t.y)/2+offset});
@@ -42,13 +44,18 @@
       html+=this.doc.wires.map(w=>`<g data-wire="${w.id}" tabindex="0" role="button" aria-label="Seleziona filo ${esc(w.id)} da ${esc(w.a)} a ${esc(w.b)}" class="free-wire ${this.selection?.kind==='wire'&&this.selection.id===w.id?'selected':''}"><title>${esc(w.id)} · ${esc(w.a)} → ${esc(w.b)} · ${t.nodes[w.a]<0?'massa':'N'+(t.nodes[w.a]+1)}</title><path class="wire-hit" d="${this.route(w)}"/><path class="wire-separation" d="${this.route(w)}" fill="none" stroke="#fcfdff" stroke-width="6" pointer-events="none"/><path class="wire-ink" d="${this.route(w)}"/></g>`).join('');
       html+=this.doc.components.map(c=>this.symbol(c)).join('');
       if(this.labels||this.dcValues)for(const n of t.groups){const at=this.port(n.pins[0]);html+=`<text class="free-net-label" x="${at.x+12}" y="${at.y-15}">${esc(n.label||n.name)+(this.dcValues?' · '+esc(fmt(this.dcValues[n.name],'V')):'')}</text>`;}
-      for(const [kind,pin]of Object.entries(this.doc.probes)){if(!pin)continue;const at=this.port(pin);html+=`<g class="free-probe ${kind}" transform="translate(${at.x+9} ${at.y-36})"><rect width="${kind==='output'?43:32}" height="21" rx="5"/><text x="8" y="14">${kind==='output'?'OUT':'IN'}</text></g>`;}
+      const probes=this.doc.sheetProbes||{IN:this.doc.probes.input,OUT:this.doc.probes.output};
+      for(const [label,pin]of Object.entries(probes)){
+        if(!pin)continue;
+        const at=this.port(pin),kind=label==='OUT'?'output':'input';
+        html+=`<g class="free-probe ${kind}" transform="translate(${at.x+9} ${at.y-36})"><rect width="${label.length>2?43:32}" height="21" rx="5"/><text x="8" y="14">${label}</text></g>`;
+      }
       const probeOffsets=new Map();for(const [i,probe]of (this.doc.traces||[]).entries()){
         if(probe.kind!=='voltage')continue;const at=this.port(probe.positive),offset=probeOffsets.get(probe.positive)||0;probeOffsets.set(probe.positive,offset+1);
         const colors=['#159e89','#d78b29','#9c6bce','#dc6c87','#278fa8','#7470d9','#8b9b36','#ae7648'];
         html+=`<g class="free-probe" transform="translate(${at.x+9+offset*35} ${at.y+12})"><rect width="31" height="20" rx="5" style="fill:${colors[i%8]}"/><text x="6" y="14">${probe.id}</text></g>`;
       }
-      for(const c of this.doc.components)for(const pin of M.PINS[c.type]){
+      for(const c of this.doc.components.filter(c=>!c.schematicDecoration))for(const pin of M.PINS[c.type]){
         const ref=c.id+':'+pin,p=this.port(ref),pending=ref===this.pending,label=M.pinLabel(c.type,pin);
         html+=`<g data-pin="${ref}" class="free-terminal ${used.has(ref)?'connected':''} ${pending?'pending':''} ${unconnected.has(ref)?'unconnected':''}" role="button" tabindex="0" aria-label="Terminale ${esc(c.id)} ${esc(label)}${unconnected.has(ref)?', da collegare':''}"><title>${esc(c.id)} · ${esc(label)} · ${unconnected.has(ref)?'Da collegare':t.nodes[ref]<0?'massa':'N'+(t.nodes[ref]+1)}</title><circle cx="${p.x}" cy="${p.y}" r="16" class="terminal-hit"/><circle cx="${p.x}" cy="${p.y}" r="5" class="terminal-dot"/>${(this.mode==='wire'||unconnected.has(ref))&&c.type!=='J'?`<text x="${p.x+(p.dx||1)*13}" y="${p.y+(p.dy||-1)*13}" text-anchor="${p.dx<0?'end':'start'}">${esc(label)}</text>`:''}</g>`;
       }
@@ -74,9 +81,19 @@
       if(c.type==='M'){shape='<path d="M-46 0H-20M-20-24V24M-12-24V24M-12-18H24V-42M-12 18H24V42M-12 0H10"/>'+ (c.polarity==='p'?'<path d="M-3-5L-9 0L-3 5"/>':'<path d="M4-5L10 0L4 5"/>');value=(c.polarity==='p'?'PMOS':'NMOS')+' · Vt '+fmt(c.vto,'V');}
       if(c.type==='G')shape='<path d="M0-22V0m-16 0h32m-27 6h22m-17 6h12m-9 6h6"/>';
       if(c.type==='J')shape='<circle r="5" class="junction-dot"/>';
+      if(c.schematicDecoration){
+        if(c.type==='J'&&!c.schematicJunction)return '';
+        return `<g class="free-part schematic-decoration" transform="translate(${c.x} ${c.y})" aria-hidden="true"><g class="part-ink">${shape}</g></g>`;
+      }
+      if(c.schematicPolarized)shape+='<path d="M-19-31V-21m-5-5h10"/>';
+      if(this.doc.sheetSchematic){
+        if(c.type==='D')value='1N4148';
+        if(c.type==='M')value=c.polarity==='p'?'pMOS':'nMOS';
+        if(c.type==='V'&&c.wave.kind==='dc'&&['VDD','VG'].includes(c.id)&&c.id!==this.doc.settings.dcSource)value=fmt(M.dcValue(c),'V');
+      }
       const vertical=['R','C','L'].includes(c.type)&&c.rotation%180===90,source=['V','I'].includes(c.type),x=source?-35:vertical?30:0,anchor=source?'end':vertical?'start':'middle',nameY=c.type==='U'?64:source?-4:vertical?-6:c.type==='G'?42:c.type==='J'?-18:-52,valueY=c.type==='U'?85:source?17:vertical?17:-30;
       const hit=c.type==='U'?[-49,-47,105,95]:['Q','M'].includes(c.type)?[-40,-45,80,90]:source?[-28,-28,56,56]:c.type==='G'?[-21,-20,42,43]:c.type==='J'?[-12,-12,24,24]:vertical?[-25,-31,50,62]:[-31,-25,62,50];
-      return`<g data-part="${c.id}" class="free-part ${c.benchRole?'bench-part':''} ${(this.selection?.kind==='component'&&this.selection.id===c.id)||(this.selection?.kind==='group'&&this.selection.ids.includes(c.id))?'selected':''}" role="button" tabindex="0" aria-label="Seleziona ${esc(c.id)}, ${M.NAMES[c.type]}" transform="translate(${c.x} ${c.y})"><title>${esc(c.id)} · ${M.NAMES[c.type]}${c.benchRole?' · '+esc(c.benchRole):''}${value?' · '+esc(value):''}</title><rect class="part-hit" x="${hit[0]}" y="${hit[1]}" width="${hit[2]}" height="${hit[3]}" rx="8"/><g class="part-ink" transform="rotate(${c.rotation})">${shape}</g><g data-label-block="${c.id}"><text class="part-name" x="${x}" y="${nameY}" text-anchor="${anchor}">${esc(c.id)}</text>${value?`<text class="part-value" x="${x}" y="${valueY}" text-anchor="${anchor}">${esc(value)}</text>`:''}</g></g>`;
+      return`<g data-part="${c.id}" class="free-part ${c.benchRole?'bench-part':''} ${(this.selection?.kind==='component'&&this.selection.id===c.id)||(this.selection?.kind==='group'&&this.selection.ids.includes(c.id))?'selected':''}" role="button" tabindex="0" aria-label="Seleziona ${esc(c.id)}, ${M.NAMES[c.type]}" transform="translate(${c.x} ${c.y})"><title>${esc(c.id)} · ${M.NAMES[c.type]}${c.benchRole?' · '+esc(c.benchRole):''}${value?' · '+esc(value):''}</title><rect class="part-hit" x="${hit[0]}" y="${hit[1]}" width="${hit[2]}" height="${hit[3]}" rx="8"/><g class="part-ink" transform="rotate(${c.rotation})${c.schematicFlipX?' scale(-1 1)':c.schematicFlipY?' scale(1 -1)':''}">${shape}</g><g data-label-block="${c.id}"><text class="part-name" x="${x}" y="${nameY}" text-anchor="${anchor}">${esc(c.id)}</text>${value?`<text class="part-value" x="${x}" y="${valueY}" text-anchor="${anchor}">${esc(value)}</text>`:''}</g></g>`;
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     reveal(ref){const p=this.port(ref);if(p.x<this.view.x+35||p.x>this.view.x+this.view.w-35||p.y<this.view.y+35||p.y>this.view.y+this.view.h-35){this.view.x=p.x-this.view.w/2;this.view.y=p.y-this.view.h/2;}this.draw();this.callbacks.view?.();}

@@ -202,9 +202,8 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .analysis-pane .plot-meta{order:2}
 .student-workbench .analysis-pane .cursor-toolbar{order:3}
 .student-workbench .analysis-pane .plot-area{order:4}
-.student-workbench .analysis-pane .student-result-metrics{order:5}
 .student-workbench .analysis-pane .plot-bottom{order:6}
-.student-workbench .analysis-pane .timeline{order:7}
+.student-workbench .analysis-pane .graph-details{order:7}
 .student-workbench .workbench[data-workbench-view=plot] .study-launcher,
 .student-workbench .workbench[data-workbench-view=plot] .student-measurement-entry,
 .student-workbench .free-center[data-workbench-view=plot] .study-launcher,
@@ -216,7 +215,7 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .inspector-scroll>.bench-mode-strip{order:1;flex-shrink:0}
 .student-workbench .inspector-scroll>.sheet-preset{order:2;flex-shrink:0}
 .student-workbench .inspector-scroll>.inspector-summary{order:3;flex-shrink:0}
-.student-workbench .free-results .student-result-metrics{order:4}
+.student-workbench .free-results .graph-details{order:4}
 .student-workbench .free-results .free-results-bottom{order:3}
 .student-workbench .free-results .free-result-content{order:2}
 @media(max-width:760px){
@@ -247,8 +246,13 @@ html{overscroll-behavior-y:none}
 .plot-scope-controls,.plot-scope-controls [data-trace-axes],.plot-time-controls{
  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0
 }
-.cursor-toolbar:has(> .plot-scope-controls:not([hidden])){flex-wrap:wrap}
-.plot-scope-controls{flex:1 0 100%;padding-top:4px}
+.graph-details{flex:none;border-top:1px solid #dde5f0;color:#36547b}
+.graph-details[hidden]{display:none}
+.graph-details>summary{padding:7px 12px;cursor:pointer;font-weight:600}
+.graph-details[open]>summary{border-bottom:1px solid #dde5f0}
+.graph-details>.plot-scope-controls{padding:8px 12px}
+.graph-details>.student-result-metrics{margin:0}
+@media(max-width:760px){.graph-details>summary{min-height:40px;padding-block:10px}}
 .plot-scope-controls[hidden],.plot-scope-controls [hidden]{display:none}
 .plot-scope-controls [data-trace-axes]{flex:1 1 280px}
 .plot-scope-controls [data-trace-axes] label{

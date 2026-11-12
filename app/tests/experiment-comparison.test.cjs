@@ -17,3 +17,13 @@ test('absolute pulse maxima subtract each measured baseline without modifying ra
  const saved={...doc,comparisonStudy:{version:1,records:{'preamp:charge':{...dataset,name:'Banco',modelStamp:C.stamp(doc)}}}};assert.deepEqual(L.parse(L.serialize(saved)).comparisonStudy,saved.comparisonStudy);
  for(const baselineColumn of [0,1,3,-1,NaN])assert.throws(()=>D.parse(raw,{kind:'charge',xUnit:'C',baselineColumn,sigmaColumn:3}));assert.throws(()=>D.parse('q,v,b\n1,2,\n2,3,1',{kind:'charge',xUnit:'C',baselineColumn:2}),/Baseline/);
 });
+
+test('comparison overlays retain the whole RC peak and residuals only at measured times',()=>{
+ const doc=project(),duration=doc.circuits.rc.duration;
+ const result=E.compare(doc,D.parse('t,V\n0,0\n'+duration+',0',{xUnit:'s'}));
+ const {overlay,residual}=E.chartData(result);
+ assert.equal(residual.length,2);
+ assert.equal(overlay.filter(row=>Object.hasOwn(row,'observed')).length,2);
+ assert.ok(overlay.some(row=>row.x>0&&row.x<duration&&row.prediction>4.8));
+ assert.equal(overlay.filter(row=>Object.hasOwn(row,'prediction')).length,result.curve.length);
+});

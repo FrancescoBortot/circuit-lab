@@ -288,10 +288,17 @@
     plot.lockHover=true;playback.start(readingPosition(),readingRange());
   }
 
+  let showSchematicDetails=false,schematicType;
   function drawDiagram(p=params()){
     const real=networkDiagram(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
-    if(!networkDiagram(p)){diagram.render(p,project.layouts[p.type]||{},selected);return;}
-    const d=M.network(p,S.is(p)?project.analysis:project.analysis==='time'?null:p.bodeInput);d.settings.analysis=project.analysis==='bode'?'bode':S.isCharacteristic(project.analysis)?'dc':'time';
+    if(schematicType!==p.type){showSchematicDetails=false;schematicType=p.type;}
+    const details=$('guidedSchematicDetails');
+    if(!real){details.hidden=true;diagram.render(p,project.layouts[p.type]||{},selected);return;}
+    const full=M.network(p,S.is(p)?project.analysis:project.analysis==='time'?null:p.bodeInput);
+    details.hidden=!window.GuidedSchematic.hasModelDetails(full,p.type);
+    details.setAttribute('aria-pressed',String(!details.hidden&&showSchematicDetails));
+    const d=!details.hidden&&showSchematicDetails?full:window.GuidedSchematic.layout(full,p.type,p);
+    d.settings.analysis=project.analysis==='bode'?'bode':S.isCharacteristic(project.analysis)?'dc':'time';
     for(const c of d.components)if(project.layouts[p.type]?.[c.id])Object.assign(c,project.layouts[p.type][c.id]);
     const id=p.type==='rc'&&selected==='R'?'R1':p.type==='rc'&&selected==='C'?'C1':selected;
     realDiagram.render(d,id?{kind:'component',id}:null,'select',null,false);if(wasHidden)requestAnimationFrame(()=>realDiagram.fit());
@@ -318,7 +325,9 @@
   }});
   for(const type of ['pointerdown','wheel','keydown'])$('plot').addEventListener(type,()=>{stopPlayback();plot.lockHover=false;plot.syncControls();},{capture:true});
   plot.timePan.addEventListener('input',stopPlayback,{capture:true});
-  plot.controls.addEventListener('click',()=>{stopPlayback();plot.lockHover=false;plot.syncControls();},{capture:true});
+  function unlockReading(){stopPlayback();plot.lockHover=false;plot.syncControls();}
+  for(const controls of [plot.controls,plot.scopeControls])controls.addEventListener('click',unlockReading,{capture:true});
+  document.addEventListener('student-plot-details-closed',stopPlayback);
 
   $('circuitList').addEventListener('click',e=>{if(e.target.closest('[data-open-editor]')){window.circuitEditor?.open();return;}const b=e.target.closest('[data-experiment]');if(b)activate(b.dataset.experiment);});
   $$('[data-panel]').forEach(b=>b.addEventListener('click',()=>{if(!applyFields())return;panel=b.dataset.panel;renderInspector();}));
@@ -339,6 +348,11 @@
   $('sheetPreset').addEventListener('change',()=>applyPreset($('sheetPreset').value));
   $('resetCircuit').addEventListener('click',()=>{projectEpoch++;project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori iniziali ripristinati.');});
   $('rotateComponent').addEventListener('click',()=>{if(!networkDiagram(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>activeDiagram().fit());
+  $('guidedSchematicDetails').addEventListener('click',()=>{
+    showSchematicDetails=!showSchematicDetails;
+    if(!showSchematicDetails)selected=null;
+    fitDiagram();
+  });
   $('resetLayout').addEventListener('click',()=>{delete project.layouts[params().type];fitDiagram();drawDiagram();persist();});
   function setWorkspaceView(view){
     const main=$('appLayout').querySelector('.workbench');main.dataset.workbenchView=view;
@@ -368,7 +382,6 @@
   $('projectFile').addEventListener('change',async()=>{const file=$('projectFile').files[0];if(!file)return;try{if(file.size>window.LocalProjects.MAX_BYTES)throw new Error('Il progetto supera il limite di 1 MB.');window.ProjectPanel.importText(await file.text());}catch(error){toast(error.message,true);}finally{$('projectFile').value='';}});
   $('guidedCancel').addEventListener('click',()=>calculating?tasks.cancel():calculate());
   $('exportCSV').addEventListener('click',()=>{if(!applyFields()||calculating)return;download(M.csv(params(),project.analysis,data),'text/csv;charset=utf-8',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.csv');toast('Download CSV richiesto al browser · unità SI.');});
-  $('exportSVG').addEventListener('click',()=>{const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Arial,sans-serif;font-size:10px;fill:#7185a1}.axis-unit,.guide-text{font-size:9px}';svg.prepend(style);download(svg.outerHTML,'image/svg+xml',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.svg');toast('Download SVG richiesto al browser.');});
   $('projectName').addEventListener('change',()=>{if(window.circuitEditor?.active)return;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();});
   $('helpButton').addEventListener('click',()=>window.circuitEditor?.active?window.circuitEditor.showHelp():$('helpDialog').showModal());for(const id of ['closeHelp','helpDone'])$(id).addEventListener('click',()=>$('helpDialog').close());
   function loadProject(text){const next=M.parse(text);projectEpoch++;if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();fitDiagram();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}

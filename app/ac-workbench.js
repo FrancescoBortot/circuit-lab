@@ -158,9 +158,11 @@
       return R.csv([['f_Hz','Vin_V','Vout_V','uVin_V','uVout_V','G_V_V','G_dB','uG_dB','fase_originale_deg','uFase_deg','fase_continua_deg','fit_modulo_dB','residuo_modulo_fit_dB','fase_prevista_RC_deg','residuo_fase_RC_deg','sim_modulo_dB','sim_fase_deg','residuo_modulo_sim_dB','residuo_fase_sim_deg'],...r.points.map(p=>{const db=f?.predictDb(p.x),ph=f?.predictPhase(p.x),sd=sim?A.interpolate(this.simulation,p.x,'db'):NaN,sp=sim?A.interpolate(this.simulation,p.x,'phase'):NaN;return[p.x,p.input,p.output,p.uInput,p.uOutput,p.gain,p.db,p.uDb,p.phase,p.uPhase,p.continuousPhase,db,p.db-db,ph,p.phase===undefined?null:A.wrap(p.phase-ph),sd,sp,p.db-sd,p.phase===undefined?null:A.wrap(p.phase-sp)];})]);
     }
     exportSVG(){
-      const plots=[$('acMagnitudePlot'),...(this.state.showPhase?[$('acPhasePlot')]:[])],width=Math.max(900,...plots.map(p=>p.viewBox.baseVal.width)),height=plots.reduce((s,p)=>s+p.viewBox.baseVal.height+34,90);let y=90;
-      const header=`<rect width="100%" height="100%" fill="white"/><style>text{font-family:Arial,sans-serif;font-size:10px;fill:#64748b}</style><text x="18" y="23" style="font-size:14px">Misure in frequenza RC · ${esc(this.state.dataset.name)}</text><text x="18" y="43">${esc(refs[this.state.reference])} · ${esc(F(this.result.from,'Hz'))} → ${esc(F(this.result.to,'Hz'))}</text><text x="18" y="63">Grigio: dati · Blu: fit modulo / fase prevista · Verde: simulazione (se attiva) · Ambra: G0/√2 dichiarato</text>`;
-      const body=plots.map((p,i)=>{const v=p.viewBox.baseVal,part=`<text x="18" y="${y-8}">${i?'Fase Vout − Vin':'Modulo del guadagno'}</text><g transform="translate(0 ${y})">${p.innerHTML}</g>`;y+=v.height+34;return part;}).join('');this.download(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${header}${body}</svg>`,'image/svg+xml','rc-bode-misure.svg');
+      const {state,result}=this;
+      const range=refs[state.reference]+' · '+F(result.from,'Hz')+' → '+F(result.to,'Hz');
+      const plots=[{svg:this.magnitudePlot.svg,series:this.magnitudePlot.series,label:'Modulo del guadagno · '+range}];
+      if(!$('acPhaseSection').hidden)plots.push({svg:this.phasePlot.svg,series:this.phasePlot.series,label:'Fase Vout − Vin'});
+      this.download(window.PlotExport.source(plots,'Misure in frequenza RC · '+state.dataset.name),'image/svg+xml','rc-bode-misure.svg');
     }
     bind(){
       document.addEventListener('click',e=>{if(e.target.closest('[data-open-ac]')){if(window.rcWorkbench.dialog.open)window.rcWorkbench.dialog.close();this.open();}});

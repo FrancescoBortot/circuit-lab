@@ -21,9 +21,14 @@ const assert=require('node:assert/strict');
  [...versions.querySelectorAll('button')].find(b=>b.textContent==='Recupera versione rimossa').click();await flush();assert.equal(JSON.parse(storage.get('cl-flow-revisions')).length,24);versions.close();console.log('PASS full revision archive, recovery backup and reversible removal');
  const Base=env.LabPlot;let created=0,destroyed=0;env.LabPlot=class extends Base{constructor(...a){super(...a);created++;}destroy(){destroyed++;super.destroy();}};
  for(let i=0;i<3;i++){env.MeasurementComparison.open();await flush();click('[data-cmp-close]');}assert.equal(created,6);assert.equal(destroyed,6);console.log('PASS comparison releases every plot');
+ const details=document.querySelector('#appLayout .graph-details');
+ assert.equal(details.open,false);
+ assert.ok(details.contains(document.getElementById('timeline')));
+ assert.ok(details.querySelector('.student-result-metrics button'));
+ assert.ok(details.querySelector('[data-split-y]'));
  const original=document.getElementById('plot'),before=original.outerHTML,model=env.GuidedLab.snapshot();
- const exported=env.PlotExport.build([{svg:original,series:[{label:'Misure <b>& modello',color:'#e36c16'}]}],'Prova <script>');
- assert.match(exported.outerHTML,/Misure &lt;b&gt;&amp; modello/);assert.match(exported.outerHTML,/Prova &lt;script&gt;/);assert.equal(original.outerHTML,before);assert.equal(env.GuidedLab.snapshot(),model);assert.ok(Number(exported.getAttribute('height'))>0);console.log('PASS standalone graphic labels, source and project preservation');
+ const exported=env.PlotExport.build([{svg:original,series:[{label:'Misure <b>& modello',color:'#e36c16',line:false,points:true}]},{svg:original}],'Prova <script>');
+ assert.match(exported.outerHTML,/Misure &lt;b&gt;&amp; modello/);assert.match(exported.outerHTML,/Prova &lt;script&gt;/);for(const index of [0,1]){const id='plot-'+index+'-plot-clip';assert.ok(exported.querySelector('[id="'+id+'"]'));assert.ok(exported.querySelector('[clip-path="url(#'+id+')"]'));}assert.equal(original.outerHTML,before);assert.equal(env.GuidedLab.snapshot(),model);assert.ok(Number(exported.getAttribute('height'))>0);console.log('PASS standalone graphic labels, source and project preservation');
  Object.defineProperty(document.documentElement,'clientWidth',{configurable:true,value:390});env.LabWorkflow.go(1);assert.ok(document.getElementById('appLayout').classList.contains('inspector-closed'));Object.defineProperty(document.documentElement,'clientWidth',{configurable:true,value:1280});console.log('PASS mobile simulation keeps plot unobstructed');
  env.LabWorkflow.go(0);assert.equal(document.getElementById('studentProjects')?.open||false,false);
  // NEXT_CHECK

@@ -1,6 +1,6 @@
 # Giornate 5 e 6 · diodi e MOSFET
 
-Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova da caricare** mostra i parametri che cambiano prima di applicarli. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
+Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova della scheda** mostra i parametri che cambiano prima di applicarli. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
 
 | Giornata | Esperienza | Risultati |
 | --- | --- | --- |
@@ -17,6 +17,8 @@ Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova da caricare*
 
 **Diodo.** Il grafico usa Vᴅ ai capi del diodo e corrente Iᴅ in ampere. Il fit non pesato di ln(Iᴅ) contro Vᴅ usa correnti da 1 µA fino a 10 mA, entro 20 V di generatore con la resistenza di serie scelta. La pendenza dà `n = 1/(Vₜ·pendenza)` e l’intercetta dà `Iₛ = exp(intercetta)`. L’approssimazione vale in diretta quando Iᴅ è molto maggiore di Iₛ. La curva e il fit sono simulati. Il modello Shockley omette breakdown, capacità di giunzione e resistenza di serie interna.
 
+Nel selettore **Prova della scheda**, le prove del diodo suggeriscono una resistenza di serie per fascia di corrente. La scheda indica 1 MΩ per 1–10 µA. I valori di partenza per le fasce successive sono 100 kΩ per 10–100 µA, 10 kΩ per 0,1–1 mA e 1 kΩ per 1–10 mA. Regola la sorgente DC leggendo la corrente e riporta la tensione a zero prima di sostituire la resistenza.
+
 **Raddrizzatori.** Le prove partono da 10 Vpp e R₁ = 68 kΩ. Il filtro aggiunge C₁ = 22 µF e mantiene R₁ in parallelo. Il montaggio della prova RC usa generatore da 50 Ω e sonde ×10 equivalenti da 10 MΩ e 12 pF, in DC. Il carico esterno di esempio Rᴸ = 4,7 kΩ si aggiunge in parallelo. La media è l’integrale temporale diviso per il periodo e il ripple è `Vmax − Vmin` nell’ultimo periodo intero. Controlla l’avviso di assestamento quando cambi capacità, frequenza o durata.
 
 **MOSFET.** La prova Q imposta Vᴅₛ = 7 V e cerca Iᴅ = 0,7 mA nel modello. Il voltmetro da 10 MΩ a valle di R₁ abbassa Vɢₛ e quindi Iᴅ. Per la curva di trasferimento la scansione si ferma a 4,5 V di generatore o 4 mA di drain. La stima usa due punti attorno a Q per ciascuna curva, in saturazione. Con pendenza `m = ΔIᴅ/ΔVᴅₛ`, `rₒ = 1/m` e `λₙ = m/(I₁ − m·V₁)`. A Vᴅₛ fissata, l’intercetta sull’asse Vɢₛ della retta per i due punti `(Vɢₛ, √Iᴅ)` stima VTN. Da Q si ricava `kₙ = 2 Iᴅ/[(Vɢₛ − VTN)²(1 + λₙ Vᴅₛ)]`.
@@ -26,6 +28,10 @@ Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova da caricare*
 **Amplificatore.** Alla prima apertura, se nella sessione è già presente il circuito di caratterizzazione, vengono ripresi il modello, R₁ e il punto di lavoro. Vᴅᴅ è calcolata da `Vᴅₛ + Iᴅ·Rᴅ` entro il campo del modello. I valori di esempio sono Rᴅ = 10 kΩ, C₁ = C₂ = 100 nF, carico di uscita 10 MΩ e frequenza 3 kHz. Il riferimento a centro banda è `−gₘ·(Rᴅ ∥ rₒ ∥ Rᴸ)` in saturazione, con `gₘ = 2Iᴅ/(Vɢₛ − VTN)`. Il rapporto delle ampiezze Vpp è positivo. La VTC confronta le ampiezze a regime con la previsione di piccolo segnale e riporta la pendenza del fit sui campioni fino a 0,2 Vpp quando ce ne sono almeno tre.
 
 **Porte.** I circuiti usano Vᴅᴅ = 5 V. I livelli sono classificati come 0 sotto 1 V e 1 sopra 4 V. Il trattino indica una tensione intermedia. Le tabelle si calcolano in DC ai livelli impostati negli ingressi. I transitori mostrano le commutazioni dei generatori ideali. Il modello MOS è a tre terminali con corpo al source, senza capacità interne o effetto body. Nella NAND il corpo di M3 è quindi riferito al source locale e il nodo intermedio ha un ramo da 100 MΩ verso massa per fissarne il potenziale a canali spenti. Nel CMOS il carico di lettura è 10 MΩ.
+
+## Indicazioni nelle prove
+
+I preset del raddrizzatore distinguono la misura a 50 Hz prima di aggiungere il carico, la misura con Rᴸ aggiunta e la ripetizione a 1 kHz con lo stesso carico. Le prove nMOS indicano quale tensione mantenere fissa nelle scansioni e come ritrovare il punto di lavoro. La prova VTC propone otto ampiezze a 3 kHz fra 100 mVpp e 1 Vpp. Per NOR e NAND si parte con le due sonde su IN1 e IN2, poi si sposta la seconda su OUT per compilare la tabella mantenendo il trigger su IN1.
 
 ## Dati e salvataggi
 

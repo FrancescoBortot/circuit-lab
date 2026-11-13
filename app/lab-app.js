@@ -15,7 +15,13 @@
   function toast(text,error=false){clearTimeout(timer);$('toast').textContent=text;$('toast').classList.toggle('error',error);$('toast').hidden=false;timer=setTimeout(()=>$('toast').hidden=true,error?6500:3000);}
   function updateSaveStatus(){if(!window.circuitEditor?.active){$('saveStatus').textContent=storageState.ok?'Recupero automatico attivo':'Sessione locale · esporta una copia';$('saveStatus').dataset.state=storageState.ok?'saved':'unsaved';}}
   function ensureSession(){if(!project.session)project.session={id:crypto.randomUUID?crypto.randomUUID():'session-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),createdAt:new Date().toISOString()};}
-  function trialLabel(){const t=window.GuidedTrials.current(project,M.CATALOG);$('guidedTrialBadge').hidden=!t.label;$('guidedTrialName').textContent=t.label;$('guidedTrialChanged').hidden=!t.modified;$('sheetPreset').value=t.preset;}
+  function trialLabel(){
+    const t=window.GuidedTrials.current(project,M.CATALOG);
+    $('guidedTrialBadge').hidden=!t.label;$('guidedTrialName').textContent=t.label;$('guidedTrialChanged').hidden=!t.modified;
+    $('sheetPreset').value=t.preset;
+    const advice=$('sheetPresetAdvice'),hint=S.presetHint(params().type,t.preset);
+    advice.textContent=hint;advice.hidden=!hint;
+  }
   function sessionState(withResult=false){
     if(window.circuitEditor?.active)return;const detail={text:M.serialize(project)};
     if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,...(lastSimulationResult?.values?.truth?{truthCsv:S.truthCsv(params(),lastSimulationResult.values.truth)}:{}),points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
@@ -70,14 +76,14 @@
   function renderInspector(focus){
     const content=$('inspectorContent'),panelChanged=content.dataset.panel!==panel,helpOpen=Boolean(content.querySelector('[data-rc-help]')?.open),precisionOpen=Boolean(content.querySelector('[data-analysis-precision]')?.open),readingOpen=Boolean(content.querySelector('[data-analysis-reading]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
     $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Analisi del circuito';
-    $('sheetPreset').innerHTML='<option value="" disabled>Scegli una prova…</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    $('sheetPreset').innerHTML='<option value="" disabled>Scegli una sottoesperienza…</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';
       if(S.is(p)){
         const checkbox=(key,label)=>`<label class="field-checkbox">${label}<input data-check="${key}" type="checkbox" ${p[key]?'checked':''}></label>`;
         html+=S.fields(p).map(([key,label,unit])=>field(key,label,unit,key==='RL'&&p.type==='mos-amplifier'?
-          'Il valore nominale di 10 MΩ rappresenta la lettura ideale. In modalità reale viene sostituito dalla sonda configurata. Un valore diverso resta come carico esterno.':'')).join('');
+          'Il valore nominale di 10 MΩ rappresenta la lettura ideale. In modalità reale viene sostituito dalla sonda configurata. Un valore diverso resta come carico esterno.':S.componentHint(p.type,key))).join('');
         if(p.type==='half-wave-rc')html+=checkbox('externalLoad','Inserisci il carico esterno Rᴸ')+field('initial','Tensione iniziale su C₁','V');
         if(p.type==='mos-iv')html+=checkbox('gateMeter','Collega il voltmetro da 10 MΩ al gate');
         html+='<p class="field-hint">Parametri di esempio a 27 °C. Inserisci i valori ricavati dai tuoi dati per confrontare il modello con il banco.</p>';
@@ -384,6 +390,7 @@
   $('projectFile').addEventListener('change',async()=>{const file=$('projectFile').files[0];if(!file)return;try{if(file.size>window.LocalProjects.MAX_BYTES)throw new Error('Il progetto supera il limite di 1 MB.');window.ProjectPanel.importText(await file.text());}catch(error){toast(error.message,true);}finally{$('projectFile').value='';}});
   $('guidedCancel').addEventListener('click',()=>calculating?tasks.cancel():calculate());
   $('exportCSV').addEventListener('click',()=>{if(!applyFields()||calculating)return;download(M.csv(params(),project.analysis,data),'text/csv;charset=utf-8',window.GuidedTrials.stem(project,M.CATALOG)+'-'+project.analysis+'.csv');toast('Download CSV richiesto al browser · unità SI.');});
+
   $('projectName').addEventListener('change',()=>{if(window.circuitEditor?.active)return;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();});
   $('helpButton').addEventListener('click',()=>window.circuitEditor?.active?window.circuitEditor.showHelp():$('helpDialog').showModal());for(const id of ['closeHelp','helpDone'])$(id).addEventListener('click',()=>$('helpDialog').close());
   function loadProject(text){const next=M.parse(text);projectEpoch++;if(window.circuitEditor?.active)window.circuitEditor.back();project=next;selected=null;panel='components';$('projectName').value=project.name;renderNavigation();renderInspector();fitDiagram();calculate();persist(true);toast('Progetto guidato aperto sul dispositivo.');}

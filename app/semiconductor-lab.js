@@ -16,8 +16,57 @@
     {id:'nmos-nand',type:'nmos-nand',day:6,step:'2.2',name:'Porta NAND nMOS',short:'NAND',description:'Due nMOS in serie portano l’uscita a massa quando entrambi gli ingressi sono alti.'},
     {id:'cmos-inverter',type:'cmos-inverter',day:6,step:'2.3',name:'Inverter CMOS',short:'CMOS',description:'Confronta i livelli di uscita con quelli dell’inverter a carico resistivo.'}
   ];
+  const DIODE_RANGES=[
+    {key:'forward-1u', current:'1–10 µA', resistance:1e6, label:'1 MΩ'},
+    {key:'forward-10u', current:'10–100 µA', resistance:100e3, label:'100 kΩ'},
+    {key:'forward-100u', current:'0,1–1 mA', resistance:10e3, label:'10 kΩ'},
+    {key:'forward-1m', current:'1–10 mA', resistance:1e3, label:'1 kΩ'}
+  ];
+  const diodeRange=key=>DIODE_RANGES.find(range=>range.key===key);
+  const RECTIFIER_R1='R₁ da 56 a 82 kΩ (esempio 68 kΩ).';
+  const FILTER_C1='C₁ da 22 a 47 µF (esempio 22 µF), positivo su OUT.';
+  const FILTER_LOAD='Rᴸ da 2,2 a 6,8 kΩ (esempio 4,7 kΩ), in parallelo.';
+  const MOS_GATE_R='R₁ di protezione da 0,5 a 1 MΩ (esempio 680 kΩ).';
+  const MOS_BIAS='Riprendi il punto di lavoro misurato nella quinta giornata. Usa Rᴅ = 10 kΩ e C₁ = C₂ = 100 nF.';
+  const logicMeasurements='Prima CH1 su IN1 e CH2 su IN2, con trigger su IN1. Poi sposta CH2 su OUT e annota VOUT per 00, 01, 10 e 11.';
+  const PRESET_HINTS={
+    'half-wave':{sine:RECTIFIER_R1+' Imposta 10 Vpp a 50 Hz. Misura i picchi di IN e OUT e il valore medio.'},
+    'half-wave-rc':{
+      probe:RECTIFIER_R1+' '+FILTER_C1+' A 50 Hz, misura media e ripple con la sonda ×10, prima di aggiungere Rᴸ.',
+      load:FILTER_LOAD+' A 50 Hz, misura di nuovo media e ripple.',
+      fast:'Mantieni lo stesso Rᴸ e la stessa ampiezza della prova a 50 Hz. Passa a 1 kHz e misura di nuovo media e ripple.'
+    },
+    'mos-iv':{
+      qpoint:MOS_GATE_R+' Fissa Vᴅₛ a 7 V e regola Vɢₛ fino a Iᴅ ≈ 0,7 mA. Annota Vɢₛ, Iᴅ e Vᴅₛ.',
+      output:'Tieni Vɢₛ al valore del punto di lavoro. Varia Vᴅₛ da 0,2 a 9 V e misura Iᴅ in circa dieci punti, includendo la zona di transizione.',
+      transfer:'Tieni Vᴅₛ a 7 V. Varia Vɢₛ da 0,2 V e prendi più punti vicino alla soglia. Fermati al primo limite raggiunto fra 4,5 V e 4 mA di drain.',
+      meter:MOS_GATE_R+' Misura la tensione prima e dopo R₁, usando un punto alla volta, e osserva come cambia Iᴅ.'
+    },
+    'mos-amplifier':{
+      small:MOS_BIAS+' Verifica Vᴅₛ e Iᴅ, poi misura IN e OUT con 100 mVpp a 3 kHz.',
+      large:'Mantieni la polarizzazione e la frequenza a 3 kHz. A 1 Vpp confronta la forma d’onda con quella di piccolo segnale.',
+      vtc:'A 3 kHz misura Vpp in ingresso e in uscita. Sequenza suggerita in mVpp: 100, 150, 200, 300, 450, 600, 800, 1000. Cerca dove OUT si discosta dalla retta.',
+      bode:'Verifica il punto di lavoro prima di leggere la risposta di piccolo segnale.'
+    },
+    'nmos-nor':{logic:logicMeasurements},
+    'nmos-nand':{logic:logicMeasurements}
+  };
+  const COMPONENT_HINTS={
+    'half-wave':{R1:RECTIFIER_R1},
+    'half-wave-rc':{R1:RECTIFIER_R1,C1:FILTER_C1,RL:FILTER_LOAD},
+    'mos-iv':{gateR:MOS_GATE_R}
+  };
+  const componentHint=(type,key)=>COMPONENT_HINTS[type]?.[key]||'';
+  function presetHint(type,key){
+    if(type!=='diode-iv')return PRESET_HINTS[type]?.[key]||'';
+    const range=diodeRange(key);
+    if(!range)return '';
+    const reference=key==='forward-1u'?'Valore indicato nella scheda.':'Valore consigliato per partire.';
+    return 'R₁ = '+range.label+' in serie al diodo per '+range.current+'. '+reference+
+      ' Regola la tensione DC leggendo la corrente. Riporta la tensione a 0 V prima di cambiare resistenza.';
+  }
   const PRESETS={
-    'diode-iv':[['forward','Caratteristica diretta · 1 µA–10 mA']],
+    'diode-iv':[['forward','Curva completa · 1 µA–10 mA'],...DIODE_RANGES.map(r=>[r.key,r.current+' con '+r.label])],
     'half-wave':[['sine','Sinusoide · 10 Vpp · 50 Hz']],
     'half-wave-rc':[['probe','Sonda ×10 · 50 Hz'],['load','Carico esterno · 50 Hz'],['fast','Carico esterno · 1 kHz']],
     'mos-iv':[['qpoint','Punto di lavoro · 7 V, 0,7 mA'],['output','Curva Iᴅ–Vᴅₛ · Vɢₛ fisso'],['transfer','Curva Iᴅ–Vɢₛ · Vᴅₛ fisso'],['meter','Voltmetro da 10 MΩ sul gate']],
@@ -320,8 +369,14 @@
 
   function applyPreset(params,key){
     const p=Free.clone(params);
+    if(p.type==='diode-iv'){
+      const range=diodeRange(key);
+      if(range){p.R1=range.resistance;p.wave1.level=0;}
+      if(key==='forward')p.R1=DIODE_RANGES.at(-1).resistance;
+    }
     if(rectifier(p)){
-      p.wave1=wave('sine',10,key==='fast'?1000:50);
+      if(['load','fast'].includes(key)&&p.wave1.kind==='sine')p.wave1.frequency=key==='fast'?1000:50;
+      else p.wave1=wave('sine',10,key==='fast'?1000:50);
       p.autoTime=true;
       if(p.type==='half-wave-rc'){
         p.externalLoad=key!=='probe';
@@ -329,7 +384,8 @@
       }
     }
     if(p.type==='mos-iv'){
-      if(key==='qpoint'){p.drainBias=7;p.wave1.level=nominalGate(p,.0007);}
+      if(key==='qpoint'||key==='transfer')p.drainBias=7;
+      if(key==='qpoint')p.wave1.level=nominalGate(p,.0007);
       p.gateMeter=key==='meter';
       return {parameters:p,analysis:key==='transfer'?'mosTransfer':'mosOutput'};
     }
@@ -531,5 +587,5 @@
     ).join('\r\n');
   }
 
-  return {CATALOG,TYPES,PRESETS,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,analysisOptions,simulate,analyze,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
+  return {CATALOG,TYPES,PRESETS,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,presetHint,componentHint,analysisOptions,simulate,analyze,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
 });

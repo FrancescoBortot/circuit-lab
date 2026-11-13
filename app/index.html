@@ -70,6 +70,11 @@
   </aside>
   <main class="workbench" data-workbench-view="both">
     <div class="workspace-views" role="group" aria-label="Visualizzazione del laboratorio"><button data-guided-view="both" aria-pressed="true">Circuito e grafico</button><button data-guided-view="circuit" aria-pressed="false">Solo circuito</button><button data-guided-view="plot" aria-pressed="false">Solo grafico</button></div>
+    <div class="sheet-preset">
+      <label for="sheetPreset">Prova della scheda</label>
+      <select id="sheetPreset" aria-describedby="sheetPresetAdvice"></select>
+      <p id="sheetPresetAdvice" hidden></p>
+    </div>
     <section class="schematic-pane" aria-labelledby="schematicTitle">
       <div class="pane-toolbar guided-toolbar"><div class="guided-circuit-context"><h1 id="circuitTitle">Circuito RC</h1><h2 id="schematicTitle" class="sr-only">Schema</h2><div id="guidedTrialBadge" class="guided-trial-badge" hidden><span>PROVA</span><strong id="guidedTrialName"></strong><small id="guidedTrialChanged" hidden>personalizzata</small></div></div>
         <div class="schematic-tools"><button type="button" class="text-button" id="guidedSchematicDetails" aria-pressed="false" title="Mostra anche i componenti equivalenti usati nella simulazione" hidden>Modello completo</button><button class="button edit-button" id="editButton" aria-expanded="true" aria-label="Modifica componenti"><svg><use href="#i-settings"/></svg><span>Modifica</span></button><button class="icon-button" id="rotateComponent" aria-label="Ruota il componente selezionato" title="Ruota il componente selezionato"><svg><use href="#i-rotate"/></svg></button><span class="tool-divider"></span><button class="icon-button" id="diagramOut" aria-label="Riduci schema"><svg><use href="#i-minus"/></svg></button><span id="diagramZoom" class="zoom-number">100%</span><button class="icon-button" id="diagramIn" aria-label="Ingrandisci schema"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="diagramFit" aria-label="Centra schema"><svg><use href="#i-fit"/></svg></button><button class="icon-button" id="resetLayout" aria-label="Ripristina disposizione dei componenti" title="Ripristina disposizione"><svg><use href="#i-reset"/></svg></button></div>
@@ -98,7 +103,7 @@
   <aside class="inspector" id="inspector" aria-label="Modifica circuiti e impostazioni">
     <div class="inspector-heading"><div><span class="inspector-eyebrow">MODIFICA IL CIRCUITO</span><h2 id="inspectorTitle">Componenti</h2></div><button id="closeInspector" class="icon-button" aria-label="Chiudi pannello di modifica"><svg><use href="#i-close"/></svg></button></div>
     <div class="inspector-tabs" role="group" aria-label="Impostazioni da modificare"><button data-panel="components" aria-pressed="true">Componenti</button><button data-panel="signals" aria-pressed="false">Segnali</button><button data-panel="analysis" aria-pressed="false">Analisi</button></div>
-    <div class="inspector-scroll"><div class="bench-mode-strip"><span>Montaggio</span><button class="bench-mode-button" id="guidedBenchMode" data-open-bench>Ideale · impostazioni</button></div><div class="sheet-preset"><label for="sheetPreset">Prova da caricare</label><select id="sheetPreset" aria-describedby="sheetPresetHint"></select><small id="sheetPresetHint">Controlla l’anteprima prima di applicarla.</small></div><div id="inspectorContent"></div></div>
+    <div class="inspector-scroll"><div class="bench-mode-strip"><span>Montaggio</span><button class="bench-mode-button" id="guidedBenchMode" data-open-bench>Ideale · impostazioni</button></div><div id="inspectorContent"></div></div>
     <div class="inspector-summary" id="summary"></div>
     <button class="reset-circuit" id="resetCircuit"><svg><use href="#i-reset"/></svg>Ripristina questo circuito</button>
   </aside>

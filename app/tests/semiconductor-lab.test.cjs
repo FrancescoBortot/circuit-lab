@@ -43,6 +43,50 @@ test('guided diode I–V uses terminal voltage, recovers its parameters and comp
   close(limited.source,20,1e-7);
 });
 
+test('diode presets recommend one series resistor per current decade within the supply range',()=>{
+  const p=Lab.defaults('diode-iv');
+  for(const [key,resistance,high] of [['forward-1u',1e6,1e-5],['forward-10u',1e5,1e-4],['forward-100u',1e4,1e-3],['forward-1m',1e3,.01]]){
+    const {parameters,analysis}=S.applyPreset(p,key);
+    assert.equal(parameters.R1,resistance);
+    assert.equal(parameters.wave1.level,0);
+    assert.equal(analysis,'diodeIV');
+    assert.match(S.presetHint('diode-iv',key),/0 V/);
+    const curve=Quality.analyze(parameters,analysis).data;
+    assert.ok(curve.at(-1).out>=high*.99999);
+    assert.ok(curve.at(-1).source<=20.000001);
+    const saved=project('diode-iv',analysis);
+    saved.circuits['diode-iv']=parameters;
+    Trials.select(saved,key,Lab.CATALOG);
+    assert.equal(Trials.current(Lab.parse(Lab.serialize(saved)),Lab.CATALOG).preset,key);
+  }
+  assert.equal(p.R1,1e3);
+  assert.equal(S.applyPreset({...p,R1:1e6},'forward').parameters.R1,1e3);
+});
+
+test('sheet presets hold the prescribed quantities when advancing to the next measurement',()=>{
+  const filter={...Lab.defaults('half-wave-rc'),R1:82e3,C1:47e-6,RL:6.8e3};
+  const unloaded=S.applyPreset(filter,'probe').parameters;
+  unloaded.wave1.vpp=8;
+  const loaded=S.applyPreset(unloaded,'load').parameters;
+  const fast=S.applyPreset(loaded,'fast').parameters;
+  assert.equal(unloaded.externalLoad,false);
+  assert.equal(loaded.externalLoad,true);
+  assert.equal(loaded.wave1.frequency,50);
+  assert.equal(fast.wave1.frequency,1000);
+  assert.equal(loaded.wave1.vpp,8);
+  assert.equal(fast.wave1.vpp,8);
+  for(const key of ['R1','C1','RL'])assert.equal(fast[key],filter[key]);
+
+  const measured=Lab.defaults('mos-iv');
+  measured.wave1.level=2.4;measured.drainBias=8;
+  const output=S.applyPreset(measured,'output');
+  const transfer=S.applyPreset(measured,'transfer');
+  assert.equal(output.parameters.wave1.level,2.4);
+  assert.equal(transfer.analysis,'mosTransfer');
+  assert.equal(transfer.parameters.drainBias,7);
+  assert.equal(transfer.parameters.wave1.level,2.4);
+});
+
 test('half-wave filter compares the same probe load at 50 Hz and 1 kHz after settling',()=>{
   const p=Lab.defaults('half-wave-rc');
   const values=key=>{

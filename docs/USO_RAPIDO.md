@@ -52,6 +52,8 @@ In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e
 
 Negli schemi guidati delle giornate 5 e 6, generatori, diodi, transistor e carichi seguono la disposizione delle schede quando è disponibile. **Modello completo** mostra anche i componenti equivalenti degli strumenti e i rami interni del simulatore, se presenti. La vista scelta agisce solo sul disegno.
 
+Il selettore **Prova della scheda** si trova sopra lo schema, nell’area centrale. La scelta apre un’anteprima prima di applicare i parametri.
+
 ## Dare spazio al circuito o al grafico
 
 Sopra l’area centrale, **Circuito e grafico**, **Solo circuito** e **Solo grafico** cambiano la visualizzazione nelle esperienze guidate e nell’editor libero. I pulsanti restano disponibili per riaprire il riquadro nascosto. Con entrambi aperti, il circuito mantiene un’altezza leggibile e l’area centrale scorre; il separatore consente di variare l’altezza dello schema. **Nascondi circuito** e **Nascondi grafico** aprono direttamente la vista complementare. I passaggi **1 · Costruisci** e **2 · Simula** scelgono rispettivamente circuito e grafico.
@@ -173,7 +175,7 @@ Accanto ai risultati trovi **Misure del banco ↔ simulazione**: carica i dati o
 
 ### Preamplificatore · 1.3 Verifica della linearità
 
-Nella terza giornata, scegli **1.3 · Verifica della linearità · guida, simulazione e misure** nella tendina **Prova da caricare**, in Schema o Breadboard. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
+Nella terza giornata, scegli **1.3 · Verifica della linearità · guida, simulazione e misure** nella tendina **Prova della scheda** sopra lo schema o **Prova da caricare** nella Breadboard. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
 
 Il pannello calcola Qin nominale = |Vin|·T/Rin, τ = Rf·Cf, il picco ideale Qin/Cf e la correzione per la scarica durante l’impulso. Usa i componenti misurati del gruppo. La previsione assume massa virtuale ideale; non è una misura della carica né una stima completa dell’incertezza. L’applicazione diretta di Vin al circuito è disponibile con montaggio ideale: con le impedenze strumentali attive la tensione della sorgente e Vin misurata non coincidono.
 

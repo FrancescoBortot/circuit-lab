@@ -52,7 +52,7 @@ In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e
 
 Negli schemi guidati delle giornate 5 e 6, generatori, diodi, transistor e carichi seguono la disposizione delle schede quando è disponibile. **Modello completo** mostra anche i componenti equivalenti degli strumenti e i rami interni del simulatore, se presenti. La vista scelta agisce solo sul disegno.
 
-Apri **Prove della scheda** sopra lo schema. Per la caratteristica I–V del diodo, le quattro resistenze di serie sono già visibili nello stesso punto. La scelta apre un’anteprima prima di applicare i parametri.
+Apri **Prove della scheda** sopra lo schema. Per la caratteristica I–V del diodo, le quattro resistenze di serie sono già visibili nello stesso punto. La scelta applica subito i parametri e aggiorna la prova attiva.
 
 ## Dare spazio al circuito o al grafico
 
@@ -66,7 +66,7 @@ Fai clic dentro lo schema per attivarlo: il bordo diventa azzurro e il primo cli
 
 ### Montare sulla breadboard
 
-**Prova da caricare** propone configurazioni con un’anteprima delle modifiche. **Percorso del segnale** e **Tutti i collegamenti** regolano il dettaglio dei cavi; **Mostra nel disegno** offre controlli diretti per contatti interni, pin e schema a colori. Il selettore degli strumenti dichiara il carico ideale, dei cavi diretti o delle sonde ×10.
+**Prova da caricare** applica la configurazione scelta e mostra la prova attiva. **Percorso del segnale** e **Tutti i collegamenti** regolano il dettaglio dei cavi; **Mostra nel disegno** offre controlli diretti per contatti interni, pin e schema a colori. Il selettore degli strumenti dichiara il carico ideale, dei cavi diretti o delle sonde ×10.
 
 In **Costruzione guidata** ogni Avanti mostra un pezzo o un collegamento alla volta, con una breve spiegazione. I punti precisi sono evidenziati nel disegno; il testo evita elenchi ripetuti di coordinate. L’avanzamento non richiede spunte obbligatorie. **Come leggere la breadboard** include esempi interattivi sui fori collegati, barre e canale centrale, pinout TL082, distinzione GND/V−, uso degli strumenti e controlli pratici. Lo schema a colori rimane in fondo al montaggio. Per tornare alle analisi usa la vista Schema o i passaggi principali.
 

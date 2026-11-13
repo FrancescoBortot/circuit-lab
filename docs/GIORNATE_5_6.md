@@ -1,6 +1,6 @@
 # Giornate 5 e 6 · diodi e MOSFET
 
-Apri **Quinta giornata** o **Sesta giornata** nel catalogo. La scelta di una prova mostra i parametri che cambiano prima di applicarli. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
+Apri **Quinta giornata** o **Sesta giornata** nel catalogo. La scelta di una prova applica subito i parametri e aggiorna la prova attiva. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
 
 | Giornata | Esperienza | Risultati |
 | --- | --- | --- |

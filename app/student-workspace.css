@@ -134,7 +134,7 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .sheet-preset-list>button[aria-current=true],.diode-preset-list>button[aria-current=true]{border-color:#4465db;background:#eaf0ff}
 #diodeFullCurve[aria-current=true]{font-weight:700;text-decoration:underline;text-underline-offset:3px}
 .diode-preset-note,.sheet-preset>p{margin:5px 0 0;font-size:12px;color:#405b83}
-.sheet-preset-advice{color:#294472}
+#diodeActiveResistance{margin-inline-start:auto;color:#294472;font-size:12px;font-weight:700}
 .guided-trial-modified{color:#526882}
 @media(max-width:520px){.diode-preset-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Override the general toolbar label row for the three-line preset field. */

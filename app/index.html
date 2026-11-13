@@ -72,12 +72,12 @@
     <div class="workspace-views" role="group" aria-label="Visualizzazione del laboratorio"><button data-guided-view="both" aria-pressed="true">Circuito e grafico</button><button data-guided-view="circuit" aria-pressed="false">Solo circuito</button><button data-guided-view="plot" aria-pressed="false">Solo grafico</button></div>
     <section class="sheet-preset" aria-label="Prove della scheda">
       <div id="diodePresetGroup" class="diode-presets" hidden>
-        <div class="diode-preset-heading"><h2>Resistenza di serie R₁</h2><button type="button" class="text-button" data-sheet-preset="forward" id="diodeFullCurve">Curva completa</button></div>
+        <div class="diode-preset-heading"><h2>Resistenza di serie R₁</h2><span id="diodeActiveResistance" role="status"></span><button type="button" class="text-button" data-sheet-preset="forward" id="diodeFullCurve">Curva completa</button></div>
         <div id="diodePresetList" class="diode-preset-list" role="group" aria-label="Resistenze e fasce di corrente"></div>
         <p class="diode-preset-note">La scheda indica 1 MΩ. Gli altri valori sono suggeriti. Riporta la tensione a 0 V prima di cambiare resistenza.</p>
       </div>
       <details id="sheetPresetMenu" class="sheet-preset-menu">
-        <summary id="sheetPreset"><span>Prove della scheda</span><span id="sheetPresetLabel">Scegli una prova</span></summary>
+        <summary id="sheetPreset"><span>Prove della scheda</span><span id="sheetPresetLabel" aria-live="polite">Scegli una prova</span></summary>
         <div id="sheetPresetList" class="sheet-preset-list"></div>
       </details>
       <p id="sheetPresetAdvice" hidden></p>

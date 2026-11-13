@@ -587,5 +587,5 @@
     ).join('\r\n');
   }
 
-  return {CATALOG,TYPES,PRESETS,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,presetHint,componentHint,analysisOptions,simulate,analyze,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
+  return {CATALOG,TYPES,PRESETS,DIODE_RANGES,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,presetHint,componentHint,analysisOptions,simulate,analyze,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
 });

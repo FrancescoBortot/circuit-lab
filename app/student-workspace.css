@@ -99,18 +99,44 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .schematic-help-tip{background:#f0f4fc;border-radius:8px;padding:12px;font-size:12px}
 @media(max-width:600px){.schematic-help-grid{grid-template-columns:1fr}}
 
-.student-workbench .workbench>.sheet-preset{
- display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 14px;
- border:1px solid #bacafb;border-radius:9px;background:#edf2ff;padding:9px 12px;margin:0 0 10px;color:#243c75
+.student-workbench .workbench>.sheet-preset{margin-bottom:10px;color:#294472}
+.sheet-preset-menu{position:relative;width:fit-content;max-width:100%}
+.sheet-preset-menu[hidden],.diode-presets[hidden],.sheet-preset>p[hidden]{display:none}
+.sheet-preset-menu>summary{
+ display:flex;align-items:center;gap:5px 12px;flex-wrap:wrap;list-style:none;cursor:pointer;
+ min-height:40px;padding:7px 10px;border:1px solid #becdf1;border-radius:8px;background:#fff;color:#243c75
 }
-.sheet-preset>label{font-size:14px;font-weight:700}
-.sheet-preset>select{
- width:100%;min-width:0;min-height:40px;padding:6px 10px;border:1px solid #8fa6e8;border-radius:7px;
- background:white;color:#223b72;font-weight:600
+.sheet-preset-menu>summary::-webkit-details-marker{display:none}
+.sheet-preset-menu>summary::after{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 2px 4px auto}
+.sheet-preset-menu[open]>summary::after{transform:rotate(225deg);margin-bottom:0}
+.sheet-preset-menu>summary>span:first-child{font-weight:700}
+#sheetPresetLabel{color:#455e88;overflow-wrap:anywhere}
+.sheet-preset-list{
+ position:absolute;z-index:5;top:calc(100% + 5px);inset-inline-start:0;min-width:100%;width:max-content;max-width:min(380px,calc(100vw - 32px));
+ max-height: min(55vh,22rem);overflow:auto;padding:4px;border:1px solid #becdf1;border-radius:8px;background:#fff;
+ box-shadow:0 8px 20px #223c6620
 }
-.sheet-preset>p,.sheet-preset-advice{color:#294472}
-.sheet-preset>p{grid-column:1/-1;margin:0}
-@media(max-width:520px){.student-workbench .workbench>.sheet-preset{grid-template-columns:minmax(0,1fr);gap:4px}}
+.sheet-preset-list>button{
+ display:block;width:100%;padding:7px 9px;text-align:left;white-space:normal;overflow-wrap:anywhere;
+ border:1px solid transparent;border-radius:5px;background:#fff;color:#243c75
+}
+.diode-presets{padding:8px 10px;border:1px solid #cbd7ee;border-radius:8px;background:#fff}
+.diode-preset-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:3px 12px;margin-bottom:5px}
+.diode-preset-heading h2{margin:0;font-size:14px;color:#243c75}
+.diode-preset-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.diode-preset-list>button{
+ display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;min-height:46px;
+ padding:4px 9px;border:1px solid #cbd7ee;border-radius:6px;background:#f8faff;color:#243c75;text-align:left
+}
+.diode-preset-list strong{font-size:14px}
+.diode-preset-list span{font-size:11px;color:#405b83}
+.sheet-preset-list>button:hover,.diode-preset-list>button:hover{border-color:#839be5;background:#f0f4ff}
+.sheet-preset-list>button[aria-current=true],.diode-preset-list>button[aria-current=true]{border-color:#4465db;background:#eaf0ff}
+#diodeFullCurve[aria-current=true]{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.diode-preset-note,.sheet-preset>p{margin:5px 0 0;font-size:12px;color:#405b83}
+.sheet-preset-advice{color:#294472}
+.guided-trial-modified{color:#526882}
+@media(max-width:520px){.diode-preset-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Override the general toolbar label row for the three-line preset field. */
 .bb-toolbar .bb-preset-control{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;flex:1 1 250px;min-width:240px;max-width:350px;align-items:start}
 .bb-toolbar .bb-preset-control>span{white-space:nowrap;font-size:12px;font-weight:650}

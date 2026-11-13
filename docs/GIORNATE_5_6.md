@@ -1,6 +1,6 @@
 # Giornate 5 e 6 · diodi e MOSFET
 
-Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova della scheda** mostra i parametri che cambiano prima di applicarli. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
+Apri **Quinta giornata** o **Sesta giornata** nel catalogo. La scelta di una prova mostra i parametri che cambiano prima di applicarli. I valori iniziali sono esempi a 27 °C. In **Componenti** puoi sostituirli con quelli ricavati al banco.
 
 | Giornata | Esperienza | Risultati |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Apri **Quinta giornata** o **Sesta giornata** nel catalogo. **Prova della scheda
 
 **Diodo.** Il grafico usa Vᴅ ai capi del diodo e corrente Iᴅ in ampere. Il fit non pesato di ln(Iᴅ) contro Vᴅ usa correnti da 1 µA fino a 10 mA, entro 20 V di generatore con la resistenza di serie scelta. La pendenza dà `n = 1/(Vₜ·pendenza)` e l’intercetta dà `Iₛ = exp(intercetta)`. L’approssimazione vale in diretta quando Iᴅ è molto maggiore di Iₛ. La curva e il fit sono simulati. Il modello Shockley omette breakdown, capacità di giunzione e resistenza di serie interna.
 
-Nel selettore **Prova della scheda**, le prove del diodo suggeriscono una resistenza di serie per fascia di corrente. La scheda indica 1 MΩ per 1–10 µA. I valori di partenza per le fasce successive sono 100 kΩ per 10–100 µA, 10 kΩ per 0,1–1 mA e 1 kΩ per 1–10 mA. Regola la sorgente DC leggendo la corrente e riporta la tensione a zero prima di sostituire la resistenza.
+Sopra lo schema del diodo sono affiancate le quattro resistenze di serie consigliate per fascia di corrente. La scheda indica 1 MΩ per 1–10 µA. I valori di partenza per le fasce successive sono 100 kΩ per 10–100 µA, 10 kΩ per 0,1–1 mA e 1 kΩ per 1–10 mA. Regola la sorgente DC leggendo la corrente e riporta la tensione a zero prima di sostituire la resistenza.
 
 **Raddrizzatori.** Le prove partono da 10 Vpp e R₁ = 68 kΩ. Il filtro aggiunge C₁ = 22 µF e mantiene R₁ in parallelo. Il montaggio della prova RC usa generatore da 50 Ω e sonde ×10 equivalenti da 10 MΩ e 12 pF, in DC. Il carico esterno di esempio Rᴸ = 4,7 kΩ si aggiunge in parallelo. La media è l’integrale temporale diviso per il periodo e il ripple è `Vmax − Vmin` nell’ultimo periodo intero. Controlla l’avviso di assestamento quando cambi capacità, frequenza o durata.
 

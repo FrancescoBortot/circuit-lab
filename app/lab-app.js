@@ -16,10 +16,27 @@
   function updateSaveStatus(){if(!window.circuitEditor?.active){$('saveStatus').textContent=storageState.ok?'Recupero automatico attivo':'Sessione locale · esporta una copia';$('saveStatus').dataset.state=storageState.ok?'saved':'unsaved';}}
   function ensureSession(){if(!project.session)project.session={id:crypto.randomUUID?crypto.randomUUID():'session-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),createdAt:new Date().toISOString()};}
   function trialLabel(){
-    const t=window.GuidedTrials.current(project,M.CATALOG);
-    $('guidedTrialBadge').hidden=!t.label;$('guidedTrialName').textContent=t.label;$('guidedTrialChanged').hidden=!t.modified;
-    $('sheetPreset').value=t.preset;
-    const advice=$('sheetPresetAdvice'),hint=S.presetHint(params().type,t.preset);
+    const trial=window.GuidedTrials.current(project,M.CATALOG),type=params().type;
+    const menu=$('sheetPresetMenu'),diode=$('diodePresetGroup');
+    if(menu.dataset.circuit!==type){
+      menu.dataset.circuit=type;menu.open=false;
+      const isDiode=type==='diode-iv';
+      diode.hidden=!isDiode;menu.hidden=isDiode;
+      if(isDiode){
+        $('diodePresetList').innerHTML=S.DIODE_RANGES.map(({key,label,current})=>
+          '<button type="button" data-sheet-preset="'+key+'"><strong>'+label+'</strong><span>'+current+'</span></button>').join('');
+      }else{
+        $('sheetPresetList').innerHTML=presets[type].map(([key,label])=>
+          '<button type="button" data-sheet-preset="'+key+'">'+esc(label)+'</button>').join('');
+      }
+    }
+    $('sheetPresetLabel').textContent=trial.label||'Scegli una prova';
+    $('guidedTrialChanged').hidden=!trial.modified;
+    for(const button of document.querySelectorAll('.sheet-preset [data-sheet-preset]')){
+      if(button.dataset.sheetPreset===trial.preset)button.setAttribute('aria-current','true');
+      else button.removeAttribute('aria-current');
+    }
+    const advice=$('sheetPresetAdvice'),hint=type==='diode-iv'?'':S.presetHint(type,trial.preset);
     advice.textContent=hint;advice.hidden=!hint;
   }
   function sessionState(withResult=false){
@@ -76,7 +93,6 @@
   function renderInspector(focus){
     const content=$('inspectorContent'),panelChanged=content.dataset.panel!==panel,helpOpen=Boolean(content.querySelector('[data-rc-help]')?.open),precisionOpen=Boolean(content.querySelector('[data-analysis-precision]')?.open),readingOpen=Boolean(content.querySelector('[data-analysis-reading]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
     $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Analisi del circuito';
-    $('sheetPreset').innerHTML='<option value="" disabled>Scegli una sottoesperienza…</option>'+presets[p.type].map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
     let html='';
     if(panel==='components'){
       html='<p class="panel-description">I valori sottolineati nello schema sono modificabili. Cliccali oppure usa questi campi.</p>';
@@ -353,7 +369,6 @@
     else if(el.matches('[data-field]'))applyFields();
   });
   $('inspectorContent').addEventListener('click',e=>{if(e.target.closest('#balanceResistors')){const p=params();p.R3=p.R1;p.R4=p.Rf;renderInspector();calculate();persist();}});
-  $('sheetPreset').addEventListener('change',()=>applyPreset($('sheetPreset').value));
   $('resetCircuit').addEventListener('click',()=>{projectEpoch++;project.circuits[current().type]=M.defaults(current().type);window.GuidedTrials.select(project,'',M.CATALOG);delete project.layouts[current().type];selected=null;for(const key of Object.keys(units))delete units[key];renderInspector();fitDiagram();calculate();persist(true);toast('Valori iniziali ripristinati.');});
   $('rotateComponent').addEventListener('click',()=>{if(!networkDiagram(params())){diagram.rotate();return;}const id=params().type==='rc'&&selected==='R'?'R1':params().type==='rc'&&selected==='C'?'C1':selected,c=realDiagram.doc.components.find(c=>c.id===id);if(c&&['R','C','L'].includes(c.type)){(project.layouts[params().type]??={})[id]={x:c.x,y:c.y,rotation:(c.rotation+90)%360};drawDiagram();persist();}});$('diagramIn').addEventListener('click',()=>activeDiagram().zoom(1.2));$('diagramOut').addEventListener('click',()=>activeDiagram().zoom(1/1.2));$('diagramFit').addEventListener('click',()=>activeDiagram().fit());
   $('guidedSchematicDetails').addEventListener('click',()=>{

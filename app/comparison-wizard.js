@@ -10,8 +10,11 @@
   const independent=$('[data-cmp-independent]')?.closest('label');if(independent)steps[1].append(independent);steps[1].append(preview);
   for(const selector of ['.comparison-kind-note','.flow-actions','[data-cmp-summary]','.comparison-table']){const el=$(selector);if(el)steps[2].append(el);}
   for(const el of [...dialog.querySelectorAll('.comparison-plot')]){
-   const cursor=el.previousElementSibling;if(cursor?.classList.contains('cursor-toolbar'))steps[2].insertBefore(cursor,steps[2].querySelector('.comparison-table'));
-   steps[2].insertBefore(el,steps[2].querySelector('.comparison-table'));
+   const table=steps[2].querySelector('.comparison-table'),scope=el.previousElementSibling;
+   const cursor=scope?.classList.contains('plot-scope-controls')?scope.previousElementSibling:scope;
+   if(cursor?.classList.contains('cursor-toolbar'))steps[2].insertBefore(cursor,table);
+   if(scope?.classList.contains('plot-scope-controls'))steps[2].insertBefore(scope,table);
+   steps[2].insertBefore(el,table);
   }
   const controls=document.createElement('div'),back=document.createElement('button'),next=document.createElement('button');
   controls.className='flow-actions';back.textContent='← Indietro';next.textContent='Continua →';controls.append(back,next);

@@ -4,16 +4,15 @@
  for(const [free,selector] of [[false,'#appLayout .plot-bottom'],[true,'#freeWorkspace .free-results-bottom']]){
   const readout=document.querySelector(selector),details=document.createElement('details');
   const summary=document.createElement('summary'),box=document.createElement('div');
-  const scope=readout.parentElement.querySelector('.plot-scope-controls');
   const timeline=free?null:document.getElementById('timeline');
-  details.className='graph-details';summary.textContent='Misure e controlli del grafico';
+  details.className='graph-details';summary.textContent=free?'Misure del grafico':'Misure e riproduzione';
   box.className='student-result-metrics';box.setAttribute('aria-label','Letture principali della curva');
-  details.append(summary,box,scope);
+  details.append(summary,box);
   if(timeline){
    details.append(timeline);
    details.addEventListener('toggle',()=>{if(!details.open)document.dispatchEvent(new Event('student-plot-details-closed'));});
   }
-  readout.after(details);panels.set(free,{details,box,scope});
+  readout.after(details);panels.set(free,{details,box,timeline});
  }
  let queued=false;
  function update(){
@@ -21,8 +20,8 @@
   const e=window.circuitEditor,free=e.active;
   const config=free?(e.result&&!e.busy&&!e.fieldError&&e.plot.data.length&&e.lastPlotAnalysis===e.doc.settings.analysis?e.plot.config:null):window.GuidedLab.plotSnapshot();
   const rows=window.StudentTools.readings(config?{...config,pulse:config.pulse||(free&&e.doc.settings.analysis==='time'?window.LabMeasurements.excitation(e.doc):null)}:null);
-  const {details,box,scope}=panels.get(free),key=JSON.stringify(rows);
-  details.hidden=!rows.length&&scope.hidden;
+  const {details,box,timeline}=panels.get(free),key=JSON.stringify(rows);
+  details.hidden=!rows.length&&(!timeline||timeline.hidden);
   box.hidden=!rows.length;
   if(box.dataset.readingsKey===key)return;
   box.dataset.readingsKey=key;box.replaceChildren();

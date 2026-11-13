@@ -201,7 +201,7 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .analysis-pane .analysis-toolbar{order:1}
 .student-workbench .analysis-pane .plot-meta{order:2}
 .student-workbench .analysis-pane .cursor-toolbar{order:3}
-.student-workbench .analysis-pane .plot-area{order:4}
+.student-workbench .analysis-pane :is(.plot-area,.plot-scope-controls){order:4}
 .student-workbench .analysis-pane .plot-bottom{order:6}
 .student-workbench .analysis-pane .graph-details{order:7}
 .student-workbench .workbench[data-workbench-view=plot] .study-launcher,
@@ -243,18 +243,34 @@ html{overscroll-behavior-y:none}
  .student-workbench :is(.workbench,.free-center,.library,.free-library,.inspector-scroll,.free-inspector){overscroll-behavior-y:contain}
 }
 
-.plot-scope-controls,.plot-scope-controls [data-trace-axes],.plot-time-controls{
+.plot-scope-controls,.plot-division-controls,[data-division-fields],.plot-scope-controls [data-trace-axes],.plot-time-controls{
  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0
 }
+.plot-scope-controls{padding:8px 12px;border-block:1px solid #dde5f0;background:#f6f8fc;color:#36547b;flex:none}
+.plot-division-controls{flex:1 1 100%}
+.plot-division{
+ display:grid;grid-template-columns:auto minmax(3.8em,4.8em) auto;align-items:center;gap:4px;font-size:12px;font-weight:600
+}
+.plot-division input{
+ width:100%;min-width:0;padding:3px 6px;border:1px solid #c8d6ed;border-radius:6px;background:#fff;color:#203c64;font-variant-numeric:tabular-nums
+}
+.plot-division input[aria-invalid=true]{border-color:#ad3434}
+.plot-scope-controls [data-scale-error]{font-size:12px;color:#8b2626}
+.plot-scope-controls button{
+ padding:4px 9px;border:1px solid #c8d6ed;border-radius:6px;background:#fff;color:inherit
+}
+.plot-scope-controls [data-scale-auto]{font-weight:600;background:#eaf0ff;color:#284ac2}
+.plot-scope-controls button:hover{border-color:#8299cb}
+.plot-trace-settings summary{cursor:pointer;padding:5px 0;font-size:12px}
+.plot-trace-settings[open]{flex-basis:100%}
+.plot-trace-settings [data-trace-axes]{margin-top:6px}
 .graph-details{flex:none;border-top:1px solid #dde5f0;color:#36547b}
 .graph-details[hidden]{display:none}
 .graph-details>summary{padding:7px 12px;cursor:pointer;font-weight:600}
 .graph-details[open]>summary{border-bottom:1px solid #dde5f0}
-.graph-details>.plot-scope-controls{padding:8px 12px}
 .graph-details>.student-result-metrics{margin:0}
 @media(max-width:760px){.graph-details>summary{min-height:40px;padding-block:10px}}
 .plot-scope-controls[hidden],.plot-scope-controls [hidden]{display:none}
-.plot-scope-controls [data-trace-axes]{flex:1 1 280px}
 .plot-scope-controls [data-trace-axes] label{
  display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;overflow-wrap:anywhere
 }

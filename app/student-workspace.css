@@ -99,22 +99,35 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .schematic-help-tip{background:#f0f4fc;border-radius:8px;padding:12px;font-size:12px}
 @media(max-width:600px){.schematic-help-grid{grid-template-columns:1fr}}
 
-.student-workbench .workbench>.sheet-preset{margin-bottom:10px;color:#294472}
-.sheet-preset-menu{position:relative;width:fit-content;max-width:100%}
+.student-workbench .guided-workspace-heading{align-items:center;gap:6px 12px;padding:0 0 8px}
+.guided-workspace-name{min-width:0}
+.guided-workspace-name h1{margin:0;font-size:18px;line-height:1.25}
+.guided-workspace-name span{display:block;margin-top:2px}
+.student-workbench .guided-workspace-heading .workspace-views{margin:0 0 0 auto}
+.guided-settings-shortcut{display:none}
+#appLayout.inspector-closed .guided-settings-shortcut{display:inline-flex}
+.breadboard-guided-active #appLayout.inspector-closed .guided-settings-shortcut{display:none}
+.student-workbench .guided-toolbar{min-height:44px;padding:5px 10px}
+.guided-toolbar .schematic-tools{flex:1;justify-content:flex-end;margin:0}
+.guided-toolbar .bb-view-switch{margin-inline-end:auto}
+@media(max-width:760px){
+ .student-workbench .guided-workspace-heading .workspace-views{margin-inline-start:0}
+ .student-workbench #inspector{width:100%}
+}
+#inspector .sheet-preset{margin:0;padding:0;border:0;color:#294472}
+.sheet-preset-menu{width:100%}
 .sheet-preset-menu[hidden],.diode-presets[hidden],.sheet-preset>p[hidden]{display:none}
 .sheet-preset-menu>summary{
- display:flex;align-items:center;gap:5px 12px;flex-wrap:wrap;list-style:none;cursor:pointer;
- min-height:40px;padding:7px 10px;border:1px solid #becdf1;border-radius:8px;background:#fff;color:#243c75
+ display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;list-style:none;cursor:pointer;
+ min-height:44px;padding:7px 10px;border:1px solid #becdf1;border-radius:8px;background:#fff;color:#243c75
 }
 .sheet-preset-menu>summary::-webkit-details-marker{display:none}
-.sheet-preset-menu>summary::after{content:"";width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 2px 4px auto}
+.sheet-preset-menu>summary::after{content:"";grid-column:2;grid-row:1 / span 2;width:7px;height:7px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin:0 2px 4px auto}
 .sheet-preset-menu[open]>summary::after{transform:rotate(225deg);margin-bottom:0}
 .sheet-preset-menu>summary>span:first-child{font-weight:700}
 #sheetPresetLabel{color:#455e88;overflow-wrap:anywhere}
 .sheet-preset-list{
- position:absolute;z-index:5;top:calc(100% + 5px);inset-inline-start:0;min-width:100%;width:max-content;max-width:min(380px,calc(100vw - 32px));
- max-height: min(55vh,22rem);overflow:auto;padding:4px;border:1px solid #becdf1;border-radius:8px;background:#fff;
- box-shadow:0 8px 20px #223c6620
+ margin-top:5px;padding:4px;border:1px solid #becdf1;border-radius:8px;background:#fff
 }
 .sheet-preset-list>button{
  display:block;width:100%;padding:7px 9px;text-align:left;white-space:normal;overflow-wrap:anywhere;
@@ -123,7 +136,7 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .diode-presets{padding:8px 10px;border:1px solid #cbd7ee;border-radius:8px;background:#fff}
 .diode-preset-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:3px 12px;margin-bottom:5px}
 .diode-preset-heading h2{margin:0;font-size:14px;color:#243c75}
-.diode-preset-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.diode-preset-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .diode-preset-list>button{
  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-width:0;min-height:46px;
  padding:4px 9px;border:1px solid #cbd7ee;border-radius:6px;background:#f8faff;color:#243c75;text-align:left
@@ -136,7 +149,6 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .diode-preset-note,.sheet-preset>p{margin:5px 0 0;font-size:12px;color:#405b83}
 #diodeActiveResistance{margin-inline-start:auto;color:#294472;font-size:12px;font-weight:700}
 .guided-trial-modified{color:#526882}
-@media(max-width:520px){.diode-preset-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Override the general toolbar label row for the three-line preset field. */
 .bb-toolbar .bb-preset-control{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;flex:1 1 250px;min-width:240px;max-width:350px;align-items:start}
 .bb-toolbar .bb-preset-control>span{white-space:nowrap;font-size:12px;font-weight:650}
@@ -145,6 +157,7 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .bb-toolbar .bb-preset-control[hidden]{display:none!important}
 /* One compact study entry, with the working drawing kept clear. */
 .study-launcher{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:9px 0 13px;flex:none}
+#guidedStudyLauncher .study-launcher{display:grid;gap:4px;padding:0}
 .study-launcher[hidden]{display:none!important}.study-actions{display:flex;gap:6px;flex-wrap:wrap}
 .study-actions button{border:1px solid #ced9ec;border-radius:7px;background:#fff;color:#355681;padding:7px 10px;cursor:pointer;font-size:12px}
 .study-actions button:hover{background:#edf3ff;border-color:#9dafd8}.study-launcher p{margin:0;flex:1 1 230px;font-size:12px;line-height:1.5;color:#506782}
@@ -241,16 +254,14 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .analysis-pane :is(.plot-area,.plot-scope-controls){order:4}
 .student-workbench .analysis-pane .plot-bottom{order:6}
 .student-workbench .analysis-pane .graph-details{order:7}
-.student-workbench .workbench[data-workbench-view=plot] .study-launcher,
 .student-workbench .workbench[data-workbench-view=plot] .student-measurement-entry,
 .student-workbench .free-center[data-workbench-view=plot] .study-launcher,
 .student-workbench .free-center[data-workbench-view=plot] .student-measurement-entry{display:none}
 .student-workbench .workbench[data-workbench-view=plot] .plot-area,
 .student-workbench .free-center[data-workbench-view=plot] .free-plot-area{flex:0 0 auto;height:clamp(220px,32dvh,360px)}
 .student-workbench .inspector-scroll{display:flex;flex-direction:column;gap:12px}
-.student-workbench .inspector-scroll>#inspectorContent{order:0;flex-shrink:0}
-.student-workbench .inspector-scroll>.bench-mode-strip{order:1;flex-shrink:0}
-.student-workbench .inspector-scroll>.inspector-summary{order:3;flex-shrink:0}
+#inspector .inspector-scroll>*{flex-shrink:0}
+#guidedStudyLauncher:empty{display:none}
 .student-workbench .free-results .graph-details{order:4}
 .student-workbench .free-results .free-results-bottom{order:3}
 .student-workbench .free-results .free-result-content{order:2}

@@ -27,7 +27,7 @@ La barra **Costruisci → Simula → Misura → Esporta** indica l’attività s
 ## Sessioni e prove guidate
 
 1. Scrivi il **nome della sessione** nel campo in alto. Su telefono apri le opzioni **⌄ accanto a Salva** e modifica il nome nel pannello.
-2. Scegli un circuito e una **Prova guidata**. Il suo nome resta sopra lo schema anche cambiando pannello. **Personalizzata** indica parametri o analisi diversi dalla selezione iniziale. **Nessuna prova guidata** rimuove l’etichetta senza azzerare il circuito.
+2. Scegli un circuito e una **Prova guidata**. La selezione attiva resta visibile nel pannello di destra anche cambiando scheda. **Personalizzata** indica parametri o analisi diversi dalla selezione iniziale. **Nessuna prova guidata** rimuove l’etichetta senza azzerare il circuito.
 3. Le prove vengono conservate nel browser, con l’ultima versione di ciascuna combinazione sessione/circuito/prova. Le opzioni **⌄ → Prove salvate** permettono di riaprirle. Le versioni successive della stessa prova aggiornano la copia; per tenerle in sessioni distinte usa **Altre sessioni e nuova sessione → Inizia**. La nuova sessione parte dai parametri correnti senza modificare le sessioni precedenti.
 4. Premi **Salva sessione** per scaricare lo ZIP completo. Contiene una cartella della sessione, identificata anche da un codice breve, e sottocartelle dei circuiti. Ogni nome include **sessione + circuito + prova**. JSON, schema SVG e relazione HTML sono sempre inclusi; CSV e grafici corrispondono alle analisi già calcolate con quei parametri. Una modifica elettrica esclude i risultati precedenti finché non sono ricalcolati.
 5. Nei browser compatibili, **Scegli cartella…** collega una destinazione locale: poi **Salva sessione** crea le cartelle e scrive i file. La scelta non esporta nulla finché non premi Salva. Il collegamento vale per l’apertura corrente dell’app. Negli altri browser estrai lo ZIP per ottenere la stessa struttura. Rinominare la sessione genera un nuovo percorso; i vecchi file non vengono cancellati.
@@ -52,7 +52,7 @@ In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e
 
 Negli schemi guidati delle giornate 5 e 6, generatori, diodi, transistor e carichi seguono la disposizione delle schede quando è disponibile. **Modello completo** mostra anche i componenti equivalenti degli strumenti e i rami interni del simulatore, se presenti. La vista scelta agisce solo sul disegno.
 
-Apri **Prove della scheda** sopra lo schema. Per la caratteristica I–V del diodo, le quattro resistenze di serie sono già visibili nello stesso punto. La scelta applica subito i parametri e aggiorna la prova attiva.
+Apri **Prove della scheda** nel pannello a destra. Se il pannello è chiuso, usa **Prove e parametri**. Per la caratteristica I–V del diodo, le quattro resistenze di serie sono già visibili nello stesso punto. La scelta applica subito i parametri e aggiorna la prova attiva.
 
 ## Dare spazio al circuito o al grafico
 
@@ -78,7 +78,7 @@ Nel **Transitorio guidato**, apri **Misure e controlli del grafico** per trovare
 
 ## Percorso consigliato per studiare
 
-L’**Assistente di laboratorio** sostituisce le tre tendine sopra il disegno con una sola barra compatta. Si apre in un pannello riducibile, lasciando accessibile il circuito.
+L’**Assistente di laboratorio** è nel pannello di destra, sopra i parametri del circuito. Si apre in un pannello riducibile, lasciando accessibile il circuito.
 
 - **Prepara la prova** collega obiettivo, parametro da variare e condizioni da mantenere. Puoi aprire il componente indicato, esaminare una prova pronta con anteprima, passare al grafico, confrontare misure e annotare nel quaderno.
 - **Previsione e modello** calcola riferimenti ideali usando i valori attuali: per esempio τ e taglio RC, guadagno e baseline del non invertente, oppure tempi dello shaping. Scegli un parametro e un’ipotesi (doppio, metà o ±1%): la tabella confronta le previsioni **senza modificare il circuito**. Le ipotesi ideali, gli effetti inclusi nel modello e le possibili differenze al banco rimangono distinti. Per reti libere non riconosciute non viene inventata una formula: è disponibile lo studio Parametri e tolleranze. I parametri tipici TL082 si esaminano in un’anteprima prima di applicarli; restano un profilo parziale, non un macromodello del costruttore.
@@ -175,7 +175,7 @@ Accanto ai risultati trovi **Misure del banco ↔ simulazione**: carica i dati o
 
 ### Preamplificatore · 1.3 Verifica della linearità
 
-Nella terza giornata, scegli **1.3 · Verifica della linearità · guida, simulazione e misure** in **Prove della scheda** sopra lo schema o **Prova da caricare** nella Breadboard. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
+Nella terza giornata, scegli **1.3 · Verifica della linearità · guida, simulazione e misure** in **Prove della scheda** nel pannello di destra o **Prova da caricare** nella Breadboard. Inserisci l’ampiezza di Vin misurata all’ingresso e la frequenza; scegli il duty del tratto **high** oppure la Width del tratto negativo. High 0 V e low negativo: T = (1 − duty_high/100)/f. A 200 Hz, high 99,9% corrisponde a 5 µs. Il duty varia a passi di 0,1%; Width permette durate intermedie, rispettando il minimo imposto dal duty massimo 99,9%.
 
 Il pannello calcola Qin nominale = |Vin|·T/Rin, τ = Rf·Cf, il picco ideale Qin/Cf e la correzione per la scarica durante l’impulso. Usa i componenti misurati del gruppo. La previsione assume massa virtuale ideale; non è una misura della carica né una stima completa dell’incertezza. L’applicazione diretta di Vin al circuito è disponibile con montaggio ideale: con le impedenze strumentali attive la tensione della sorgente e Vin misurata non coincidono.
 

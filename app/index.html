@@ -69,21 +69,13 @@
     </div>
   </aside>
   <main class="workbench" data-workbench-view="both">
-    <div class="workspace-views" role="group" aria-label="Visualizzazione del laboratorio"><button data-guided-view="both" aria-pressed="true">Circuito e grafico</button><button data-guided-view="circuit" aria-pressed="false">Solo circuito</button><button data-guided-view="plot" aria-pressed="false">Solo grafico</button></div>
-    <section class="sheet-preset" aria-label="Prove della scheda">
-      <div id="diodePresetGroup" class="diode-presets" hidden>
-        <div class="diode-preset-heading"><h2>Resistenza di serie R₁</h2><span id="diodeActiveResistance" role="status"></span><button type="button" class="text-button" data-sheet-preset="forward" id="diodeFullCurve">Curva completa</button></div>
-        <div id="diodePresetList" class="diode-preset-list" role="group" aria-label="Resistenze e fasce di corrente"></div>
-        <p class="diode-preset-note">La scheda indica 1 MΩ. Gli altri valori sono suggeriti. Riporta la tensione a 0 V prima di cambiare resistenza.</p>
-      </div>
-      <details id="sheetPresetMenu" class="sheet-preset-menu">
-        <summary id="sheetPreset"><span>Prove della scheda</span><span id="sheetPresetLabel" aria-live="polite">Scegli una prova</span></summary>
-        <div id="sheetPresetList" class="sheet-preset-list"></div>
-      </details>
-      <p id="sheetPresetAdvice" hidden></p>
-    </section>
+    <header class="student-context guided-workspace-heading">
+      <div class="guided-workspace-name"><h1 id="circuitTitle">Circuito RC</h1><span id="guidedWorkspaceDetail"></span></div>
+      <div class="workspace-views" role="group" aria-label="Visualizzazione del laboratorio"><button data-guided-view="both" aria-pressed="true">Circuito e grafico</button><button data-guided-view="circuit" aria-pressed="false">Solo circuito</button><button data-guided-view="plot" aria-pressed="false">Solo grafico</button></div>
+      <button type="button" class="button guided-settings-shortcut" id="guidedShowSettings" aria-controls="inspector" aria-expanded="true">Prove e parametri</button>
+    </header>
     <section class="schematic-pane" aria-labelledby="schematicTitle">
-      <div class="pane-toolbar guided-toolbar"><div class="guided-circuit-context"><h1 id="circuitTitle">Circuito RC</h1><h2 id="schematicTitle" class="sr-only">Schema</h2><small id="guidedTrialChanged" class="guided-trial-modified" hidden>Prova personalizzata</small></div>
+      <div class="pane-toolbar guided-toolbar"><h2 id="schematicTitle" class="sr-only">Schema del circuito</h2>
         <div class="schematic-tools"><button type="button" class="text-button" id="guidedSchematicDetails" aria-pressed="false" title="Mostra anche i componenti equivalenti usati nella simulazione" hidden>Modello completo</button><button class="button edit-button" id="editButton" aria-expanded="true" aria-label="Modifica componenti"><svg><use href="#i-settings"/></svg><span>Modifica</span></button><button class="icon-button" id="rotateComponent" aria-label="Ruota il componente selezionato" title="Ruota il componente selezionato"><svg><use href="#i-rotate"/></svg></button><span class="tool-divider"></span><button class="icon-button" id="diagramOut" aria-label="Riduci schema"><svg><use href="#i-minus"/></svg></button><span id="diagramZoom" class="zoom-number">100%</span><button class="icon-button" id="diagramIn" aria-label="Ingrandisci schema"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="diagramFit" aria-label="Centra schema"><svg><use href="#i-fit"/></svg></button><button class="icon-button" id="resetLayout" aria-label="Ripristina disposizione dei componenti" title="Ripristina disposizione"><svg><use href="#i-reset"/></svg></button></div>
       </div>
       <div class="schematic-stage" id="schematicStage"><svg id="realSchematic" hidden tabindex="0" role="group" aria-label="Schema modificabile del circuito guidato"></svg><svg id="schematic" role="group" tabindex="0" aria-label="Schema modificabile: clicca un componente per modificarne i valori, trascinalo per spostarlo."></svg></div>
@@ -110,7 +102,26 @@
   <aside class="inspector" id="inspector" aria-label="Modifica circuiti e impostazioni">
     <div class="inspector-heading"><div><span class="inspector-eyebrow">MODIFICA IL CIRCUITO</span><h2 id="inspectorTitle">Componenti</h2></div><button id="closeInspector" class="icon-button" aria-label="Chiudi pannello di modifica"><svg><use href="#i-close"/></svg></button></div>
     <div class="inspector-tabs" role="group" aria-label="Impostazioni da modificare"><button data-panel="components" aria-pressed="true">Componenti</button><button data-panel="signals" aria-pressed="false">Segnali</button><button data-panel="analysis" aria-pressed="false">Analisi</button></div>
-    <div class="inspector-scroll"><div class="bench-mode-strip"><span>Montaggio</span><button class="bench-mode-button" id="guidedBenchMode" data-open-bench>Ideale · impostazioni</button></div><div id="inspectorContent"></div></div>
+    <div class="inspector-scroll">
+      <section class="sheet-preset" aria-label="Prove della scheda">
+        <div id="diodePresetGroup" class="diode-presets" hidden>
+          <div class="diode-preset-heading"><h2>Resistenza di serie R₁</h2><span id="diodeActiveResistance" role="status"></span><button type="button" class="text-button" data-sheet-preset="forward" id="diodeFullCurve">Curva completa</button></div>
+          <div id="diodePresetList" class="diode-preset-list" role="group" aria-label="Resistenze e fasce di corrente"></div>
+          <p class="diode-preset-note">La scheda indica 1 MΩ. Gli altri valori sono suggeriti. Riporta la tensione a 0 V prima di cambiare resistenza.</p>
+        </div>
+        <details id="sheetPresetMenu" class="sheet-preset-menu">
+          <summary id="sheetPreset"><span>Prove della scheda</span><span id="sheetPresetLabel" aria-live="polite">Scegli una prova</span></summary>
+          <div id="sheetPresetList" class="sheet-preset-list"></div>
+        </details>
+        <p id="sheetPresetAdvice" hidden></p><small id="guidedTrialChanged" class="guided-trial-modified" hidden>Prova personalizzata</small>
+      </section>
+      <div id="guidedStudyLauncher"></div>
+      <div id="inspectorContent"></div>
+      <div class="bench-mode-strip">
+        <span>Montaggio</span>
+        <button class="bench-mode-button" id="guidedBenchMode" data-open-bench>Ideale · impostazioni</button>
+      </div>
+    </div>
     <div class="inspector-summary" id="summary"></div>
     <button class="reset-circuit" id="resetCircuit"><svg><use href="#i-reset"/></svg>Ripristina questo circuito</button>
   </aside>

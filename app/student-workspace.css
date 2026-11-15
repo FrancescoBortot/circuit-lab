@@ -366,3 +366,13 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
  .transient-comparison [data-options] label{flex:1 1 135px;line-height:1.35;padding:5px 7px}
  .transient-comparison:has([data-modes]:not([hidden])) .diode-comparison-plot{height:clamp(185px,25dvh,230px)}
 }
+.transient-comparison [data-zero-center]{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px}
+.transient-comparison [data-reading]{margin:4px 0}
+.diode-comparison .plot-scope-controls{border:1px solid #dde5f0;border-radius:8px;padding:6px 8px;margin-bottom:8px}
+@media(max-width:560px){
+ .diode-comparison [data-division-fields]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:4px 8px}
+ .diode-comparison .plot-division{grid-template-columns:auto minmax(0,1fr) auto}
+ .diode-comparison [data-division=time]{grid-column:1/-1;grid-template-columns:auto minmax(4.4em,6em) auto;justify-content:start}
+ .diode-comparison .plot-division :is(input,select){padding-inline:4px}
+ .diode-comparison .plot-time-controls label{flex-basis:145px}
+}

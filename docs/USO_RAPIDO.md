@@ -171,6 +171,8 @@ Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento
 
 Apri il confronto nel pannello di destra. La legenda identifica A e B e la riga sopra il grafico indica cosa resta uguale. Quando sono disponibili due letture della stessa prova, scegli la coppia o il grafico dai pulsanti in alto. Il circuito aperto rimane disponibile con i suoi parametri.
 
+In ogni grafico di confronto regola **CH1**, **CH2** e la scala orizzontale per divisione. Nel Bode l’asse X usa decadi e le ordinate dB. Nel confronto del diodo l’asse X usa volt e le correnti sono su scale logaritmiche in decadi. La vista normalizzata usa V/V, mentre il confronto tra frequenze del raddrizzatore usa la frazione del periodo sull’asse X. La curva A parte su CH1 e la curva B su CH2. Per confrontare i livelli bassi degli inverter, attiva **Centra le scale manuali su 0 V** e prova **50 mV/div** su entrambi i canali. **Auto** ripristina le scale e l’intero intervallo.
+
 | Giornata | Esperienza | Confronto |
 | --- | --- | --- |
 | 1 | Circuito RC | Scarica con cavo diretto e sonda ×10, con tempo a 4 V/e e R·C nominale |

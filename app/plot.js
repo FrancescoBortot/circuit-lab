@@ -124,6 +124,17 @@
     syncScope(){
       this.scopeControls.hidden=!this.config?.scope||!this.data.length;
       if(this.scopeControls.hidden)return;
+      const horizontal=this.config.xUnit==='s'?'Tempo':this.config.xUnit==='Hz'?'Frequenza':this.config.xUnit==='V'?'Tensione':'Periodo';
+      const field=this.divisionFields.querySelector('[data-division="time"]');
+      field.querySelector('span').textContent=horizontal;
+      field.querySelector('input').setAttribute('aria-label',horizontal+' per divisione');
+      field.querySelector('select').setAttribute('aria-label','Unità '+horizontal+' per divisione');
+      this.timePan.closest('label').firstChild.textContent=horizontal==='Tempo'?'Scorri nel tempo ':'Scorri l’asse X ';
+      const timeControls=this.timePan.closest('.plot-time-controls');
+      timeControls.setAttribute('aria-label',horizontal==='Tempo'?'Finestra temporale':'Finestra orizzontale');
+      for(const [action,name] of [['out','Allarga'],['in','Restringi']]){
+        timeControls.querySelector('[data-time-zoom="'+action+'"]').setAttribute('aria-label',name+(horizontal==='Tempo'?' finestra temporale':' finestra orizzontale'));
+      }
       this.splitButton.hidden=this.config.series.length<2;
       this.splitButton.setAttribute('aria-pressed',String(this.splitY));
       this.axisControls.hidden=this.splitButton.hidden||!this.splitY;
@@ -139,6 +150,10 @@
         select.value=this.axisFor(series);
         label.append(select);this.axisControls.append(label);
       }
+    }
+    divisionUnit(axis){
+      if(axis==='time')return this.config.logX?'decadi':this.config.xUnit||'periodi';
+      return this.config.logY?'decadi':this.config.yUnit;
     }
     resetDivisionInputs(){
       for(const field of this.divisionFields.children){
@@ -157,11 +172,12 @@
         const axis=field.dataset.division,step=axis==='time'?(this.view[1]-this.view[0])/timeDivisions:this.geometry.verticalSteps.get(axis);
         field.hidden=step===undefined;
         if(field.hidden)continue;
-        const unit=axis==='time'?this.config.xUnit:this.config.yUnit,input=field.querySelector('input'),select=field.querySelector('select');
-        const best=RCModel.scale(step,unit).factor;
+        const unit=this.divisionUnit(axis),input=field.querySelector('input'),select=field.querySelector('select');
+        const scaled=['s','V','A','Hz','Ω'].includes(unit);
+        const best=scaled?RCModel.scale(step,unit).factor:1;
         if(select.dataset.unit!==unit){
           select.dataset.unit=unit;
-          select.innerHTML=prefixes.map(([factor,prefix])=>`<option value="${factor}">${prefix}${unit}/div</option>`).join('');
+          select.innerHTML=(scaled?prefixes:[[1,'']]).map(([factor,prefix])=>`<option value="${factor}">${prefix}${unit}/div</option>`).join('');
         }
         const factor=Number(field.dataset.unitSelected)||best;
         select.value=String(factor);
@@ -177,8 +193,14 @@
       if(!/^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw)||!Number.isFinite(step)||step<1e-24||step>1e15){
         this.showScaleError(input,'Inserisci un numero positivo per la scala.');return;
       }
-      if(axis==='time'&&(span<duration/1000*(1-1e-9)||span>duration*1000*(1+1e-9))){
-        this.showScaleError(input,'Tempo/div ammesso da '+M.format(duration/1000/timeDivisions,'s',4)+' a '+M.format(duration*1000/timeDivisions,'s',4)+'.');return;
+      const limit=this.config.logX?duration:duration*1000;
+      if(axis==='time'&&(span<duration/1000*(1-1e-9)||span>limit*(1+1e-9))){
+        const unit=this.divisionUnit(axis);
+        const display=value=>unit==='s'||unit==='V'?M.format(value,unit,4):divisionNumber(value)+' '+unit;
+        this.showScaleError(input,'Scala orizzontale ammessa da '+display(duration/1000/timeDivisions)+' a '+display(limit/timeDivisions)+' per divisione.');return;
+      }
+      if(axis!=='time'&&this.config.logY&&(step<1e-6||step>30)){
+        this.showScaleError(input,'Inserisci da 0,000001 a 30 decadi per divisione.');return;
       }
       delete input.dataset.draft;this.showScaleError(input,'');
       if(axis==='time')this.panTo((this.view[0]+this.view[1]-span)/2,span);
@@ -189,7 +211,7 @@
       this.data=[];this.series=[];this.geometry=null;this.scopeControls.hidden=true;this.svg.replaceChildren();
     }
     set(config){
-      const old=this.config,sameScope=old?.scope&&config.scope&&old.scopeKey===config.scopeKey&&old.yUnit===config.yUnit;
+      const old=this.config,sameScope=old?.scope&&config.scope&&old.scopeKey===config.scopeKey&&old.yUnit===config.yUnit&&old.logY===config.logY&&old.logX===config.logX;
       const oldData=config.scope?old?.data:this.data;
       const same=old&&(!config.scope||sameScope)&&old.logX===config.logX&&old.xUnit===config.xUnit&&oldData?.[0]?.x===config.data[0]?.x&&oldData?.at(-1)?.x===config.data.at(-1)?.x,ax=this.cursorA?.x,bx=this.cursorB?.x;
       if(!sameScope&&config.scope){this.splitY=true;this.verticalSteps={};this.traceAxes.clear();this.resetDivisionInputs();}
@@ -256,7 +278,9 @@
       let html=`<defs><clipPath id="${this.svg.id}-clip"><rect x="${left}" y="${top}" width="${pw}" height="${ph}"/></clipPath></defs>`;
       for(const [index,{axis,traces}] of groups.entries()){
         let min=Infinity,max=-Infinity;
-        for(const sample of extentSamples)for(const series of traces){
+        const manual=this.verticalSteps[axis];
+        const extentTraces=scope&&this.config.sharedAutoY&&manual===undefined?this.series:traces;
+        for(const sample of extentSamples)for(const series of extentTraces){
           const value=sample[series.key];
           if(!validY(value))continue;
           const sigma=series.sigmaKey&&Number.isFinite(sample[series.sigmaKey])?sample[series.sigmaKey]:0;
@@ -267,7 +291,8 @@
         if(!Number.isFinite(min)){min=-1;max=1;}
         let step,origin;
         if(scope){
-          ({origin,step}=verticalRange(min,max,this.verticalSteps[axis]));
+          ({origin,step}=verticalRange(min,max,manual));
+          if(manual!==undefined&&this.config.centerManualYAtZero)origin=0;
           min=origin-step*verticalDivisions/2;max=origin+step*verticalDivisions/2;
           verticalSteps.set(axis,step);
         }else{
@@ -275,33 +300,38 @@
           if(max-min<1e-15){const padding=logY?.25:1;min-=padding;max+=padding;}
           const gap=(max-min)*.1;min-=gap;max+=gap;
         }
-        const y=scope?v=>top+(.5-(v-origin)/step/verticalDivisions)*ph:v=>top+(max-domainY(v))/(max-min)*ph;
+        const y=scope?v=>top+(.5-(domainY(v)-origin)/step/verticalDivisions)*ph:v=>top+(max-domainY(v))/(max-min)*ph;
         const yScale=logY||this.config.plainY||['dB','°'].includes(this.config.yUnit)?{factor:1,unit:this.config.yUnit}:RCModel.scale(Math.max(Math.abs(min),Math.abs(max)),this.config.yUnit);
         for(const s of traces)traceY.set(s.key,y);
         const atRight=axis==='B',edge=atRight?w-right:left,labelX=edge+(atRight?9:-9),anchor=atRight?'start':'end';
-        const decades=logY?Array.from({length:Math.max(0,Math.floor(max)-Math.ceil(min)+1)},(_,i)=>10**(Math.ceil(min)+i)):[];
+        const decades=logY&&!scope?Array.from({length:Math.max(0,Math.floor(max)-Math.ceil(min)+1)},(_,i)=>10**(Math.ceil(min)+i)):[];
         const yticks=scope?Array.from({length:verticalDivisions+1},(_,i)=>origin+(i-verticalDivisions/2)*step):logY?(decades.length>=2?decades:ticks(min,max,4).map(v=>10**v)):ticks(min,max,4);
         for(const [i,v] of yticks.entries()){
           const py=scope?top+(verticalDivisions-i)/verticalDivisions*ph:y(v);
-          const zero=scope?Math.abs(v)<step*1e-10:v===0;
+          const zero=!logY&&(scope?Math.abs(v)<step*1e-10:v===0);
+          const tickLabel=logY?(scope?M.format(10**v,this.config.yUnit,3):Number(v.toPrecision(2)).toExponential().replace('e-','e−')):num((zero?0:v)/yScale.factor);
           if(index===0)html+=`<path d="M${left},${py}H${w-right}" stroke="${zero?'#dce3ed':'#edf1f6'}"/>`;
           if(split)html+=`<path d="M${edge},${py}h${atRight?5:-5}" stroke="#8496b1"/>`;
-          if(!scope||i%2===0||zero)html+=`<text x="${labelX}" y="${py+4}" text-anchor="${anchor}">${logY?Number(v.toPrecision(2)).toExponential().replace('e-','e−'):num((zero?0:v)/yScale.factor)}</text>`;
+          if(!scope||i%2===0||zero)html+=`<text x="${labelX}" y="${py+4}" text-anchor="${anchor}">${tickLabel}</text>`;
         }
         const unit=this.config.yLabel?this.config.yLabel+' ('+yScale.unit+')':yScale.unit;
         const channel=scope?(this.splitY?channels[axis]:'Y')+' · ':'';
-        html+=`<text x="${scope?labelX:8}" y="12" text-anchor="${scope?anchor:'start'}" class="axis-unit" data-y-axis="${axis}">${channel}${unit}</text>`;
+        html+=`<text x="${atRight?w-8:8}" y="12" text-anchor="${atRight?'end':'start'}" class="axis-unit" data-y-axis="${axis}">${channel}${unit}</text>`;
         if(split){
           const spacing=Math.min(21,(pw/2-10)/traces.length);
           for(const [i,s] of traces.entries()){
             const direction=atRight?-1:1,start=edge+direction*(5+i*spacing),length=direction*spacing*.72;
-            html+=`<path d="M${start},9h${length}" stroke="${s.color}" stroke-width="2.5"${s.dash?' stroke-dasharray="'+s.dash+'"':''}/>`;
+            html+=`<path d="M${start},17h${length}" stroke="${s.color}" stroke-width="2.5"${s.dash?' stroke-dasharray="'+s.dash+'"':''}/>`;
           }
         }
       }
-      let xticks=this.config.logX?Array.from({length:Math.ceil(this.view[1])-Math.floor(this.view[0])+1},(_,i)=>10**(Math.floor(this.view[0])+i)).filter(v=>this.toDomain(v)>=this.view[0]&&this.toDomain(v)<=this.view[1]):ticks(...this.view,Math.max(3,Math.floor(pw/100)));
-      if(this.config.logX&&xticks.length<2)xticks=ticks(this.fromDomain(this.view[0]),this.fromDomain(this.view[1]),5);
-      if(scope)xticks=Array.from({length:timeDivisions+1},(_,i)=>this.view[0]+i*(this.view[1]-this.view[0])/timeDivisions);
+      let xticks;
+      if(scope)xticks=Array.from({length:timeDivisions+1},(_,i)=>this.fromDomain(this.view[0]+i*(this.view[1]-this.view[0])/timeDivisions));
+      else if(this.config.logX){
+        const first=Math.ceil(this.view[0]),last=Math.floor(this.view[1]);
+        xticks=last-first>=1?Array.from({length:last-first+1},(_,i)=>10**(first+i)):
+          ticks(this.fromDomain(this.view[0]),this.fromDomain(this.view[1]),5);
+      }else xticks=ticks(...this.view,Math.max(3,Math.floor(pw/100)));
       const timeScale=RCModel.scale(this.view[1]-this.view[0],this.config.xUnit);
       const tickEvery=scope?pw<420?5:pw<700?2:1:1;
       for(const [i,v] of xticks.entries()){
@@ -321,7 +351,7 @@
         this.syncDivisions();
         const travel=this.domain[1]-this.domain[0]-(this.view[1]-this.view[0]);
         this.timePan.value=travel>0?String(Math.round(1000*clamp((this.view[0]-this.domain[0])/travel,0,1))):'500';
-        this.timePan.setAttribute('aria-valuetext',this.view.map(t=>M.format(t,'s',4)).join(' – '));
+        this.timePan.setAttribute('aria-valuetext',this.view.map(t=>M.format(this.fromDomain(t),this.config.xUnit,4)).join(' – '));
       }
     }
     drawCursor(){

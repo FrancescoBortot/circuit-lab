@@ -45,7 +45,7 @@
   $('diodeCompareNote').textContent=diodeVoltage
    ? 'Le curve Iᴅ(Vᴅ) si sovrappongono dove entrambe arrivano. R₁ cambia la corrente massima raggiungibile con la sorgente.'
    : 'Alla stessa tensione del generatore, una R₁ maggiore riduce la corrente. La caduta su R₁ è Vɢ − Vᴅ.';
-  plot.set({data,series,xLabel,xUnit:'V',yLabel:'Iᴅ',yUnit:'A',logY:true,noZero:true});
+  plot.set({data,series,scope:true,scopeKey:revision+':'+key,sharedAutoY:true,xLabel,xUnit:'V',yLabel:'Iᴅ',yUnit:'A',logY:true,noZero:true});
  }
 
  async function compare(){

@@ -16,13 +16,17 @@
   <div class="ps-legend" data-legend aria-label="Condizioni A e B"></div>
   <p data-status role="status"></p>
   <section data-result aria-label="Uscite simulate a confronto" hidden>
-   <div data-chart><div class="diode-comparison-plot"><svg id="transientComparePlot" role="img" aria-label="Curve simulate A e B"></svg></div><p data-reading hidden></p></div>
+   <div data-chart>
+    <label data-zero-center hidden><input type="checkbox"> Centra le scale manuali su 0 V</label>
+    <div class="diode-comparison-plot"><svg id="transientComparePlot" role="img" aria-label="Curve simulate A e B"></svg></div>
+    <p data-reading hidden></p>
+   </div>
    <table class="transient-comparison-table"><caption>Misure sulle curve simulate</caption><thead></thead><tbody></tbody></table>
    <p data-note></p>
   </section>`;
  document.body.append(dialog);
  const $=selector=>dialog.querySelector(selector),normalize=$('[data-normalize]');
- const status=$('[data-status]'),result=$('[data-result]');
+ const status=$('[data-status]'),result=$('[data-result]'),zero=$('[data-zero-center] input');
  const tasks=new window.CircuitTasks(),format=(value,unit)=>L.format(value,unit,4);
  let doc,params,curves,mode,analysis,revision=0,plot,traces;
  const modes={
@@ -115,12 +119,16 @@
   return type==='mos-iv'?'Le letture si riferiscono allo stesso punto di polarizzazione del generatore.':'Le curve e le misure si riferiscono all’ultimo periodo simulato.';
  }
  function readCursor(row){
-  if(!traces||!C.isGate(params.type))return;
+  if(!traces)return;
   const read=$('[data-reading]');
   read.hidden=false;
-  const input=['vin','vin2'].map(key=>C.interpolate(traces[0],row.x,key));
   const output=traces.map(trace=>C.interpolate(trace,row.x,'out'));
-  read.textContent=format(row.x,'s')+' · '+[...input,...output].map((value,i)=>['IN1','IN2','NOR','NAND'][i]+' '+format(value,'V')).join(' · ');
+  const readings=C.isGate(params.type)?[
+   ['IN1',C.interpolate(traces[0],row.x,'vin')],['IN2',C.interpolate(traces[0],row.x,'vin2')],
+   ['NOR',output[0]],['NAND',output[1]]
+  ]:[['A',output[0]],['B',output[1]]];
+  const {xUnit,yUnit}=plot.config;
+  read.textContent=format(row.x,xUnit)+' · '+readings.map(([label,value])=>label+' '+format(value,yUnit)).join(' · ');
  }
  function draw(){
   if(!curves)return;
@@ -137,10 +145,11 @@
     const series=curves.map(({label},i)=>({key:i?'B':'A',label,color:i?'#af501b':'#3156c9',dash:i?'6 4':undefined,sparse:true}));
     const data=traces.flatMap((rows,i)=>rows.map(({x,out})=>({x,[series[i].key]:out}))).sort((a,b)=>a.x-b.x);
     const bode=analysis==='bode',compensation=C.isCompensation(type);
+    $('[data-zero-center]').hidden=bode||normalized;
     const cutoff=type==='inverting'?C.measurements(curves[1],analysis)[1]:undefined;
     const xLabel=bode?'Frequenza':phase?'Frazione del periodo':compensation?'Tempo dall’inizio dell’impulso':
      ['rc','shaper-buffer'].includes(type)?'Tempo':'Tempo nell’ultimo periodo';
-    plot.set({data,series,xLabel,xUnit:bode?'Hz':phase?'':'s',logX:bode,
+    plot.set({data,series,scope:true,scopeKey:revision,sharedAutoY:true,centerManualYAtZero:!bode&&!normalized&&zero.checked,xLabel,xUnit:bode?'Hz':phase?'':'s',logX:bode,
      yLabel:bode?'Modulo':normalized?'(OUT − media) / Vpp IN':compensation?'OUT − baseline':'OUT',
      yUnit:bode?'dB':normalized?'V/V':'V',plainY:bode,noZero:bode||type==='half-wave-rc',
      guides:compensation?[{x:referenceTime(),label:'10 tₛₕ'}]:Number.isFinite(cutoff)?[{x:cutoff,label:'−3 dB · B'}]:[]});
@@ -185,7 +194,7 @@
    input.type='radio';input.name='lab-comparison-mode';input.value=value;input.checked=value===mode;
    label.append(input,text);return label;
   }));
-  normalize.checked=false;
+  normalize.checked=false;zero.checked=false;
   if(!plot){
    plot=new window.LabPlot($('#transientComparePlot'),readCursor);
    plot.controls.hidden=true;
@@ -195,6 +204,10 @@
  });
  $('[data-options]').addEventListener('change',event=>{mode=event.target.value;calculate();});
  normalize.addEventListener('change',draw);
+ zero.addEventListener('change',()=>{
+  plot.config.centerManualYAtZero=zero.checked;
+  plot.draw();
+ });
  $('[data-close]').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{
   revision++;tasks.cancel();curves=null;result.hidden=true;

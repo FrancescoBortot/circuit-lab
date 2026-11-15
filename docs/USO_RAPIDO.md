@@ -52,6 +52,8 @@ In fondo, **Hai misure di laboratorio?** apre gli strumenti per importare dati e
 
 Negli schemi guidati delle giornate 5 e 6, generatori, diodi, transistor e carichi seguono la disposizione delle schede quando è disponibile. **Modello completo** mostra anche i componenti equivalenti degli strumenti e i rami interni del simulatore, se presenti. La vista scelta agisce solo sul disegno.
 
+Usa **Scarica schema** sotto il disegno per salvare un PNG del circuito intero. Il comando è disponibile nelle esperienze guidate e nell’editor libero.
+
 Apri **Prove della scheda** nel pannello a destra. Se il pannello è chiuso, usa **Prove e parametri**. Per la caratteristica I–V del diodo, le quattro resistenze di serie sono già visibili nello stesso punto. La scelta applica subito i parametri e aggiorna la prova attiva.
 
 ## Dare spazio al circuito o al grafico
@@ -164,6 +166,19 @@ Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento
 
 
 **Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono subito sotto il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.
+
+### Confronti guidati nelle sei giornate
+
+Apri il confronto nel pannello di destra. La legenda identifica A e B e la riga sopra il grafico indica cosa resta uguale. Quando sono disponibili due letture della stessa prova, scegli la coppia o il grafico dai pulsanti in alto. Il circuito aperto rimane disponibile con i suoi parametri.
+
+| Giornata | Esperienza | Confronto |
+| --- | --- | --- |
+| 1 | Circuito RC | Scarica con cavo diretto e sonda ×10, con tempo a 4 V/e e R·C nominale |
+| 2 | Invertente · VTC e banda | Bode ideale e a banda finita, con guadagno a 30 Hz e taglio a −3 dB |
+| 3 | Shaper · buffer di uscita | Con e senza buffer, con picco e tempo sul gradino oppure picco della risposta in frequenza |
+| 4 | Preamp + shaper o Shaper compensato | Undershoot e scarto dalla baseline a 10 Rsh₂·Csh₂ dall’inizio dell’impulso, prima e dopo l’inserimento di Rpz |
+| 5 | Diodo, raddrizzatore con filtro RC, caratterizzazione nMOS | Resistenze di serie, carico e frequenza, oppure effetto del voltmetro su Vɢₛ e Iᴅ |
+| 6 | Amplificatore nMOS, inverter e porte NOR/NAND | Ampiezze, livelli DC oppure forme d’onda con cursore comune e tabella di verità |
 
 ### Grafico, parametri e misure del banco
 

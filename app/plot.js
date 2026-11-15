@@ -290,7 +290,7 @@
         }
         const unit=this.config.yLabel?this.config.yLabel+' ('+yScale.unit+')':yScale.unit;
         const channel=scope?(this.splitY?channels[axis]:'Y')+' · ':'';
-        html+=`<text x="${labelX}" y="12" text-anchor="${anchor}" class="axis-unit" data-y-axis="${axis}">${channel}${unit}</text>`;
+        html+=`<text x="${scope?labelX:8}" y="12" text-anchor="${scope?anchor:'start'}" class="axis-unit" data-y-axis="${axis}">${channel}${unit}</text>`;
         if(split){
           const spacing=Math.min(21,(pw/2-10)/traces.length);
           for(const [i,s] of traces.entries()){

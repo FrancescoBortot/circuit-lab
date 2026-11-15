@@ -17,7 +17,9 @@ Apri **Quinta giornata** o **Sesta giornata** nel catalogo. La scelta di una pro
 
 **Diodo.** Il grafico usa Vᴅ ai capi del diodo e corrente Iᴅ in ampere. Il fit non pesato di ln(Iᴅ) contro Vᴅ usa correnti da 1 µA fino a 10 mA, entro 20 V di generatore con la resistenza di serie scelta. La pendenza dà `n = 1/(Vₜ·pendenza)` e l’intercetta dà `Iₛ = exp(intercetta)`. L’approssimazione vale in diretta quando Iᴅ è molto maggiore di Iₛ. La curva e il fit sono simulati. Il modello Shockley omette breakdown, capacità di giunzione e resistenza di serie interna.
 
-Sopra lo schema del diodo sono affiancate le quattro resistenze di serie consigliate per fascia di corrente. La scheda indica 1 MΩ per 1–10 µA. I valori di partenza per le fasce successive sono 100 kΩ per 10–100 µA, 10 kΩ per 0,1–1 mA e 1 kΩ per 1–10 mA. Regola la sorgente DC leggendo la corrente e riporta la tensione a zero prima di sostituire la resistenza.
+Nel pannello di destra sono affiancate le quattro resistenze di serie consigliate per fascia di corrente. La scheda indica 1 MΩ per 1–10 µA. I valori di partenza per le fasce successive sono 100 kΩ per 10–100 µA, 10 kΩ per 0,1–1 mA e 1 kΩ per 1–10 mA. Regola la sorgente DC leggendo la corrente e riporta la tensione a zero prima di sostituire la resistenza.
+
+Apri **Confronta due resistenze** per sovrapporre due simulazioni con lo stesso modello del diodo. Con Vᴅ in ascissa, le curve coincidono nel tratto comune ma arrivano a correnti massime diverse. Con Vɢ in ascissa, a parità di tensione del generatore la corrente è minore con la resistenza più grande. Il confronto lascia invariata la prova attiva.
 
 **Raddrizzatori.** Le prove partono da 10 Vpp e R₁ = 68 kΩ. Il filtro aggiunge C₁ = 22 µF e mantiene R₁ in parallelo. Il montaggio della prova RC usa generatore da 50 Ω e sonde ×10 equivalenti da 10 MΩ e 12 pF, in DC. Il carico esterno di esempio Rᴸ = 4,7 kΩ si aggiunge in parallelo. La media è l’integrale temporale diviso per il periodo e il ripple è `Vmax − Vmin` nell’ultimo periodo intero. Controlla l’avviso di assestamento quando cambi capacità, frequenza o durata.
 
@@ -32,6 +34,14 @@ Sopra lo schema del diodo sono affiancate le quattro resistenze di serie consigl
 ## Indicazioni nelle prove
 
 I preset del raddrizzatore distinguono la misura a 50 Hz prima di aggiungere il carico, la misura con Rᴸ aggiunta e la ripetizione a 1 kHz con lo stesso carico. Le prove nMOS indicano quale tensione mantenere fissa nelle scansioni e come ritrovare il punto di lavoro. La prova VTC propone otto ampiezze a 3 kHz fra 100 mVpp e 1 Vpp. Per NOR e NAND si parte con le due sonde su IN1 e IN2, poi si sposta la seconda su OUT per compilare la tabella mantenendo il trigger su IN1.
+
+## Confronti guidati
+
+I comandi si trovano nel pannello destro. Ogni confronto calcola due copie della prova con le impostazioni indicate nel pannello.
+
+- **Raddrizzatore con filtro RC.** Confronta la sola sonda ×10 e il carico esterno a 50 Hz, oppure lo stesso carico a 50 Hz e 1 kHz. La tabella mostra ripple, tensione media e stato di assestamento dell’ultimo periodo. A frequenze diverse l’asse orizzontale mostra la frazione del periodo.
+- **Amplificatore nMOS.** Sovrapponi le uscite ottenute con 100 mVpp e 1 Vpp dal generatore a 3 kHz. Per confrontare le forme d’onda, sottrai la media di ciascuna uscita e dividi per il Vpp del corrispondente ingresso simulato attivando la normalizzazione.
+- **Inverter nMOS e CMOS.** Da entrambi gli inverter puoi confrontare le uscite con il medesimo ingresso 0–5 V a 50 Hz e alimentazione a 5 V. Le due simulazioni partono dal modello nMOS del circuito aperto, usano i valori di Rᴅ e del pMOS della sessione quando disponibili e adottano il montaggio ideale. La tabella riporta i livelli DC con ingresso alto e basso.
 
 ## Dati e salvataggi
 

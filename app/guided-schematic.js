@@ -5,8 +5,54 @@
 })(globalThis,function(Free,Bench){
   'use strict';
 
+  function finalStage(doc){
+    const byId=new Map(doc.components.map(part=>[part.id,part]));
+    const amp=byId.get('Ufinal');
+    const input=doc.wires.find(wire=>wire.b==='Ufinal:plus').a;
+    const source=byId.get(input.split(':')[0]);
+    const inputY=source.y+({V1:-43,Csh2:-34,Uout:0}[source.id]);
+    const x=amp.x,y=inputY+50;
+    Object.assign(amp,{y:inputY+25,schematicFlipY:true});
+    Object.assign(byId.get('Ri'),{x:x-135,y:y+75});
+    Object.assign(byId.get('Rgain'),{x:x-15,y:y+185});
+
+    const stage=new Set(['Ufinal','Ri','Rgain','Rbias','Vbias']);
+    const returns=new Set(doc.wires.filter(wire=>['Ri:b','Vbias:n'].includes(wire.a))
+      .map(wire=>wire.b.split(':')[0]));
+    doc.components=doc.components.filter(part=>!returns.has(part.id));
+    doc.wires=doc.wires.filter(wire=>![wire.a,wire.b].some(pin=>stage.has(pin.split(':')[0])));
+    doc.sheetSchematic=true;
+    const point=(x,y,type='J',junction=false)=>{
+      const id=(type==='J'?'JF':'GF')+doc.components.length;
+      doc.components.push({...Free.component(type,id,x,y),schematicDecoration:true,schematicJunction:junction});
+      return id+(type==='J'?':j':':g');
+    };
+    const path=(...pins)=>{
+      for(let i=1;i<pins.length;i++)doc.wires.push({id:'WF'+doc.wires.length,a:pins[i-1],b:pins[i]});
+    };
+
+    const summing=point(x-135,y,'J',true);
+    const feedback=point(x-215,y,'J',byId.has('Rbias'));
+    const output=point(x+125,amp.y);
+    path(input,'Ufinal:plus');
+    path('Ufinal:minus',summing,feedback,point(x-215,y+185),'Rgain:a');
+    path(summing,'Ri:a');
+    path('Ri:b',point(x-135,y+157,'G'));
+    path('Ufinal:out',output,point(x+125,y+185),'Rgain:b');
+    if(byId.has('Rbias')){
+      Object.assign(byId.get('Rbias'),{x:x-330,y});
+      Object.assign(byId.get('Vbias'),{x:x-435,y:y+50});
+      path(feedback,'Rbias:b');
+      path('Rbias:a',point(x-435,y),'Vbias:p');
+      path('Vbias:n',point(x-435,y+145,'G'));
+    }
+    doc.probes.output=output;
+    return doc;
+  }
+
   function layout(network,type,params){
     const doc=Bench.remove(network);
+    if(type==='detector-chain'||type==='noninverting')return finalStage(doc);
     if(!['diode-iv','half-wave','half-wave-rc','mos-iv','mos-amplifier','nmos-inverter','nmos-nor','nmos-nand','cmos-inverter'].includes(type))return doc;
 
     const hidden=new Set(['Rref','Rleak','Jout']);

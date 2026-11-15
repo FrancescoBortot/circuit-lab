@@ -24,3 +24,21 @@ test('guided sheet diagrams preserve the connections between visible components'
   }
  }
 });
+
+test('the guided final stage preserves all terminal connections with and without bias',()=>{
+ const {layout}=require('../guided-schematic'),Bench=require('../bench-model');
+ for(const type of ['detector-chain','noninverting'])for(const biasEnabled of [false,true])for(const mode of ['ideal','real']){
+  const p={...L.defaults(type),biasEnabled,bench:{...Bench.defaults(),mode}};
+  const full=L.network(p),before=JSON.stringify(full),nominal=Bench.remove(full),sheet=layout(full,type,p);
+  assert.equal(JSON.stringify(full),before);
+  assert.deepEqual(M.validate(sheet),[]);
+  const original=M.topology(nominal).nodes,drawn=M.topology(sheet).nodes;
+  const pins=sheet.components.filter(c=>!c.schematicDecoration).flatMap(c=>M.PINS[c.type].map(pin=>c.id+':'+pin));
+  for(const a of pins){
+   assert.equal(drawn[a]<0,original[a]<0,a);
+   for(const b of pins)assert.equal(drawn[a]===drawn[b],original[a]===original[b],a+' '+b);
+  }
+  assert.equal(drawn[sheet.probes.output],drawn['Ufinal:out']);
+  assert.ok(sheet.components.some(c=>c.schematicJunction&&drawn[c.id+':j']===drawn['Ufinal:minus']));
+ }
+});

@@ -108,8 +108,21 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 #appLayout.inspector-closed .guided-settings-shortcut{display:inline-flex}
 .breadboard-guided-active #appLayout.inspector-closed .guided-settings-shortcut{display:none}
 .student-workbench .guided-toolbar{min-height:44px;padding:5px 10px}
-.guided-toolbar .schematic-tools{flex:1;justify-content:flex-end;margin:0}
-.guided-toolbar .bb-view-switch{margin-inline-end:auto}
+.guided-toolbar .schematic-tools{flex:1;min-width:0;flex-wrap:wrap;justify-content:flex-end;margin:0}
+.guided-view-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-inline-end:auto;max-width:100%}
+.guided-view-tools .bb-view-switch{margin:0}
+.guided-view-tools>.text-button{min-height:32px;padding:4px 8px;border:1px solid #ced9ec;border-radius:7px;background:#fff;color:#355681;font-size:11px}
+.guided-view-tools>.text-button:hover,.guided-view-tools>.text-button[aria-expanded=true]{background:#edf3ff;border-color:#9dafd8}
+.guided-tool-short{display:none}
+@media(min-width:761px) and (max-width:1000px){
+ .student-workbench:not(.breadboard-guided-active) #appLayout:not(.inspector-closed) .guided-view-tools{max-width:calc(100% - 290px)}
+}
+@media(max-width:520px){
+ .guided-view-tools{flex-basis:100%}
+ .guided-view-tools>.text-button{min-height:40px}
+ .guided-view-tools>.text-button>span:not(.guided-tool-short){display:none}
+ .guided-tool-short{display:inline}
+}
 @media(max-width:760px){
  .student-workbench .guided-workspace-heading .workspace-views{margin-inline-start:0}
  .student-workbench #inspector{width:100%}
@@ -157,7 +170,6 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .bb-toolbar .bb-preset-control[hidden]{display:none!important}
 /* One compact study entry, with the working drawing kept clear. */
 .study-launcher{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:9px 0 13px;flex:none}
-#guidedStudyLauncher .study-launcher{display:grid;gap:4px;padding:0}
 .study-launcher[hidden]{display:none!important}.study-actions{display:flex;gap:6px;flex-wrap:wrap}
 .study-actions button{border:1px solid #ced9ec;border-radius:7px;background:#fff;color:#355681;padding:7px 10px;cursor:pointer;font-size:12px}
 .study-actions button:hover{background:#edf3ff;border-color:#9dafd8}.study-launcher p{margin:0;flex:1 1 230px;font-size:12px;line-height:1.5;color:#506782}
@@ -261,7 +273,6 @@ body[data-student-contrast=high]{--muted:#263c59;--line:#6c7f99;--soft:#fff;back
 .student-workbench .free-center[data-workbench-view=plot] .free-plot-area{flex:0 0 auto;height:clamp(220px,32dvh,360px)}
 .student-workbench .inspector-scroll{display:flex;flex-direction:column;gap:12px}
 #inspector .inspector-scroll>*{flex-shrink:0}
-#guidedStudyLauncher:empty{display:none}
 .student-workbench .free-results .graph-details{order:4}
 .student-workbench .free-results .free-results-bottom{order:3}
 .student-workbench .free-results .free-result-content{order:2}
@@ -377,7 +388,6 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
  .diode-comparison .plot-time-controls label{flex-basis:145px}
 }
 
-.measurement-guide-launch{align-self:flex-start;text-align:left;color:#3154b0}
 .measurement-guide{padding:10px 12px;margin:0;border:1px solid #cad8ef;border-radius:8px;background:#f7faff;color:#263e61;flex:none}
 .schematic-pane>.measurement-guide{margin:0 10px 8px}
 .measurement-guide-head,.measurement-guide-controls,.measurement-guide-entry{display:flex;gap:6px 10px;align-items:end;flex-wrap:wrap}

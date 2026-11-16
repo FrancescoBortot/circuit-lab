@@ -61,7 +61,7 @@
 .breadboard-guided-active #inspector,.breadboard-guided-active #schematicStage,.breadboard-guided-active .schematic-hint,.breadboard-guided-active .workspace-views,.breadboard-guided-active .analysis-pane,.breadboard-guided-active #paneDivider{display:none!important}
 .breadboard-guided-active .workbench{overflow-x:hidden;overflow-y:auto;display:block;overscroll-behavior-y:contain;scrollbar-gutter:stable;overflow-anchor:none}
 .breadboard-guided-active .schematic-pane,.breadboard-guided-active [data-workbench-view=plot] .schematic-pane{display:block!important;height:auto;overflow:visible;flex:none}
-.breadboard-guided-active .schematic-tools>:not(.bb-view-switch){display:none}
+.breadboard-guided-active .schematic-tools>:not(.guided-view-tools){display:none}
 .breadboard-free-active #freeWorkspace{grid-template-columns:175px minmax(0,1fr)}
 .breadboard-free-active .free-inspector,.breadboard-free-active .free-canvas-wrap,.breadboard-free-active .free-canvas-footer,.breadboard-free-active .free-results,.breadboard-free-active .free-workspace-views,.breadboard-free-active [data-free-view]{display:none!important}
 .breadboard-free-active .free-center{overflow-x:hidden;overflow-y:auto;display:block;overscroll-behavior-y:contain;scrollbar-gutter:stable;overflow-anchor:none}

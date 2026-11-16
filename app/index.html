@@ -76,7 +76,13 @@
     </header>
     <section class="schematic-pane" aria-labelledby="schematicTitle">
       <div class="pane-toolbar guided-toolbar"><h2 id="schematicTitle" class="sr-only">Schema del circuito</h2>
-        <div class="schematic-tools"><button type="button" class="text-button" id="guidedSchematicDetails" aria-pressed="false" title="Mostra anche i componenti equivalenti usati nella simulazione" hidden>Modello completo</button><button class="button edit-button" id="editButton" aria-expanded="true" aria-label="Modifica componenti"><svg><use href="#i-settings"/></svg><span>Modifica</span></button><button class="icon-button" id="rotateComponent" aria-label="Ruota il componente selezionato" title="Ruota il componente selezionato"><svg><use href="#i-rotate"/></svg></button><span class="tool-divider"></span><button class="icon-button" id="diagramOut" aria-label="Riduci schema"><svg><use href="#i-minus"/></svg></button><span id="diagramZoom" class="zoom-number">100%</span><button class="icon-button" id="diagramIn" aria-label="Ingrandisci schema"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="diagramFit" aria-label="Centra schema"><svg><use href="#i-fit"/></svg></button><button class="icon-button" id="resetLayout" aria-label="Ripristina disposizione dei componenti" title="Ripristina disposizione"><svg><use href="#i-reset"/></svg></button></div>
+        <div class="schematic-tools">
+          <div class="guided-view-tools">
+            <button type="button" class="text-button" id="guidedStudyLauncher" data-study-open="plan" aria-label="Assistente di laboratorio" aria-haspopup="dialog"><span>Assistente di laboratorio</span><span class="guided-tool-short">Assistente</span></button>
+            <button type="button" class="text-button" id="openMeasureGuide" aria-label="Dove mettere i puntali" aria-controls="measurementGuide" aria-expanded="false"><span>Dove mettere i puntali</span><span class="guided-tool-short">Puntali</span></button>
+          </div>
+          <button type="button" class="text-button" id="guidedSchematicDetails" aria-pressed="false" title="Mostra anche i componenti equivalenti usati nella simulazione" hidden>Modello completo</button><button class="button edit-button" id="editButton" aria-expanded="true" aria-label="Modifica componenti"><svg><use href="#i-settings"/></svg><span>Modifica</span></button><button class="icon-button" id="rotateComponent" aria-label="Ruota il componente selezionato" title="Ruota il componente selezionato"><svg><use href="#i-rotate"/></svg></button><span class="tool-divider"></span><button class="icon-button" id="diagramOut" aria-label="Riduci schema"><svg><use href="#i-minus"/></svg></button><span id="diagramZoom" class="zoom-number">100%</span><button class="icon-button" id="diagramIn" aria-label="Ingrandisci schema"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="diagramFit" aria-label="Centra schema"><svg><use href="#i-fit"/></svg></button><button class="icon-button" id="resetLayout" aria-label="Ripristina disposizione dei componenti" title="Ripristina disposizione"><svg><use href="#i-reset"/></svg></button>
+        </div>
       </div>
       <div class="schematic-stage" id="schematicStage"><svg id="realSchematic" hidden tabindex="0" role="group" aria-label="Schema modificabile del circuito guidato"></svg><svg id="schematic" role="group" tabindex="0" aria-label="Schema modificabile: clicca un componente per modificarne i valori, trascinalo per spostarlo."></svg></div>
       <div class="schematic-hint"><span><i></i><strong>Clicca un valore per modificarlo.</strong> Sfondo o Esc per deselezionare. Trascina per spostare.</span><button type="button" class="text-button schematic-download" id="downloadSchematic" title="Scarica lo schema come immagine PNG">Scarica schema</button><button class="text-button" id="toggleSchematic" title="Nascondi il circuito e ingrandisci il grafico">Nascondi circuito</button></div>
@@ -117,8 +123,6 @@
         <p id="sheetPresetAdvice" hidden></p><small id="guidedTrialChanged" class="guided-trial-modified" hidden>Prova personalizzata</small>
       </section>
       <button type="button" class="button" id="compareLabTransients" aria-haspopup="dialog" hidden></button>
-      <button type="button" class="button measurement-guide-launch" id="openMeasureGuide" aria-controls="measurementGuide" aria-expanded="false">Dove mettere i puntali</button>
-      <div id="guidedStudyLauncher"></div>
       <div id="inspectorContent"></div>
       <div class="bench-mode-strip">
         <span>Montaggio</span>

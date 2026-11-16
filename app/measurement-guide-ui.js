@@ -1,10 +1,7 @@
 (() => {
  'use strict';
  const lab=window.GuidedLab,board=window.BreadboardWorkbench,guide=window.MeasurementGuide;
- const $=s=>document.querySelector(s),schemaButton=$('#openMeasureGuide');
- const boardButton=schemaButton.cloneNode(true);
- boardButton.id='openBoardMeasureGuide';
- $('.bb-guide-tools').append(boardButton);
+ const $=s=>document.querySelector(s),button=$('#openMeasureGuide');
  const panel=document.createElement('section');
  panel.id='measurementGuide';panel.className='measurement-guide';panel.hidden=true;
  panel.setAttribute('aria-labelledby','measurementGuideTitle');
@@ -32,7 +29,8 @@
  const field=s=>panel.querySelector(s);
  const choice=field('[data-measure-choice]'),reading=field('#meterReading'),unit=field('#meterUnit');
  const schematicStage=$('#schematicStage'),boardWrap=$('.bb-board-wrap');
- const buttons=[schemaButton,boardButton],status=field('#meterStatus');
+ const status=field('#meterStatus');
+ const boardWorkbench=$('.bb-workbench');
  let active=false,scope='',currentId='',steps=[],location=null,frame=null;
  const unitOptions={V:[[1,'V'],[1e-3,'mV']],A:[[1e-3,'mA'],[1e-6,'µA'],[1,'A']],
   Ω:[[1,'Ω'],[1e3,'kΩ'],[1e6,'MΩ']],F:[[1e-9,'nF'],[1e-12,'pF'],[1e-6,'µF'],[1e-3,'mF']]};
@@ -79,7 +77,7 @@
   clearMarkers();
   location=null;
   if(onBoard){
-   if(step.series&&$('.bb-workbench').dataset.step!=='3')return 'Per vedere il collegamento da interrompere, seleziona la vista completa del montaggio.';
+   if(step.series&&boardWorkbench.dataset.step!=='3')return 'Per vedere il collegamento da interrompere, seleziona la vista completa del montaggio.';
    const model=board.measurementReference(),resolved=guide.boardPoints(model,step);
    if(!resolved)return 'Il collegamento non è disponibile nella vista di riferimento attuale.';
    location=resolved;
@@ -100,19 +98,16 @@
  }
  function close(restore=false){
   active=false;panel.hidden=true;clearMarkers();
-  for(const button of buttons)button.setAttribute('aria-expanded','false');
-  if(restore){
-   const trigger=board.isActive()?boardButton:schemaButton;
-   (trigger.getClientRects().length?trigger:$('#guidedShowSettings'))?.focus({preventScroll:true});
-  }
+  button.setAttribute('aria-expanded','false');
+  if(restore)(button.getClientRects().length?button:$('.guided-view-tools [aria-pressed="true"]'))?.focus({preventScroll:true});
  }
  function update(){
   const onBoard=board.isActive(),free=window.circuitEditor.active;
   const doc=lab.document(),params=lab.parameters(),key=doc.session?.id+':'+doc.experiment;
   const next=free?[]:guide.forCircuit(params);
-  for(const button of buttons)button.hidden=!next.length;
+  button.hidden=!next.length||onBoard&&boardWorkbench.classList.contains('physical-mode');
   if(scope!==key){if(scope)close();scope=key;currentId='';}
-  if(!active||!next.length||onBoard&&$('.bb-workbench').classList.contains('physical-mode')){
+  if(!active||button.hidden){
    panel.hidden=true;clearMarkers();return;
   }
   const host=onBoard?boardWrap:schematicStage;
@@ -152,15 +147,11 @@
   }));
  }
  function schedule(){if(frame!==null)return;frame=requestAnimationFrame(()=>{frame=null;update();});}
- for(const button of buttons)button.addEventListener('click',()=>{
+ button.addEventListener('click',()=>{
   if(active&&!panel.hidden){close(true);return;}
   if(lab.snapshot()===null){window.circuitEditor.note('Correggi i valori prima di aprire la guida.',true);return;}
   active=true;
-  for(const trigger of buttons)trigger.setAttribute('aria-expanded','true');
-  if(!board.isActive()){
-   if($('.workbench').dataset.workbenchView==='plot')lab.setWorkspaceView('both');
-   if(matchMedia('(max-width:760px)').matches)lab.showInspector(false);
-  }
+  button.setAttribute('aria-expanded','true');
   update();
   if(!panel.hidden){panel.scrollIntoView({block:'nearest'});choice.focus({preventScroll:true});}
  });
@@ -206,7 +197,7 @@
   if(records.some(record=>record.type==='attributes'||[...record.addedNodes,...record.removedNodes].some(node=>!node.classList?.contains('measurement-probe-markers'))))schedule();
  });
  for(const selector of ['#schematic','#realSchematic','.bb-board-wrap'])observer.observe($(selector),{childList:true});
- observer.observe($('.bb-workbench'),{attributes:true,attributeFilter:['hidden','class']});
+ observer.observe(boardWorkbench,{attributes:true,attributeFilter:['hidden','class']});
  observer.observe(document.body,{attributes:true,attributeFilter:['class']});
  update();
 })();

@@ -169,7 +169,7 @@ Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento
 
 ### Dove mettere i puntali
 
-Apri **Dove mettere i puntali** nel pannello di destra o nella guida della Breadboard. Scegli la misura e segui i punti numerati. In Breadboard sono indicati i fori della vista di riferimento. Per una corrente continua, il tratteggio segnala il collegamento da interrompere a tensione spenta per inserire l’amperometro in serie.
+Trovi **Assistente di laboratorio** e **Dove mettere i puntali** accanto a **Schema** e **Breadboard**. Apri **Dove mettere i puntali** per vedere i collegamenti della misura. Scegli la misura e segui i punti numerati. In Breadboard sono indicati i fori della vista di riferimento. Per una corrente continua, il tratteggio segnala il collegamento da interrompere a tensione spenta per inserire l’amperometro in serie.
 
 Per una lettura con il multimetro, immetti valore e unità e scegli **Annota nel quaderno**. Le Note conservano i collegamenti, la prova attiva e gli eventuali riferimenti ai fori. Le misure di resistenza e capacità hanno anche il comando **Usa nel modello**.
 

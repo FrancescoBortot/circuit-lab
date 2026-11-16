@@ -167,6 +167,12 @@ Nell’esportazione LaTeX scegli dimensioni dei simboli, caratteri, orientamento
 
 **Misura segue il contesto attivo:** in RC/Transitorio propone τ e fit; in RC/Bode propone taglio e fase; negli operazionali propone ampiezze/VTC oppure banda/fase. I pannelli RC non vengono proposti sui circuiti con operazionale. Nell’editor libero le sonde richiedono un circuito completo; l’inserimento di dati sperimentali resta distinto. Le letture del cursore sono subito sotto il grafico. La croce in alto nei pannelli rimane visibile anche scorrendo Esporta.
 
+### Dove mettere i puntali
+
+Apri **Dove mettere i puntali** nel pannello di destra o nella guida della Breadboard. Scegli la misura e segui i punti numerati. In Breadboard sono indicati i fori della vista di riferimento. Per una corrente continua, il tratteggio segnala il collegamento da interrompere a tensione spenta per inserire l’amperometro in serie.
+
+Per una lettura con il multimetro, immetti valore e unità e scegli **Annota nel quaderno**. Le Note conservano i collegamenti, la prova attiva e gli eventuali riferimenti ai fori. Le misure di resistenza e capacità hanno anche il comando **Usa nel modello**.
+
 ### Confronti guidati nelle sei giornate
 
 Apri il confronto nel pannello di destra. La legenda identifica A e B e la riga sopra il grafico indica cosa resta uguale. Quando sono disponibili due letture della stessa prova, scegli la coppia o il grafico dai pulsanti in alto. Il circuito aperto rimane disponibile con i suoi parametri.

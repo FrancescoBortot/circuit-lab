@@ -376,3 +376,31 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
  .diode-comparison .plot-division :is(input,select){padding-inline:4px}
  .diode-comparison .plot-time-controls label{flex-basis:145px}
 }
+
+.measurement-guide-launch{align-self:flex-start;text-align:left;color:#3154b0}
+.measurement-guide{padding:10px 12px;margin:0;border:1px solid #cad8ef;border-radius:8px;background:#f7faff;color:#263e61;flex:none}
+.schematic-pane>.measurement-guide{margin:0 10px 8px}
+.measurement-guide-head,.measurement-guide-controls,.measurement-guide-entry{display:flex;gap:6px 10px;align-items:end;flex-wrap:wrap}
+.measurement-guide-head{justify-content:space-between;align-items:center;margin-bottom:4px}
+.measurement-guide h2{font-size:14px;line-height:1.3;margin:0}
+.measurement-guide p{margin:4px 0;font-size:12px}
+.measurement-guide p:empty{display:none}
+.measurement-guide [data-measure-mode]{font-weight:650}
+.measurement-guide ol{display:flex;flex-wrap:wrap;gap:3px 20px;margin:5px 0;padding-left:22px;font-size:12px}
+.measurement-guide li::marker,.measurement-guide li strong{color:var(--probe-color);font-weight:700}
+.measurement-guide :is(button,select,input){border:1px solid #becde6;border-radius:6px;background:white;color:inherit;padding:4px 8px}
+.measurement-guide button:hover{background:#edf3ff}
+.measurement-guide label{display:grid;gap:2px;font-size:11px;font-weight:600;min-width:0}
+.measurement-guide-controls label{flex:0 1 290px;max-width:100%}
+.measurement-guide select{width:100%;min-width:0;text-overflow:ellipsis}
+.measurement-guide-entry{margin-top:7px}
+.measurement-guide-entry input{width:10em;max-width:100%}
+.measurement-guide #meterStatus{color:#314d77}
+.measurement-probe-markers{pointer-events:none}
+.measurement-probe-ring{fill:none;stroke-width:2.5;vector-effect:non-scaling-stroke}
+.measurement-probe-tag{font:700 17px system-ui,sans-serif;stroke:white;stroke-width:3;paint-order:stroke;stroke-linejoin:round}
+.measurement-probe-wire{fill:none;stroke:#af2755;stroke-width:3;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}
+@media(max-width:560px){
+ .measurement-guide-controls label{flex-basis:100%}
+ .measurement-guide ol{display:block}
+}

@@ -96,7 +96,7 @@
  }
  function schematicImage(svg){
   const scene=svg.querySelector('#diagramScene'),base=scene||svg;
-  const groups=[...base.children].filter(el=>!el.matches('defs,rect,.free-selection-box,.pending-wire'));
+  const groups=[...base.children].filter(el=>!el.matches('defs,rect,.free-selection-box,.pending-wire,.measurement-probe-markers'));
   if(!groups.length)throw Error('Aggiungi almeno un componente prima di scaricare lo schema.');
   const transform=base.getCTM().inverse();
   const corners=groups.flatMap(el=>{

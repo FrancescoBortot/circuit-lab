@@ -20,7 +20,7 @@ Nel pannello Segnali l’impulso ha livelli, durata, periodo, ritardo e tempi de
 
 ## Linearità in carica
 
-Preamplificatore e catene con preamplificatore offrono Linearità · Q. La scansione usa impulsi negativi isolati con riposo 0 V, fronti istantanei e ritardo 20 µs. Il livello attivo è il valore assoluto del livello corrente, con segno negativo. Le durate e il numero di impulsi si modificano in Analisi. Qin = |Vin|·T/Rin è il riferimento nominale con ingresso a massa virtuale; non è una misura della carica effettiva in presenza di limiti o impedenze aggiuntive.
+Preamplificatore e catene con preamplificatore offrono **Linearità · Q**. La scansione usa impulsi negativi isolati con fronti istantanei. Il livello attivo è riposo − |Vin|. Con riposo a 0 V il ritardo è di 20 µs. Con offset il ritardo è almeno 20 τpre. Imposta durate e numero di impulsi in **Analisi**. Qin = |Vin|·T/Rin è il riferimento nominale per un ingresso a massa virtuale.
 
 Il grafico confronta i picchi rispetto alla baseline con un fit lineare non pesato. Il CSV contiene Qin_C, Vout_picco_V, T_s, baseline_V, fit_V e residuo_V. Nessuna incertezza sperimentale è assegnata ai dati simulati. La relazione conserva le condizioni della scansione; il JSON guidato permette di riprenderla. Nei transitori il CSV include anche PRE e SHAPER quando presenti.
 

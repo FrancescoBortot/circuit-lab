@@ -1,6 +1,6 @@
 # Analisi RC: dal transitorio al confronto con i dati
 
-Apri **Analisi RC**, sopra il grafico, oppure **Analisi RC · tempo e frequenza** nelle proprietà. Il pannello è disponibile nell’esperienza RC e nei circuiti liberi con condensatori. Tutti i calcoli e la lettura dei file avvengono sul dispositivo, anche offline.
+Apri **Misura τ** sopra il grafico nell’esperienza RC. Nell’editor libero, trovi l’analisi RC tra gli strumenti di misura dei circuiti con condensatori. Calcoli e lettura dei file avvengono sul dispositivo, anche offline.
 
 ## Percorso essenziale
 
@@ -41,6 +41,6 @@ CSV: massimo 200 kB e 4 000 punti, delimitatore virgola/punto e virgola/tab, dec
 
 ## Verifiche e riferimenti
 
-Il blocco temporale aggiungeva 24 test. La suite corrente conta 122 test, inclusa l’analisi AC. Include esponenziali note di carica/scarica con offset, pesatura, covarianza verificata con una formula indipendente, regressione logaritmica contro OLS indipendente, soglia, taglio, formati e round-trip. Le prove dell’interfaccia e i limiti del collaudo sono registrati in `VERIFICHE.md`.
+I test coprono carica e scarica con offset, pesatura, covarianza, regressione logaritmica, soglia, taglio e riapertura dei dati. Per riprodurre il percorso con dati sintetici, segui la [procedura RC](USO_RAPIDO.md#fit-e-bilancio-specifici-della-rc). I controlli automatici sono nel [workflow di pubblicazione](../.github/workflows/pages.yml).
 
 Riferimenti metodologici consultati: [NIST, least squares](https://www.itl.nist.gov/div898/handbook/pmd/section4/pmd431.htm) e [SciPy, curve_fit: sigma assolute e covarianza locale](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html). L’implementazione non dipende da SciPy e non è stata confrontata eseguendo SciPy.

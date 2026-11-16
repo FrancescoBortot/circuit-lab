@@ -30,8 +30,9 @@ id_ed25519
 /app/benchmark/phase6-demo/
 /app/benchmark/rc-workflow/
 
-# Guide distribuite; i registri storici restano in locale.
+# Guide distribuite. L’elenco esclude registri di lavoro e anteprime locali.
 /docs/*
+!/docs/README.md
 !/docs/USO_RAPIDO.md
 !/docs/ANALISI_RC.md
 !/docs/ANALISI_FREQUENZA.md

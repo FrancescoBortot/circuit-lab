@@ -12,4 +12,4 @@ Le tabelle modificabili conservano raw e originalPoints nel JSON. L’HTML della
 
 Le netlist sono dati. Importazione volutamente limitata R/C/L/V/I; i modelli U comportamentali possono essere esportati verso ngspice, ma non reimportati tramite espressioni. Per lo scambio completo usare JSON/ZIP. Il parser non esegue direttive, non legge include e non carica librerie.
 
-Verifiche e limiti nel registro `PROBLEMATICHE_E_AVANZAMENTO.md`. Test: `node --test app/tests/*.test.cjs`. Esempio di relazione e ZIP in `app/benchmark/phase6-demo/`.
+Per generare una relazione HTML e uno ZIP con dati sintetici, esegui `node app/scripts/check-rc-workflow.cjs` dalla radice del repository. I file vengono scritti in `app/benchmark/rc-workflow/`. [Procedura RC](USO_RAPIDO.md#fit-e-bilancio-specifici-della-rc).

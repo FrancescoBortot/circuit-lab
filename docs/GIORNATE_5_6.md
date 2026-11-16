@@ -51,7 +51,7 @@ Il JSON riapre il circuito guidato, la prova, i componenti e i dati. Lo ZIP dell
 
 ## Breadboard
 
-Passa da **Schema** a **Breadboard** per vedere il cablaggio di riferimento o montare la prova nella vista **Verifica il mio montaggio**. **Montaggio e misure dalla scheda** riporta i collegamenti e le impostazioni del banco per la prova corrente.
+Passa da **Schema** a **Breadboard** per vedere il cablaggio di riferimento. Usa **Riproduci e verifica** per disporre i componenti sulla basetta modificabile. **Montaggio e misure dalla scheda** riporta collegamenti e impostazioni del banco per la prova corrente.
 
 Il 1N4148 ha la fascia sul catodo. Nel raddrizzatore con filtro il positivo dell’elettrolitico va a OUT. I MOSFET delle prove guidate condividono un CD4007UB a 14 pin, da inserire sul canale centrale. I body sono collegati a VSS (pin 7) e VDD (pin 14). Nella NAND M1 è dalla parte di GND e il nodo fra i due transistor resta separato da massa. Nell’inverter CMOS della figura 8 i pin 8 e 13 sono uniti a OUT.
 

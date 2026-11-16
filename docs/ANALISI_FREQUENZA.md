@@ -1,6 +1,6 @@
 # Misure in frequenza della RC
 
-Apri **Analisi RC** sopra il grafico oppure **Analisi RC · tempo e frequenza** nelle proprietà. Nel pannello scegli **Frequenza · Bode**. **Tempo · τ e fit** riporta al transitorio. I due insiemi di dati sono conservati nello stesso progetto, senza sostituirsi.
+Nell’esperienza RC apri **Misura τ** sopra il grafico. Nel pannello scegli **Frequenza · Bode**. **Tempo · τ e fit** riporta al transitorio. Il progetto conserva i due insiemi di dati.
 
 ## Un percorso completo
 
@@ -52,6 +52,6 @@ Il JSON conserva testo originale, unità, formato, convenzione delle ampiezze, r
 - `app/esempi/rc-bode-dimostrativo.csv`: undici punti sintetici, generati con fc = 160 Hz e G₀ = 0,96, con perturbazione deterministica; non sono dati di un montaggio reale né una realizzazione casuale certificata.
 - `app/esempi/rc-tempo-e-frequenza.json`: circuito libero con due sonde, dataset temporale e dataset AC dimostrativi. Contenuto preparato dal pannello, salvato come artefatto locale e riaperto dall’interfaccia tramite testo JSON; non è una prova del download del browser.
 
-La suite conta 122 test: 19 nuovi su formati AC, fase, fit, identificabilità, incertezze, interpolazione e conservazione dei dati. Le risposte RC sono verificate con equazioni indipendenti; le covarianze e la propagazione del taglio sono confrontate con derivate numeriche indipendenti. Le prove effettive dell’interfaccia e le verifiche ancora aperte sono in `VERIFICHE.md`.
+I test coprono formati AC, fase, fit, identificabilità, incertezze e conservazione dei dati. Le risposte RC sono confrontate con equazioni indipendenti. Le covarianze e la propagazione del taglio sono verificate con derivate numeriche. [Controlli automatici](../.github/workflows/pages.yml).
 
 Riferimenti: [Analog Devices, filtri RC e definizione del taglio](https://wiki.analog.com/university/courses/engineering_discovery/lab_5), [NIST, propagazione e covarianze](https://physics.nist.gov/cuu/Uncertainty/combination.html). Il simulatore non carica questi siti: i collegamenti sono documentazione facoltativa. I calcoli usano solo i file locali inclusi.

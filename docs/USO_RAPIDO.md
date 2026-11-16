@@ -14,7 +14,7 @@ Gli esempi si trovano in “Parti da un esempio”. Diodi/BJT/MOS hanno modelli 
 
 ## Interfaccia per lo studio
 
-La barra **Costruisci → Simula → Misura → Esporta** indica l’attività scelta. **Simula** apre le impostazioni; **Esegui simulazione** avvia il calcolo. La scheda dell’esperienza indica obiettivo, parametro da variare e grandezze da tenere fisse. Cambiare una prova mostra prima un’anteprima: il circuito cambia solo con **Applica**.
+La barra **Costruisci → Simula → Misura → Esporta** indica l’attività scelta. **Simula** apre le impostazioni. **Esegui simulazione** avvia il calcolo. La scheda dell’esperienza indica obiettivo, parametro da variare e grandezze da tenere fisse. Scegli una voce in **Prove della scheda** per applicarla al circuito.
 
 - **Componenti e banco:** seleziona un componente e usa **Trova nello schema** o **Trova nella breadboard**. La costruzione guidata mostra azione, punti precisi, motivo fisico e controllo. Le inquadrature e gli zoom restano indipendenti. Le impostazioni avanzate si possono aprire insieme senza perdere i controlli esistenti.
 - **Valori:** puoi scrivere `22k`, `2,2 nF` o `1e-3 s` nel campo della grandezza corrispondente. Controlla l’interpretazione mostrata; **Annulla questa modifica** ripristina il valore del componente originale anche dopo averne selezionato un altro; aprire un altro progetto rende conclusa quella modifica. V e Vpp indicano grandezze diverse. Le frecce della tastiera aumentano o diminuiscono il valore visualizzato; Maiusc modifica di dieci unità.
@@ -80,7 +80,7 @@ Nel **Transitorio guidato**, apri **Misure e controlli del grafico** per trovare
 
 ## Percorso consigliato per studiare
 
-L’**Assistente di laboratorio** è nel pannello di destra, sopra i parametri del circuito. Si apre in un pannello riducibile, lasciando accessibile il circuito.
+L’**Assistente di laboratorio** si apre dal pulsante sopra lo schema. Puoi ridurlo per vedere il circuito.
 
 - **Prepara la prova** collega obiettivo, parametro da variare e condizioni da mantenere. Puoi aprire il componente indicato, esaminare una prova pronta con anteprima, passare al grafico, confrontare misure e annotare nel quaderno.
 - **Previsione e modello** calcola riferimenti ideali usando i valori attuali: per esempio τ e taglio RC, guadagno e baseline del non invertente, oppure tempi dello shaping. Scegli un parametro e un’ipotesi (doppio, metà o ±1%): la tabella confronta le previsioni **senza modificare il circuito**. Le ipotesi ideali, gli effetti inclusi nel modello e le possibili differenze al banco rimangono distinti. Per reti libere non riconosciute non viene inventata una formula: è disponibile lo studio Parametri e tolleranze. I parametri tipici TL082 si esaminano in un’anteprima prima di applicarli; restano un profilo parziale, non un macromodello del costruttore.

@@ -1,6 +1,6 @@
 # Fase 2 · motore numerico e verifica
 
-Aggiornamento del 24 ottobre 2026. **156 test superati**, sette confronti matematici e nove confronti esterni superati. Il confronto esterno è registrato in `app/benchmark/ngspice/results.json`; non considerare quel confronto eseguito se il file non è presente o contiene `pass: false`.
+I risultati dei confronti SPICE riportano il riferimento, le soglie e l’esito dei casi verificati. [Risultati ngspice](../app/benchmark/ngspice/results.json).
 
 ## Integrazione adattiva
 
@@ -37,4 +37,4 @@ L’ultimo comando usa il riferimento di sviluppo in `app/.tools/ngspice-local/b
 
 Il confronto SPICE usa netlist esplicite, impostazioni e dati grezzi conservati per ogni circuito. Le analisi AC confrontano modelli lineari corrispondenti. L’operazionale del riferimento transitorio ha un polo dominante con uscita bufferizzata; le prove sono a piccolo segnale, senza saturazione. La saturazione è verificata con vincoli e test del motore locale, non mediante quel modello lineare esterno.
 
-Fonti del riferimento: [ngspice ufficiale](https://ngspice.sourceforge.io/download.html) e [metadati Homebrew](https://formulae.brew.sh/api/formula/ngspice.json). Il download di preparazione è stato autorizzato esplicitamente dall’utente. Il tarball 47 è verificato tramite SHA-256 `894e649651f1838a14095e5a5439e7d3aa63e87ede14d283173fda4fcdef675f`. Nessun circuito o misura viene trasmesso.
+Il workflow di pubblicazione scarica il sorgente di ngspice 47 e ne verifica il digest SHA-256 prima della compilazione. [Workflow](../.github/workflows/pages.yml) · [Sorgenti ufficiali di ngspice](https://ngspice.sourceforge.io/download.html).

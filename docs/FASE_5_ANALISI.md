@@ -1,6 +1,6 @@
 # Analisi e grandezze fisiche
 
-La fase 5 aggiunge punto DC, scansione DC, griglie e fasori AC, PULSE/PWL, RL/RLC, correnti/potenze/energie. I dettagli e i limiti sono nel registro `PROBLEMATICHE_E_AVANZAMENTO.md`.
+L’editor libero offre punto DC, scansione DC, fasori AC e transitorio. Puoi usare sorgenti PULSE/PWL e osservare tensioni, correnti, potenze ed energie. [Guida rapida](USO_RAPIDO.md) · [Motore numerico](FASE_2_MOTORE.md).
 
 Riproduzione locale:
 

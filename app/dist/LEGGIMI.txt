@@ -1,48 +1,39 @@
 CIRCUIT LAB · SIMULATORE OFFLINE
 
-PER INIZIARE
-1. Estrai tutto il contenuto dello ZIP in una cartella.
-2. Apri Circuit Lab.html con un browser aggiornato e JavaScript abilitato.
-3. Scegli Circuito RC e modifica R o C per osservare il risultato.
+APRIRE L’APP
+1. Estrai Circuit-Lab-offline.zip in una cartella.
+2. Apri Circuit Lab.html con un browser aggiornato e JavaScript attivo.
+3. Scegli Circuito RC per provare il simulatore.
 
-Non servono account, Internet, installazioni di Python o Node.js, né LTspice.
-Il file HTML contiene il programma, gli stili e il motore di calcolo.
-Il pacchetto non contiene slide o schede delle giornate di laboratorio.
+Basta il browser. Il file HTML contiene anche il motore di calcolo.
+Calcoli e dati restano sul dispositivo. Per le consegne usa le schede
+fornite dal corso.
 
-GIORNATE DI LABORATORIO
-Il menu a sinistra raccoglie le quattro giornate. Nella terza trovi
-preamplificatore di carica e shaper CR-RC, anche con buffer finale.
-Nella quarta trovi undershoot, compensazione polo-zero, amplificatore
-non invertente e catena completa. Prova guidata prepara le situazioni
-particolari di ciascun circuito. I valori iniziali sono esempi modificabili.
-Preamplificatore e catena offrono anche Linearità in carica, con fit e
-residui nel CSV.
+PREPARARE UNA PROVA
+Scegli un circuito dall’elenco delle sei giornate. In Prove della scheda
+la scelta applica subito i parametri. Usa Prove e parametri per riaprire
+il pannello a destra.
 
-CONSERVA IL TUO LAVORO
-Nelle esperienze guidate, assegna il nome alla sessione in alto e scegli
-una Prova guidata. Salva sessione prepara uno ZIP con sottocartelle per
-circuito e file nominati con sessione, circuito e prova. La freccia accanto
-al pulsante apre le prove conservate e, nei browser compatibili, permette
-di scegliere una cartella locale per salvare direttamente i file.
+Apri Breadboard per consultare il montaggio e Dove mettere i puntali
+per vedere i punti di misura. Accanto al grafico, Importa e confronta
+misure apre il confronto fra un CSV e il modello attuale.
 
-Per una singola copia JSON, apri le opzioni accanto a Salva sessione oppure
-Progetto e copie nell’editor libero e scegli Scarica copia JSON.
-Per riprendere una prova, usa Apri e seleziona il suo JSON (estrai prima
-lo ZIP, se necessario). La memoria automatica appartiene al browser:
-può cambiare spostando l’applicazione o cancellando i dati del browser.
+SALVARE E RIAPRIRE
+Nelle esperienze guidate scrivi il nome della sessione e premi Salva
+sessione. Lo ZIP raccoglie progetti e risultati. Per un singolo progetto
+usa ⌄ → Scarica copia JSON. Nell’editor libero trovi lo stesso comando
+in Progetto e copie.
 
-CSV esporta i dati e SVG il grafico. Dal quaderno puoi preparare una
-relazione HTML da stampare o salvare in PDF. Calcoli e misure rimangono
-sul dispositivo; i collegamenti esterni si aprono solo se li scegli.
+Per riprendere il lavoro, premi Apri e seleziona il JSON del progetto.
+Se il JSON è in uno ZIP, estrailo prima. Trasferisci il progetto con
+il JSON quando passi dal sito al file offline o cambi dispositivo.
 
-MODELLI E VERIFICHE
-Il programma è in sviluppo e usa modelli didattici con limiti espliciti.
-Controlla sempre unità, impostazioni e ipotesi del modello prima di usare
-un risultato nella relazione. Prova salvataggio e riapertura del JSON
-nel tuo browser prima di iniziare una sessione di lavoro.
+Esporta i dati in CSV e i grafici in PNG o SVG. La relazione HTML si
+apre nel browser e si può stampare o salvare in PDF.
 
-Licenza MIT: il testo completo è in LICENSE.txt e nel file HTML.
+FILE DEL PACCHETTO
+LICENSE.txt contiene la licenza MIT.
 integrita.json riporta dimensione e SHA-256 di Circuit Lab.html.
-Uso online: https://francescobortot.github.io/circuit-lab/
-Codice e guida: https://github.com/FrancescoBortot/circuit-lab
-Il sito e il file locale hanno memorie separate: trasferisci il JSON.
+
+Guida e codice su GitHub
+https://github.com/FrancescoBortot/circuit-lab

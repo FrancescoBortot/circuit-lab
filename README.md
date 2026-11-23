@@ -42,7 +42,7 @@ Per esercitarti con dati sintetici, torna al **Transitorio**. Apri **Misura τ �
 | 5 | Caratteristica I–V del diodo, raddrizzatori, curve e punto di lavoro nMOS | Ripple del raddrizzatore con filtro RC al variare di carico e frequenza |
 | 6 | Amplificatore nMOS, inverter nMOS e CMOS, porte NOR e NAND | Livelli di uscita degli inverter con lo stesso ingresso |
 
-Apri il confronto guidato dal pannello di destra. La legenda indica che cosa rappresentano A e B. Nei confronti e nel transitorio puoi regolare le scale per divisione di **CH1**, **CH2** e dell’asse orizzontale. Per confrontare due ampiezze a vista, usa la stessa scala verticale. **Auto** ripristina la vista completa. [Guida ai confronti](docs/USO_RAPIDO.md#confronti-guidati-nelle-sei-giornate).
+Apri il confronto guidato dal pannello di destra. La legenda indica che cosa rappresentano A e B. Sopra qualsiasi grafico puoi anche premere **Fissa REF** per congelare sullo sfondo la curva attuale e osservare in tempo reale l’effetto di una modifica ai componenti. Sotto il grafico, **Misure e riproduzione** (o **Misure del grafico** nell’editor libero) riporta picchi, baseline, tempi di salita/discesa (10–90%), larghezza a metà altezza (FWHM) e ritardo IN → OUT. Quando il segnale mostra cicli regolari, il pannello riporta anche periodo, frequenza e duty cycle. Nei confronti e nel transitorio puoi regolare le scale per divisione di **CH1**, **CH2** e dell’asse orizzontale. Per confrontare due ampiezze a vista, usa la stessa scala verticale. **Auto** ripristina la vista completa. [Guida ai confronti](docs/USO_RAPIDO.md#confronti-guidati-nelle-sei-giornate).
 
 Nella terza giornata, la prova **1.3 · Verifica della linearità** include la scansione in carica e il piano delle misure al banco. Usa il picco rispetto alla baseline, **ΔV = Vmax − Vbase**. [Prova 1.3](docs/USO_RAPIDO.md#preamplificatore--13-verifica-della-linearità).
 
@@ -66,7 +66,7 @@ Usa i valori misurati dal tuo gruppo e controlla le ipotesi del modello. Per inc
 
 | Ti serve… | Usa |
 | --- | --- |
-| Riprendere una prova o trasferirla su un altro dispositivo | **⌄ → Scarica copia JSON**. Nell’editor libero usa **Progetto e copie → Scarica copia JSON**. Per recuperarla, premi **Apri** e scegli il file. |
+| Riprendere una prova o trasferirla su un altro dispositivo | **⌄ → Scarica copia JSON** oppure **Copia link al circuito** per condividere i parametri del circuito. Usa il JSON per trasferire anche misure e quaderno. Nell’editor libero usa **Progetto e copie**. Per recuperare un JSON, premi **Apri** e scegli il file. |
 | Archiviare una sessione guidata | Dai un nome alla sessione in alto, poi premi **Salva sessione**. Lo ZIP raccoglie i progetti, gli schemi, le relazioni e i risultati già calcolati. |
 | Inserire uno schema o un grafico nella relazione | Usa **Scarica schema** per il PNG dello schema. Per il grafico usa **PNG** o **SVG**. |
 | Consegnare dati e relazione | Esporta i dati in **CSV**. Da **Relazione e file** scarica la relazione HTML e aprila nel browser per stamparla o salvarla in PDF. |

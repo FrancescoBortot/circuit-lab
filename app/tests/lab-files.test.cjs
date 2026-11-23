@@ -6,3 +6,48 @@ test('SPICE import and export preserve RC topology, bias, AC phasor and finite p
 test('SPICE parser rejects unsupported control, files, devices, expressions and ambiguous scans by line',()=>{for(const body of ['.include /tmp/a','.control','B1 a 0 V=1','.model D D','R1 a 0 {R}','R1 a 0 1k\n.dc V1 0 1 .3'])assert.throws(()=>I.parse('Title\nV1 a 0 1\n'+body+'\n.end'),/Riga/);assert.equal(I.number('1M'),.001);assert.equal(I.number('1MEG'),1e6);assert.throws(()=>I.number('1kOhm'),/non supportato/);});
 
 test('free pulse and sine CSV keep absolute voltages and append explicit baseline references',()=>{const L=require('../lab-model');for(const kind of ['pulse','sine']){const p=L.defaults('preamp');p.opamp='ideal';Object.assign(p.wave1,{kind,low:.02,level:-.78,offset:.02,vpp:.04});const doc=L.network(p),result=M.simulate(doc),csv=M.csv(doc,result),lines=csv.trim().split('\r\n');assert.match(lines[0],kind==='pulse'?/OUT_baseline_V,OUT_meno_baseline_V/:/OUT_baseline_DC_V,OUT_meno_baseline_DC_V/);const row=lines[2].split(',').map(Number);assert.ok(Math.abs(row[2]-result.data[1].out)<1e-10);assert.ok(Math.abs(row.at(-1)-(row[2]-row.at(-2)))<1e-10);}});
+
+test('report and archive include notebook, comparison, assembly and semiconductor day 5-6 sections',()=>{
+ const L=require('../lab-model'),NB=require('../notebook-model'),D=require('../comparison-data'),C=require('../study-context');
+ const p=L.defaults('cmos-inverter'),doc=JSON.parse(L.serialize({name:'Sessione CMOS',experiment:'cmos-inverter',analysis:'time',circuits:{'cmos-inverter':p},layouts:{}}));
+ doc.notebookStudy=NB.notes(NB.empty('notebook-cmos'),'guided:cmos-inverter',{prediction:'Uscita invertita <script>',note:'Misura puntali: 4,98 V'});
+ const ds={...D.parse('t_ms,v_mV,u_mV\n0,5000,2\n1,100,2',{kind:'time',xUnit:'ms',yUnit:'mV',sigmaColumn:2}),name:'Misure banco CMOS',conditions:'Sonda 10x',modelStamp:C.stamp(doc)};
+ doc.comparisonStudy={version:1,records:{'cmos-inverter:time':ds}};
+ doc.assemblyStudy={version:1,records:{'guided:cmos-inverter':{signature:'mount-v1-1234abcd',active:false,index:1,checks:{continuity:true},note:'CD4007 verificato',items:{'part:M1':{stamp:'item-v1-1234abcd',status:'checked',note:'Pin 7 a GND'}}}}};
+ const html=F.report(doc,{date:'2026-11-22'});
+ assert.match(html,/Esperienza guidata · giornate 5–6/);
+ assert.match(html,/Tabella di verità DC/);
+ assert.match(html,/Quaderno dell’esperienza/);
+ assert.match(html,/Misura puntali: 4,98 V/);
+ assert.match(html,/Misure sperimentali · Misure banco CMOS/);
+ assert.match(html,/<th>Ascissa \(ms\)<\/th><th>Misura \(mV\)<\/th><th>u standard \(mV\)<\/th>/);
+ assert.match(html,/<tr><td>1<\/td><td>100<\/td><td>2<\/td><td>—<\/td><\/tr>/);
+ assert.match(html,/Montaggio e controlli al banco/);
+ assert.match(html,/CD4007 verificato/);
+ assert.doesNotMatch(html,/<script>/);
+ const archive=F.archive(doc,{date:'2026-11-22'}),entries=F.unzip(archive);
+ assert.equal(new TextDecoder().decode(entries['relazione.html']),html);
+ assert.ok(entries['confronto-time.csv']);
+ assert.equal(new TextDecoder().decode(entries['confronto-time.csv']),ds.raw);
+ assert.deepEqual(L.parse(F.projectFromArchive(archive)).comparisonStudy.records['cmos-inverter:time'],ds);
+});
+
+test('shareable URL hashes round-trip guided and free circuits and reject invalid payloads',()=>{
+ const L=require('../lab-model');
+ const p=L.defaults('rc');p.R=22000;p.C=47e-9;
+ const guided=L.serialize(L.parse(L.serialize({name:'RC condiviso',experiment:'rc',analysis:'bode',circuits:{rc:p},layouts:{}})));
+ const hashG=F.encodeShareHash(guided);
+ assert.match(hashG,/^#clab=[A-Za-z0-9_-]+$/);
+ const decodedG=L.parse(F.decodeShareHash('https://example.invalid/circuit-lab/'+hashG));
+ assert.equal(decodedG.experiment,'rc');
+ assert.equal(decodedG.analysis,'bode');
+ assert.equal(decodedG.circuits.rc.R,22000);
+ assert.equal(decodedG.circuits.rc.C,47e-9);
+ const free=M.example('inverting');free.name='Invertente condiviso';
+ const hashF=F.encodeShareHash(M.serialize(free));
+ const decodedF=M.parse(F.decodeShareHash(hashF));
+ assert.equal(decodedF.name,'Invertente condiviso');
+ assert.equal(decodedF.components.length,free.components.length);
+ assert.equal(F.decodeShareHash('#other=123'),null);
+ assert.throws(()=>F.decodeShareHash('#clab=***'),/non valido/);
+});

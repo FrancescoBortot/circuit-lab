@@ -15,9 +15,9 @@
   const ticks=(min,max,n=5)=>{const raw=(max-min)/n,p=10**Math.floor(Math.log10(raw)),f=raw/p,step=(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p,out=[];for(let i=Math.ceil(min/step);i*step<=max+step*1e-8&&out.length<30;i++)out.push(Math.abs(i*step)<step*1e-8?0:i*step);return out;};
   class LabPlot{
     constructor(svg,onCursor,onStateChange){this.svg=svg;this.onCursor=onCursor;this.onStateChange=onStateChange;this.series=[];this.data=[];this.pointers=new Map();this.dual=false;this.activeCursor='a';
-      this.splitY=true;this.traceAxes=new Map();this.verticalSteps={};
+      this.splitY=true;this.traceAxes=new Map();this.verticalSteps={};this.referenceTrace=null;
       this.controls=document.createElement('div');this.controls.className='cursor-toolbar';this.controls.setAttribute('role','group');this.controls.setAttribute('aria-label','Cursori del grafico');
-      this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><span>Clicca il grafico per posizionare</span>';
+      this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><button type="button" data-ref-trace aria-pressed="false" title="Congela la traccia attuale sullo sfondo per confrontare in tempo reale le modifiche">Fissa REF</button><span>Clicca il grafico per posizionare</span>';
       svg.parentElement.before(this.controls);
       this.interactionActive=false;svg.setAttribute('tabindex','0');
       this.activationHint=document.createElement('span');this.activationHint.className='plot-activation-hint';this.controls.append(this.activationHint);this.activationHint.id=svg.id+'InteractionHint';svg.setAttribute('aria-describedby',this.activationHint.id);
@@ -90,7 +90,7 @@
       document.addEventListener('pointerdown',this.activationPointer,true);window.addEventListener('blur',this.activationBlur);svg.addEventListener('focusout',this.activationFocus);
       svg.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(e.key==='Escape'){activate(false);e.stopImmediatePropagation();return;}if(!this.interactionActive){if(e.key==='Enter'||e.key===' '){activate(true);e.preventDefault();}e.stopImmediatePropagation();}},{capture:true});
 
-      this.controls.addEventListener('click',e=>{const key=e.target.closest('[data-cursor]')?.dataset.cursor;if(!key)return;if(key==='toggle')this.dual=!this.dual;else this.activeCursor=key;this.syncControls();this.drawCursor();this.onStateChange?.();});
+      this.controls.addEventListener('click',e=>{if(e.target.closest('[data-ref-trace]')){this.toggleReference();return;}const key=e.target.closest('[data-cursor]')?.dataset.cursor;if(!key)return;if(key==='toggle')this.dual=!this.dual;else this.activeCursor=key;this.syncControls();this.drawCursor();this.onStateChange?.();});
       this.resizeObserver=new ResizeObserver(()=>{cancelAnimationFrame(this.frame);this.frame=requestAnimationFrame(()=>this.draw());});this.resizeObserver.observe(svg.parentElement);
       svg.addEventListener('wheel',event=>{
         if(!this.data.length||!this.config.scope||event.ctrlKey||event.metaKey||event.altKey)return;
@@ -116,7 +116,32 @@
       });
     }
     destroy(){this.zoomInteraction.destroy();this.activateInteraction(false);document.removeEventListener('pointerdown',this.activationPointer,true);window.removeEventListener('blur',this.activationBlur);this.svg.removeEventListener('focusout',this.activationFocus);this.resizeObserver.disconnect();cancelAnimationFrame(this.frame);this.controls.remove();this.scopeControls.remove();}
-    syncControls(){for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
+    hasActiveReference(config=this.config){
+      const ref=this.referenceTrace;
+      return Boolean(ref?.points.length&&config&&ref.scopeKey===config.scopeKey&&
+        ref.xUnit===config.xUnit&&ref.yUnit===config.yUnit&&
+        ref.logX===Boolean(config.logX)&&ref.logY===Boolean(config.logY));
+    }
+    toggleReference(){
+      if(this.hasActiveReference())this.referenceTrace=null;
+      else if(this.data.length&&this.series.length){
+        const target=this.series.find(s=>s.key==='out')||this.series[0];
+        const points=this.data.map(d=>({x:d.x,y:d[target.key]})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+        if(!points.length)return false;
+        this.referenceTrace={scopeKey:this.config.scopeKey,xUnit:this.config.xUnit,yUnit:this.config.yUnit,logX:Boolean(this.config.logX),logY:Boolean(this.config.logY),key:target.key,label:target.label+' · REF',color:'#64748b',points};
+      }else return false;
+      this.syncControls();this.draw();this.onStateChange?.();return this.hasActiveReference();
+    }
+    refAt(xValue){
+      if(!this.hasActiveReference()||!Number.isFinite(xValue))return null;
+      const pts=this.referenceTrace.points;
+      if(xValue<pts[0].x||xValue>pts.at(-1).x)return null;
+      let lo=0,hi=pts.length;while(lo<hi){const m=(lo+hi)>>1;if(pts[m].x<=xValue)lo=m+1;else hi=m;}
+      const i=Math.max(0,lo-1),a=pts[i],b=pts[i+1];
+      if(!b||a.x===xValue||b.x===a.x)return a.y;
+      return a.y+(b.y-a.y)*(xValue-a.x)/(b.x-a.x);
+    }
+    syncControls(){if(!this.controls)return;for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}const refBtn=this.controls.querySelector('[data-ref-trace]');if(refBtn){const active=this.hasActiveReference();refBtn.setAttribute('aria-pressed',String(active));refBtn.textContent=active?'Rimuovi REF':'Fissa REF';}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
     axisFor(series){
       const traces=this.config.series,right=traces.find(trace=>trace.key==='out')||traces[1];
       return this.traceAxes.get(this.config.yUnit+':'+series.key)??(series.key===right?.key?'B':'A');
@@ -208,9 +233,10 @@
       this.syncDivisions();
     }
     clear(){
-      this.data=[];this.series=[];this.geometry=null;this.scopeControls.hidden=true;this.svg.replaceChildren();
+      this.data=[];this.series=[];this.geometry=null;this.scopeControls.hidden=true;this.svg.replaceChildren();this.syncControls();
     }
     set(config){
+      if(this.referenceTrace&&!this.hasActiveReference(config))this.referenceTrace=null;
       const old=this.config,sameScope=old?.scope&&config.scope&&old.scopeKey===config.scopeKey&&old.yUnit===config.yUnit&&old.logY===config.logY&&old.logX===config.logX;
       const oldData=config.scope?old?.data:this.data;
       const same=old&&(!config.scope||sameScope)&&old.logX===config.logX&&old.xUnit===config.xUnit&&oldData?.[0]?.x===config.data[0]?.x&&oldData?.at(-1)?.x===config.data.at(-1)?.x,ax=this.cursorA?.x,bx=this.cursorB?.x;
@@ -272,7 +298,9 @@
       const viewSamples=visible.length?visible:this.view.map(v=>window.LabMeasurements.nearest(this.data,this.fromDomain(v)));
       const extentSamples=split?this.data:viewSamples;
       const traceY=new Map();
-      const verticalSteps=new Map(),scope=this.config.scope;
+      const verticalSteps=new Map(),scope=this.config.scope,activeRef=this.hasActiveReference()?this.referenceTrace:null;
+      const refTarget=activeRef?(this.series.find(s=>s.key===activeRef.key)||this.series.find(s=>s.key==='out')||this.series[0]):null;
+      const refAxis=refTarget?this.axisFor(refTarget):'A';
       this.geometry={w,h,left,right,top,bottom,pw,ph,x,traceY,validY,verticalSteps};
       const num=v=>new Intl.NumberFormat('it-IT',{maximumSignificantDigits:4}).format(v);
       let html=`<defs><clipPath id="${this.svg.id}-clip"><rect x="${left}" y="${top}" width="${pw}" height="${ph}"/></clipPath></defs>`;
@@ -287,6 +315,12 @@
           const low=value-sigma;
           min=Math.min(min,domainY(validY(low)?low:value));
           max=Math.max(max,domainY(value+sigma));
+        }
+        if(activeRef&&(axis===refAxis||groups.length===1)){
+          for(const pt of activeRef.points){
+            if(!split&&(this.toDomain(pt.x)<this.view[0]||this.toDomain(pt.x)>this.view[1]))continue;
+            if(validY(pt.y)){min=Math.min(min,domainY(pt.y));max=Math.max(max,domainY(pt.y));}
+          }
         }
         if(!Number.isFinite(min)){min=-1;max=1;}
         let step,origin;
@@ -303,6 +337,7 @@
         const y=scope?v=>top+(.5-(domainY(v)-origin)/step/verticalDivisions)*ph:v=>top+(max-domainY(v))/(max-min)*ph;
         const yScale=logY||this.config.plainY||['dB','°'].includes(this.config.yUnit)?{factor:1,unit:this.config.yUnit}:RCModel.scale(Math.max(Math.abs(min),Math.abs(max)),this.config.yUnit);
         for(const s of traces)traceY.set(s.key,y);
+        if(activeRef&&(axis===refAxis||groups.length===1))traceY.set('__ref__',y);
         const atRight=axis==='B',edge=atRight?w-right:left,labelX=edge+(atRight?9:-9),anchor=atRight?'start':'end';
         const decades=logY&&!scope?Array.from({length:Math.max(0,Math.floor(max)-Math.ceil(min)+1)},(_,i)=>10**(Math.ceil(min)+i)):[];
         const yticks=scope?Array.from({length:verticalDivisions+1},(_,i)=>origin+(i-verticalDivisions/2)*step):logY?(decades.length>=2?decades:ticks(min,max,4).map(v=>10**v)):ticks(min,max,4);
@@ -341,6 +376,17 @@
       const xLabel=this.config.xLabel+(this.config.logX||!timeScale.unit?'':' ('+timeScale.unit+')');
       html+=`<text x="${w-right}" y="${h-2}" text-anchor="end" class="axis-unit">${xLabel}</text><g clip-path="url(#${this.svg.id}-clip)">`;
       for(const guide of this.config.guides||[]){if(this.toDomain(guide.x)>this.view[0]&&this.toDomain(guide.x)<this.view[1])html+=`<path d="M${x(guide.x)},${top+13}V${h-bottom}" stroke="#bcc9e5" stroke-dasharray="3 5"/><text x="${x(guide.x)+5}" y="${top+10}" class="guide-text">${guide.label}</text>`;}
+      if(activeRef&&traceY.has('__ref__')){
+        const yRef=traceY.get('__ref__'),samples=activeRef.points;let refPath='',started=false;
+        for(let i=0;i<samples.length;i++){
+          const pt=samples[i];if(!validY(pt.y)){started=false;continue;}
+          const domain=this.toDomain(pt.x);
+          if(domain<this.view[0]&&i+1<samples.length&&this.toDomain(samples[i+1].x)<this.view[0])continue;
+          if(domain>this.view[1]&&i>0&&this.toDomain(samples[i-1].x)>this.view[1])continue;
+          refPath+=(started?'L':'M')+x(pt.x).toFixed(2)+','+yRef(pt.y).toFixed(2);started=true;
+        }
+        if(refPath)html+=`<path class="plot-ref-trace" d="${refPath}" stroke="${activeRef.color}" stroke-width="1.8" fill="none" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>`;
+      }
       for(const s of this.series){const y=traceY.get(s.key);const samples=s.sparse?this.data.filter(row=>Object.hasOwn(row,s.key)):this.data;let path='',started=false;for(let i=0;i<samples.length;i++){const d=samples[i];if(!validY(d[s.key])){started=false;continue;}const domain=this.toDomain(d.x);if(domain<this.view[0]&&i+1<samples.length&&this.toDomain(samples[i+1].x)<this.view[0])continue;if(domain>this.view[1]&&i>0&&this.toDomain(samples[i-1].x)>this.view[1])continue;path+=(started?'L':'M')+x(d.x).toFixed(2)+','+y(d[s.key]).toFixed(2);started=true;}
         if(s.line!==false)html+=`<path d="${path}" stroke="${s.color}" stroke-width="${s.key==='out'?2.4:1.7}" fill="none" stroke-linejoin="round" stroke-linecap="round"${s.dash?' stroke-dasharray="'+s.dash+'"':''}/>`;
         if(s.points||s.sigmaKey)for(const d of visible){if(!validY(d[s.key]))continue;const px=x(d.x),py=y(d[s.key]),sigma=d[s.sigmaKey];if(s.sigmaKey&&Number.isFinite(sigma)&&sigma>0&&validY(d[s.key]-sigma)){const a=y(d[s.key]-sigma),b=y(d[s.key]+sigma);html+=`<path d="M${px},${a}V${b}M${px-3},${a}h6M${px-3},${b}h6" stroke="${s.color}" stroke-width="1" fill="none"/>`;}if(s.points)html+=`<circle cx="${px}" cy="${py}" r="2.6" fill="${s.color}" stroke="white" stroke-width=".7"/>`;}
@@ -359,11 +405,22 @@
       this.cursor=this.dual&&this.activeCursor==='b'?this.cursorB:this.cursorA;
       const g=this.geometry,root=this.svg.querySelector('#'+this.svg.id+'-cursor');if(!root)return;
       const markers=this.dual?[['A',this.cursorA,'#4264ef'],['B',this.cursorB,'#d48b22']]:[['',this.cursorA,'#8394b7']];
+      const activeRef=this.hasActiveReference()&&g.traceY.has('__ref__')?this.referenceTrace:null;
       root.innerHTML=markers.map(([label,d,color])=>{
         if(this.toDomain(d.x)<this.view[0]||this.toDomain(d.x)>this.view[1])return'';
-        const x=g.x(d.x);return`<path d="M${x},${g.top}V${g.h-g.bottom}" stroke="${color}" stroke-dasharray="3 4"/><text x="${x+5}" y="${g.top+12}" style="fill:${color};font-weight:600">${label}</text>`+this.series.filter(s=>g.validY(d[s.key])).map(s=>`<circle cx="${x}" cy="${g.traceY.get(s.key)(d[s.key])}" r="3.4" fill="${s.color}" stroke="white" stroke-width="1.5"/>`).join('');
+        const x=g.x(d.x),refVal=activeRef?this.refAt(d.x):null,refDot=activeRef&&g.validY(refVal)?`<circle cx="${x}" cy="${g.traceY.get('__ref__')(refVal)}" r="3.2" fill="white" stroke="${activeRef.color}" stroke-width="1.6"/>`:'';
+        return`<path d="M${x},${g.top}V${g.h-g.bottom}" stroke="${color}" stroke-dasharray="3 4"/><text x="${x+5}" y="${g.top+12}" style="fill:${color};font-weight:600">${label}</text>`+refDot+this.series.filter(s=>g.validY(d[s.key])).map(s=>`<circle cx="${x}" cy="${g.traceY.get(s.key)(d[s.key])}" r="3.4" fill="${s.color}" stroke="white" stroke-width="1.5"/>`).join('');
       }).join('');
       this.onCursor(this.cursor,(this.toDomain(this.cursor.x)-this.domain[0])/(this.domain[1]-this.domain[0]),this.dual?{a:this.cursorA,b:this.cursorB,active:this.activeCursor}:null);
+      if(activeRef&&!this.dual&&['plot','freePlot'].includes(this.svg.id)){
+        const readout=this.svg.ownerDocument?.getElementById(this.svg.id==='freePlot'?'freeReadout':'readout'),refVal=this.refAt(this.cursor.x);
+        if(readout&&Number.isFinite(refVal)){
+          const make=(title,val)=>{const item=this.svg.ownerDocument.createElement('div'),span=this.svg.ownerDocument.createElement('span'),strong=this.svg.ownerDocument.createElement('strong');item.className='readout-item';span.textContent=title;strong.textContent=M.format(val,this.config.yUnit,4);item.append(span,strong);readout.append(item);};
+          make(activeRef.label,refVal);
+          const live=this.cursor[activeRef.key];
+          if(Number.isFinite(live))make('Δ rispetto a REF',live-refVal);
+        }
+      }
     }
 
   }

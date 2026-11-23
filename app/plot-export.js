@@ -144,7 +144,7 @@
     const analysis=free?doc.settings.analysis:doc.analysis;
     const config=free?(editor.result&&!editor.busy&&!editor.fieldError&&editor.lastPlotAnalysis===analysis?editor.plot.config:null):window.GuidedLab.plotSnapshot();
     if(analysis==='op'||!config?.data?.length)throw Error('Calcola prima un risultato attuale.');
-    const title=doc.name+' · '+({time:'Transitorio',bode:'Bode',dc:'Scansione DC',vtc:'VTC',charge:'Caratteristica in carica',diodeIV:'Caratteristica del diodo'}[analysis]||'Analisi');
+    const title=doc.name+' · '+({time:'Transitorio',bode:'Bode',dc:'Scansione DC',vtc:'VTC',charge:'Caratteristica in carica',diodeIV:'Caratteristica del diodo',mosOutput:'Curva Iᴅ–Vᴅₛ',mosTransfer:'Curva Iᴅ–Vɢₛ'}[analysis]||'Analisi');
     const name=format==='png'?'circuit-lab-grafico':free?'circuito-libero':window.GuidedTrials.stem(doc,window.LabModel.CATALOG)+'-'+analysis;
     await save([{svg:document.getElementById(free?'freePlot':'plot'),series:config.series}],title,name,format);
    }catch(error){editor.note(error.message,true);}

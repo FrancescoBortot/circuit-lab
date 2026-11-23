@@ -99,7 +99,7 @@
  function close(restore=false){
   active=false;panel.hidden=true;clearMarkers();
   button.setAttribute('aria-expanded','false');
-  if(restore)(button.getClientRects().length?button:$('.guided-view-tools [aria-pressed="true"]'))?.focus({preventScroll:true});
+  if(restore)(!button.hidden&&(!button.getClientRects||button.getClientRects().length)?button:$('.guided-view-tools [aria-pressed="true"]'))?.focus({preventScroll:true});
  }
  function update(){
   const onBoard=board.isActive(),free=window.circuitEditor.active;
@@ -163,7 +163,7 @@
  field('[data-meter-compare]').addEventListener('click',()=>$('#compareLabTransients').click());
  function measuredValue(){
   const value=window.StudentTools.quantity(reading.value,Number(unit.value),unit.selectedOptions[0]?.textContent);
-  if(!Number.isFinite(value)||(['Ω','F'].includes(unit.dataset.base)&&value<0))throw Error('Inserisci una lettura valida.');
+  if(!Number.isFinite(value)||(['Ω','F'].includes(unit.dataset.base)&&value<=0))throw Error('Inserisci una lettura valida.');
   return value;
  }
  field('form').addEventListener('submit',event=>{

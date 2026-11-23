@@ -6,7 +6,7 @@
   const nav=document.createElement('nav'),preview=document.createElement('div'),status=$('[data-cmp-status]');let active=saved?2:0;
   nav.className='student-import-steps';nav.setAttribute('aria-label','Passaggi del confronto dati');
   steps.forEach((s,i)=>{s.className='student-import-step';s.dataset.importStep=String(i);});
-  const note=document.createElement('p');note.textContent='Una tabella salvata per circuito e tipo di analisi. Riaprendo questo pannello ritrovi i dati: puoi ricalcolare il confronto senza reimportarli. Per sostituirli, carica un altro file o modifica il testo e salva.';steps[0].append(note);steps[0].append(fields[0],$('[data-cmp-raw]'));const instrumentNote=$('[data-cmp-instrument]');if(instrumentNote)steps[0].append(instrumentNote);steps[1].append(fields[1]);const baselineFields=$('[data-cmp-baseline-fields]');if(baselineFields)steps[1].append(baselineFields);
+  const note=document.createElement('p');note.textContent=($('[data-cmp-node]')?'Una tabella per ciascun nodo misurato.':'Una tabella salvata per circuito e tipo di analisi.')+' Riaprendo questo pannello ritrovi i dati: puoi ricalcolare il confronto senza reimportarli. Per sostituirli, carica un altro file o modifica il testo e salva.';steps[0].append(note);steps[0].append(fields[0],$('[data-cmp-raw]'));const instrumentNote=$('[data-cmp-instrument]');if(instrumentNote)steps[0].append(instrumentNote);steps[1].append(fields[1]);const baselineFields=$('[data-cmp-baseline-fields]');if(baselineFields)steps[1].append(baselineFields);
   const independent=$('[data-cmp-independent]')?.closest('label');if(independent)steps[1].append(independent);steps[1].append(preview);
   for(const selector of ['.comparison-kind-note','.flow-actions','[data-cmp-summary]','.comparison-table']){const el=$(selector);if(el)steps[2].append(el);}
   for(const el of [...dialog.querySelectorAll('.comparison-plot')]){
@@ -24,7 +24,8 @@
    const delimiter=$('[data-cmp-delimiter]').value,table=window.RCAnalysis.rows(raw,delimiter==='tab'?'\t':delimiter),header=$('[data-cmp-header]').checked;
    if(table.rows.length<(header?3:2))throw Error('Inserisci almeno due righe di dati oltre all’eventuale intestazione.');
    const instrument=window.RCAnalysis.instrumentTable(window.RCAnalysis.rows(raw));
-   const hints=header?window.StudentTools.columnHints(table.rows[0],$('[data-cmp-kind]').value):null;
+   const paired=$('[data-cmp-bridge]')?.value==='pair';
+   const hints=header?window.StudentTools.columnHints(table.rows[0],$('[data-cmp-kind]').value,{target:$('[data-cmp-node]')?.value,paired}):null;
    preview.replaceChildren();const p=document.createElement('p'),wrap=document.createElement('div'),tableNode=document.createElement('table');
    p.textContent=instrument?window.RCAnalysis.instrumentSummary(instrument)+' Anteprima dei primi 8 campioni (s, V), inclusa la prima riga del file.':'Anteprima delle prime 8 righe. Separatore rilevato: '+(table.delimiter==='\t'?'tab':table.delimiter)+'. Controlla colonne e unità.';
    wrap.className='student-table';for(const row of (instrument?[['Tempo (s)','Tensione (V)'],...instrument.points.slice(0,8).map(p=>[p.x,p.y])]:table.rows.slice(0,8))){
@@ -36,6 +37,10 @@
     if(!hints||instrument)return;
     for(const[key,name]of [['xColumn','x'],['yColumn','y'],['sigmaColumn','sigma'],['phaseColumn','phase']])$('[data-cmp-'+name+']').value=hints[key]===null?'':hints[key]+1;
     for(const[key,name]of [['xUnit','xunit'],['yUnit','yunit']])if(hints[key]&&[...$('[data-cmp-'+name+']').options].some(o=>o.value===hints[key]))$('[data-cmp-'+name+']').value=hints[key];
+    if(paired){
+     $('[data-cmp-subtract]').value=hints.subtractColumn+1;
+     if(hints.subtractUnit)$('[data-cmp-subtract-unit]').value=hints.subtractUnit;
+    }
     if(table.delimiter!==','&&table.rows.slice(header?1:0).some(row=>row.some(v=>/^[-+]?\d+,\d+(?:e[-+]?\d+)?$/i.test(v))))$('[data-cmp-decimal]').value=',';
     dirty();status.textContent='Suggerimenti applicati ai campi: controllali. I dati non sono ancora salvati.';
    });

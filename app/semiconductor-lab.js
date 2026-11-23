@@ -1,8 +1,8 @@
 /* Guided semiconductor experiments built on the free circuit engine. */
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./semiconductors.js'));
-  else root.SemiconductorLab=factory(root.FreeModel,root.BenchModel,root.Semiconductors);
-})(typeof globalThis!=='undefined'?globalThis:this,function(Free,Bench,Devices){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./semiconductors.js'),require('./extra-experiments.js'));
+  else root.SemiconductorLab=factory(root.FreeModel,root.BenchModel,root.Semiconductors,root.ExtraExperiments);
+})(typeof globalThis!=='undefined'?globalThis:this,function(Free,Bench,Devices,Extra){
   'use strict';
 
   const CATALOG=[
@@ -14,7 +14,8 @@
     {id:'nmos-inverter',type:'nmos-inverter',day:6,step:'2.1',name:'Inverter nMOS resistivo',short:'¬',description:'Leggi i livelli logici e confronta la resistenza di conduzione con il modello a bassa VDS.'},
     {id:'nmos-nor',type:'nmos-nor',day:6,step:'2.2',name:'Porta NOR nMOS',short:'NOR',description:'Due nMOS in parallelo portano l’uscita a massa quando almeno un ingresso è alto.'},
     {id:'nmos-nand',type:'nmos-nand',day:6,step:'2.2',name:'Porta NAND nMOS',short:'NAND',description:'Due nMOS in serie portano l’uscita a massa quando entrambi gli ingressi sono alti.'},
-    {id:'cmos-inverter',type:'cmos-inverter',day:6,step:'2.3',name:'Inverter CMOS',short:'CMOS',description:'Confronta i livelli di uscita con quelli dell’inverter a carico resistivo.'}
+    {id:'cmos-inverter',type:'cmos-inverter',day:6,step:'2.3',name:'Inverter CMOS',short:'CMOS',description:'Confronta i livelli di uscita con quelli dell’inverter a carico resistivo.'},
+    ...Extra.CATALOG
   ];
   const DIODE_RANGES=[
     {key:'forward-1u', current:'1–10 µA', resistance:1e6, label:'1 MΩ'},
@@ -58,6 +59,7 @@
   };
   const componentHint=(type,key)=>COMPONENT_HINTS[type]?.[key]||'';
   function presetHint(type,key){
+    if(Extra.is(type))return Extra.presetHint(type,key);
     if(type!=='diode-iv')return PRESET_HINTS[type]?.[key]||'';
     const range=diodeRange(key);
     if(!range)return '';
@@ -66,6 +68,7 @@
       ' Regola la tensione DC leggendo la corrente. Riporta la tensione a 0 V prima di cambiare resistenza.';
   }
   const PRESETS={
+    ...Extra.PRESETS,
     'diode-iv':[['forward','Curva completa · 1 µA–10 mA'],...DIODE_RANGES.map(r=>[r.key,r.current+' con '+r.label])],
     'half-wave':[['sine','Sinusoide · 10 Vpp · 50 Hz']],
     'half-wave-rc':[['probe','Sonda ×10 · 50 Hz'],['load','Carico esterno · 50 Hz'],['fast','Carico esterno · 1 kHz']],
@@ -79,9 +82,9 @@
   const TYPES=CATALOG.map(c=>c.type);
   const is=p=>TYPES.includes(typeof p==='string'?p:p?.type);
   const rectifier=p=>['half-wave','half-wave-rc'].includes(p.type);
-  const logic=p=>['nmos-inverter','nmos-nor','nmos-nand','cmos-inverter'].includes(p.type);
-  const twoInputs=p=>['nmos-nor','nmos-nand'].includes(p.type);
-  const mos=p=>p.type==='mos-iv'||p.type==='mos-amplifier'||logic(p);
+  const logic=p=>Extra.isLogic(p.type)||['nmos-inverter','nmos-nor','nmos-nand','cmos-inverter'].includes(p.type);
+  const twoInputs=p=>Extra.isLogic(p.type)||['nmos-nor','nmos-nand'].includes(p.type);
+  const mos=p=>p.type==='mos-iv'||p.type==='mos-amplifier'||logic(p)||p.type==='common-source';
   const nominalScopeLoad=10e6;
   const outputDcReference=10e9;
   const outputChannel=(channel,pin)=>channel.enabled&&['output',pin,'RL:a'].includes(channel.target);
@@ -91,6 +94,7 @@
   const analysisOptions=p=>{
     if(p.type==='diode-iv')return [['diodeIV','Caratteristica I–V']];
     if(p.type==='mos-iv')return [['mosOutput','Curva Iᴅ–Vᴅₛ'],['mosTransfer','Curva Iᴅ–Vɢₛ']];
+    if(p.type==='common-source')return [['time','Tempo · Transitorio'],['bode','Frequenza · Bode']];
     if(p.type==='mos-amplifier')return [['time','Tempo · Transitorio'],['bode','Frequenza · Bode'],['vtc','Ampiezza · VTC']];
     return [['time','Tempo · Transitorio']];
   };
@@ -99,6 +103,7 @@
     const p={...Free.clone(base),type,diodeIs:35e-12,diodeN:1.5,R1:type==='diode-iv'?1e3:68e3,C1:22e-6,RL:4.7e3,externalLoad:false,
       wave1:wave(type==='diode-iv'?'dc':'sine',10,50,0,1),wave2:wave('dc',0,100),dcPoints:41};
     if(mos(p))Object.assign(p,{mosKp:1.5e-3,mosVto:1.4,mosLambda:.02,gateR:680e3,drainBias:7,gateMeter:false});
+    if(Extra.is(type))return normalizeTime(Extra.defaults(p));
     if(type==='mos-iv')p.wave1=wave('dc',0,50,0,nominalGate(p,.0007));
     if(type==='half-wave-rc')p.bench=probeSetup();
     if(type==='mos-amplifier')Object.assign(p,{wave1:wave('sine',.1,3000),RD:1e4,VDD:14,gateBias:nominalGate(p,.0007),C1:100e-9,C2:100e-9,RL:10e6,sweepMax:1,sweepPoints:11,fmin:1,fmax:1e6});
@@ -108,6 +113,7 @@
 
   function normalizeTime(p){
     const next=Free.clone(p);
+    if(Extra.is(p.type))return Extra.normalizeTime(next);
     if(next.autoTime&&rectifier(next)){
       const periods=next.type==='half-wave'?3:next.wave1.frequency>=500?64:12;
       next.duration=periods/next.wave1.frequency;
@@ -118,6 +124,7 @@
   }
 
   function fields(p){
+    if(Extra.is(p.type))return [...Extra.fields(p),...(mos(p)?mosFields(p.type==='common-source'?'M3':'M1'):[])];
     if(p.type==='mos-iv')return [
       ['gateR','Resistenza di protezione R₁','res',1,1e9,'RG'],
       ['drainBias','Polarizzazione Vᴅₛ','V',.2,9,'VDD'],
@@ -146,16 +153,17 @@
     ];
   }
 
-  function mosFields(){
+  function mosFields(id='M1'){
     return [
-      ['mosKp','Parametro kₙ','conductanceFactor',1e-9,1,'M1'],
-      ['mosVto','Tensione di soglia VTN','V',.01,20,'M1'],
-      ['mosLambda','Modulazione di canale λₙ','V⁻¹',0,1,'M1']
+      ['mosKp','Parametro kₙ','conductanceFactor',1e-9,1,id],
+      ['mosVto','Tensione di soglia VTN','V',.01,20,id],
+      ['mosLambda','Modulazione di canale λₙ','V⁻¹',0,1,id]
     ];
   }
 
   function validate(p){
     const errors={};
+    for(const [key] of Extra.switches(p.type))if(typeof p[key]!=='boolean')errors[key]='Configurazione del componente non valida.';
     for(const [key,, ,min,max] of fields(p))if(!Number.isFinite(p[key])||p[key]<min||p[key]>max)errors[key]='Valore fuori dall’intervallo del modello.';
     if(p.type==='half-wave-rc'&&typeof p.externalLoad!=='boolean')errors.externalLoad='Carico esterno non valido.';
     if(p.type==='mos-iv'){
@@ -194,6 +202,7 @@
   }
 
   function network(p,analysis){
+    if(Extra.is(p.type))return Extra.network(p,build);
     if(p.type==='mos-iv')return mosCurveNetwork(p,analysis);
     if(p.type==='mos-amplifier'||logic(p))return activeNetwork(p);
     const {doc,add,link,ground,voltage,label}=build(p);
@@ -318,6 +327,14 @@
   }
 
   function inherit(p,seeds){
+    if(['precision-rectifier','bridge-rectifier'].includes(p.type)){
+      const previous=seeds.find(q=>q&&['diode-iv','half-wave','half-wave-rc','precision-rectifier','bridge-rectifier'].includes(q.type));
+      if(previous)for(const key of ['diodeIs','diodeN'])p[key]=previous[key];
+    }
+    if(Extra.isLogic(p.type)){
+      const previous=seeds.find(q=>q&&(q.type==='cmos-inverter'||Extra.isLogic(q.type)));
+      if(previous)for(const key of ['pKp','pVto','pLambda'])p[key]=previous[key];
+    }
     if(!mos(p))return;
     const previous=seeds.find(q=>q&&mos(q));
     if(previous)for(const key of ['mosKp','mosVto','mosLambda'])p[key]=previous[key];
@@ -369,6 +386,7 @@
 
   function applyPreset(params,key){
     const p=Free.clone(params);
+    if(Extra.is(p.type))return Extra.applyPreset(p,key);
     if(p.type==='diode-iv'){
       const range=diodeRange(key);
       if(range){p.R1=range.resistance;p.wave1.level=0;}
@@ -456,9 +474,11 @@
     return {data,values};
   }
 
-  function simulate(p,options={}){
-    const doc=network(p),result=Free.simulate(doc,options);
+  function simulate(p,options={},doc=network(p)){
+    const result=Free.simulate(doc,options);
     options.capture?.(result);
+    const sample=Extra.sampleReader(p,doc);
+    if(sample)return result.data.map(row=>({x:row.x,...sample(row)}));
     const topology=Free.topology(doc),in2=doc.benchSetup?.sourceMap['V2:p']||'V2:p';
     return result.data.map(row=>({x:row.x,vin:row.vin,out:row.out,current:row.currents.D1??row.currents.M1,
       ...(twoInputs(p)?{vin2:nodeVoltage(topology,row,in2)}:{})}));
@@ -491,10 +511,13 @@
   function logicValues(p){
     const doc=network(p),two=twoInputs(p),topology=Free.topology(doc),in2=doc.benchSetup?.sourceMap['V2:p']||'V2:p';
     const states=w=>['sine','square','triangle'].includes(w.kind)?[w.offset-w.vpp/2,w.offset+w.vpp/2]:[w.kind==='dc'?w.level:0];
-    const truth=states(p.wave1).flatMap(a=>(two?states(p.wave2):[null]).map(b=>{
+    const extra=Extra.isLogic(p.type),levels=w=>extra?[0,p.VDD]:states(w);
+    const classify=extra?v=>v<.2*p.VDD?'0':v>.8*p.VDD?'1':'—':logicLevel;
+    const read=extra?Extra.sampleReader(p,doc):null;
+    const truth=levels(p.wave1).flatMap(a=>(two?levels(p.wave2):[null]).map(b=>{
       const row=dc(doc,{V1:a,...(two?{V2:b}:{})});
-      const v2=two?nodeVoltage(topology,row,in2):null;
-      return {vin:row.vin,vin2:v2,out:row.out,a:logicLevel(row.vin),b:two?logicLevel(v2):null,level:logicLevel(row.out),current:row.currents.M1};
+      const {vin,out,vin2}=read?read(row):{...row,vin2:two?nodeVoltage(topology,row,in2):null};
+      return {vin,vin2,out,a:classify(vin),b:two?classify(vin2):null,level:classify(out),current:row.currents.M1};
     }));
     const high=truth.find(row=>row.a==='1'),ron=high?.current>1e-12?high.out/high.current:undefined;
     const overdrive=high?.vin-p.mosVto,predicted=overdrive>0?1/(p.mosKp*overdrive):undefined;
@@ -502,7 +525,9 @@
   }
 
   function amplifierValues(p,data){
-    const doc=network(p),q=dc(doc),topology=Free.topology(doc),vgs=nodeVoltage(topology,q,'M1:g'),vds=nodeVoltage(topology,q,'M1:d'),id=q.currents.M1;
+    const doc=network(p);
+    if(p.type==='common-source')return Extra.sourceValues(p,doc,data);
+    const q=dc(doc),topology=Free.topology(doc),vgs=nodeVoltage(topology,q,'M1:g'),vds=nodeVoltage(topology,q,'M1:d'),id=q.currents.M1;
     const saturated=q.regions.M1==='saturazione';
     const gm=saturated?2*id/(vgs-p.mosVto):undefined;
     const ro=saturated&&p.mosLambda>0?(1+p.mosLambda*vds)/(p.mosLambda*id):Infinity;
@@ -524,13 +549,14 @@
     if(analysis==='diodeIV')return diodeCurve(p,options);
     if(analysis==='mosOutput'||analysis==='mosTransfer')return mosCurve(p,analysis,options);
     if(analysis==='time'){
-      const data=simulate(p,options);
-      return {data,values:logic(p)?logicValues(p):p.type==='mos-amplifier'?amplifierValues(p,data):timeValues(p,data)};
+      const doc=network(p),data=simulate(p,options,doc);
+      return {data,values:logic(p)?logicValues(p):Extra.is(p.type)?Extra.timeValues(p,data,doc):p.type==='mos-amplifier'?amplifierValues(p,data):timeValues(p,data)};
     }
     throw Error('Analisi non disponibile per questo circuito.');
   }
 
   function metrics(p,analysis,values,format){
+    if(Extra.is(p.type))return Extra.metrics(p,values,format);
     const show=(label,value,unit)=>({label,value:format(value,unit)});
     if(analysis==='diodeIV')return [show('Iₛ dal fit',values.is,'A'),show('n dal fit',values.n,'')];
     if(analysis==='mosOutput'||analysis==='mosTransfer'){
@@ -551,6 +577,9 @@
   }
 
   function summary(p){
+    if(p.type==='precision-rectifier')return [{label:'Modelli',value:'Due sezioni TL082 · operazionale semplificato e diodi Shockley'}];
+    if(p.type==='bridge-rectifier')return [{label:'Modello',value:p.bridgeLED?'LED generico · Shockley · 27 °C':'Diodo al silicio · Shockley · 27 °C'}];
+    if(Extra.isLogic(p.type))return [{label:'Modello MOSFET',value:'Legge quadratica · body al source nel modello'}];
     if(p.type==='diode-iv'||rectifier(p))return [{label:'Modello del diodo',value:'Shockley · 27 °C'}];
     return [{label:'Modello MOSFET',value:'Legge quadratica · 27 °C'}];
   }
@@ -570,6 +599,7 @@
   })[analysis];
 
   function columns(p,analysis){
+    if(Extra.is(p.type))return [['x','tempo_s'],...(Extra.columns[p.type]||[['vin','VA_V'],['vin2','VB_V'],['out','VY_V'],['current','ID_M1_A']]),...(Bench.real(p)?[['ch1','CH1_V'],['ch2','CH2_V'],...(p.type==='bridge-rectifier'&&p.bench.channels.every(ch=>ch.enabled)?[['math','CH2_meno_CH1_V']]:[])]:[])];
     if(analysis==='mosOutput'||analysis==='mosTransfer')return [['x',analysis==='mosOutput'?'VDS_V':'VGS_V'],['out','ID_A'],['source','V_generatore_V']];
     return analysis==='diodeIV'?[['x','VD_V'],['out','ID_A'],['source','V_generatore_V'],['linear','ID_fit_A'],['residual','residuo_A']]
       :[['x','tempo_s'],['vin',twoInputs(p)?'IN1_V':'IN_V'],...(twoInputs(p)?[['vin2','IN2_V']]:[]),['out','OUT_V'],['current','ID_A']];
@@ -580,12 +610,13 @@
     return '\uFEFF'+cols.map(([,label])=>label).join(',')+'\r\n'+data.map(row=>cols.map(([key])=>Number.isFinite(row[key])?row[key].toExponential(12):'').join(',')).join('\r\n');
   }
 
-  function truthCsv(p,rows){
+  function truthCsv(p,rows,measurements){
     const two=twoInputs(p);
-    return '\uFEFF'+(two?'IN1,IN2,VIN1_V,VIN2_V':'IN,VIN_V')+',OUT,VOUT_V,ID_M1_A\r\n'+rows.map(row=>
-      (two?[row.a,row.b,row.vin,row.vin2]:[row.a,row.vin]).concat(row.level,row.out,row.current).join(',')
+    const header=Extra.isLogic(p.type)?'A,B,VA_V,VB_V,Y,VY_V':(two?'IN1,IN2,VIN1_V,VIN2_V':'IN,VIN_V')+',OUT,VOUT_V';
+    return '\uFEFF'+header+',ID_M1_A'+(measurements?',Y_misurata_V,VDD_delle_misure_V':'')+'\r\n'+rows.map((row,i)=>
+      (two?[row.a,row.b,row.vin,row.vin2]:[row.a,row.vin]).concat(row.level,row.out,row.current,measurements?[measurements.voltages[i],measurements.vdd]:[]).join(',')
     ).join('\r\n');
   }
 
-  return {CATALOG,TYPES,PRESETS,DIODE_RANGES,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,presetHint,componentHint,analysisOptions,simulate,analyze,logicValues,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
+  return {extra:Extra,CATALOG,TYPES,PRESETS,DIODE_RANGES,is,logic,twoInputs,defaults,inherit,normalizeTime,fields,validate,network,applyPreset,presetHint,componentHint,analysisOptions,simulate,analyze,logicValues,amplifierValues,vtcValues,metrics,summary,isCharacteristic,characteristic,csv,truthCsv};
 });

@@ -36,7 +36,7 @@
     units.push({id,kind:isMos?'DIP14':'DIP8',label:id+(isMos?' · CD4007UB':' · TL082')+(owners.length>1?' · '+owners.join(' + '):''),auxiliary:false,pins,holes:clone(part.physical),checkedPins});
    }else{
     const kind=part.polarized?'CP':part.type,polarized=['D','CP'].includes(kind);
-    units.push({id:part.id,kind,label:part.auxiliary?part.id+' · bypass':part.id+(kind==='D'?' · 1N4148':kind==='CP'?' · Elettrolitico':''),value:hasValue(kind)?part.component.value:undefined,auxiliary:Boolean(part.auxiliary),ownerPackage:part.auxiliary?model.devicePins.find(p=>p.component===part.id.slice(0,part.id.lastIndexOf('.Cd')))?.packageId:undefined,pins:Object.fromEntries(Object.entries(part.holes).map(([pin,h])=>[pin,{token:'part:'+part.id+(polarized?':'+pin:''),label:part.id+' · '+(polarized?endLabel(kind,pin):pin.toUpperCase()),node:netAt(h)}])),holes:clone(part.holes)});
+    units.push({id:part.id,kind,label:part.auxiliary?part.id+' · bypass':part.id+(kind==='D'?' · '+(part.deviceLabel||'1N4148'):kind==='CP'?' · Elettrolitico':''),value:hasValue(kind)?part.component.value:undefined,auxiliary:Boolean(part.auxiliary),ownerPackage:part.auxiliary?model.devicePins.find(p=>p.component===part.id.slice(0,part.id.lastIndexOf('.Cd')))?.packageId:undefined,pins:Object.fromEntries(Object.entries(part.holes).map(([pin,h])=>[pin,{token:'part:'+part.id+(polarized?':'+pin:''),label:part.id+' · '+(polarized?endLabel(kind,pin):pin.toUpperCase()),node:netAt(h)}])),holes:clone(part.holes)});
    }
   }
   function port(id,label,node,required,contactHoles){ports.push({id,label,node,required,holes:contactHoles});}

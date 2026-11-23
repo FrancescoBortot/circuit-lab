@@ -1,7 +1,7 @@
 /* Session folders and files. Inputs are validated projects; no uploaded code runs. */
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./lab-model.js'),require('./guided-trials.js'),require('./lab-files.js'),require('./study-context.js'),require('./rc-analysis.js'));else root.SessionFiles=factory(root.LabModel,root.GuidedTrials,root.LabFiles,root.StudyContext,root.RCAnalysis);})(typeof globalThis!=='undefined'?globalThis:this,function(L,T,F,C,R){
  'use strict';
- const MAX_TRIALS=96;
+ const MAX_TRIALS=Math.max(96,L.CATALOG.reduce((total,entry)=>total+1+T.PRESETS[entry.type].length,0));
  const clone=x=>JSON.parse(JSON.stringify(x)),enc=new TextEncoder();
  const key=d=>d.session.id+'|'+d.experiment+'|'+(T.current(d,L.CATALOG).preset||'manual');
  function capture(previous,text,result=null,now=new Date().toISOString()){

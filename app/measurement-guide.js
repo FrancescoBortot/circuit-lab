@@ -50,7 +50,34 @@
   scope('logic-inputs','Osserva i due ingressi','M1:g','M3:g','Tieni il trigger su CH1 (IN1) e individua gli intervalli corrispondenti ai quattro stati.',['IN1','IN2']),
   scope('logic-output','Sposta CH2 da IN2 a OUT','M1:g',out,'Lascia CH1 e il trigger su IN1. Sposta soltanto la punta di CH2 da IN2 a OUT.',['IN1','OUT'])
  ];
+ const cmosGate=(out)=>[
+  voltGround('supply','Controlla l’alimentazione del CD4007UB','VDD:p','VDD · pin 14','Verifica +5 V fra pin 14 e pin 7.'),
+  voltGround('input-a','Verifica l’ingresso A','M1:g','A · pin 6'),
+  voltGround('input-b','Verifica l’ingresso B','M3:g','B · pin 3'),
+  voltGround('truth','Misura Y per 00, 01, 10 e 11',out,'Y','Usa il multimetro. Collega COM a GND e registra Y per ogni coppia di livelli A/B.')
+ ];
  const plans={
+  'cmos-nor':()=>cmosGate('M1:d'),
+  'cmos-nand':()=>cmosGate('M3:d'),
+  'precision-rectifier':()=>[
+   scope('main','Raddrizzamento · V₁ e OUT','R1a:a','U1:out','Sonde ×10. Usa 10 Vpp e 1 kHz e leggi i valori al centro di ciascuna semionda.',['V₁','OUT · U1']),
+   scope('node-v2','Misura il nodo V₂','R1a:a','R2:a','Mantieni CH1 e il trigger su V₁. Sposta CH2 su V₂.',['V₁','V₂']),
+   scope('aux','Misura l’uscita Vₒ′ di U2','R1a:a','U2:out','Sposta CH2 su U2 e confronta Vₒ′ con V₂ nelle due semionde.',['V₁','Vₒ′ · U2'])
+  ],
+  'bridge-rectifier':()=>[
+   component('R1','R1','Ω'),
+   scope('bridge-ab','Misura A e B e calcola CH2 − CH1','R1:a','R1:b','Collega entrambe le masse al ritorno del generatore. Usa CH2 − CH1 per Vᴮ − Vᴬ ai capi del carico flottante.',['A','B'])
+  ],
+  'common-source':p=>[
+   ...['RD','RS','R1','R2'].map(id=>component(id,id,'Ω')),
+   voltGround('bias-vdd','Punto di lavoro · Vᴅᴅ','VDD:p','VDD','Porta il segnale a zero e misura la tensione di alimentazione.'),
+   voltGround('bias-g','Punto di lavoro · Vɢ','M3:g','Gate · pin 3','Lascia COM a massa.'),
+   voltGround('bias-d','Punto di lavoro · Vᴅ','M3:d','Drain · pin 5','Ricava Iᴅ = (Vᴅᴅ − Vᴅ)/Rᴅ.'),
+   voltGround('bias-s','Punto di lavoro · Vₛ','M3:s','Source · pin 4','Ricava Vɢₛ = Vɢ − Vₛ, Vᴅₛ = Vᴅ − Vₛ e verifica Iᴅ con Vₛ/Rₛ.'),
+   scope('gain','Misura guadagno e inversione',p.inputResistor?'Ri:a':'C1:a','C2:b','Usa 100–200 mVpp a circa 10 kHz. Collega CH2 dopo C₂ e confronta fase e Vpp.'),
+   ...(p.inputResistor?[scope('rin','Misura a monte e a valle di Rᵢ','Ri:a','C1:a','Usa sonde ×10 e la stessa impostazione del generatore. Dopo la misura rimuovi Rᵢ.',['Prima di Rᵢ','Dopo Rᵢ'])]:[]),
+   ...(p.externalLoad?[scope('rout','Ripeti la misura di OUT con Rᴸ','C1:a','C2:b','Confronta OUT con la lettura senza carico mantenendo lo stesso ingresso. Dopo la misura rimuovi Rᴸ.')]:[])
+  ],
   rc:()=>[
    component('R1','R','Ω'),component('C1','C','F'),
    scope('direct','Scarica con cavi diretti','R1:a','C1:a','Collega CH1 direttamente a IN e CH2 a OUT. Misura il tempo di discesa a 1/e.'),

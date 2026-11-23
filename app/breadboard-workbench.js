@@ -50,7 +50,7 @@
   if(!original.benchSetup&&params.type==='rc'&&params.instrument!=='ideal')doc=M.example('rc',{...params,instrument:'ideal'});
   return{original,doc,params,project,key:project.experiment};
  }
- function mountingOptions(context,sectionsPerChip=context.original.assemblyStudy?.sectionsPerChip||1){const config=context.original.benchSetup?.config||context.params?.bench;return{sectionsPerChip,semiconductorType:L.semiconductor.is(context.params)?context.params.type:undefined,channels:config?.mode==='real'?config.channels:undefined,instrumentConfig:config,modelMode:config?.mode==='real'?'real':context.params?.instrument||'ideal'};}
+ function mountingOptions(context,sectionsPerChip=context.original.assemblyStudy?.sectionsPerChip||(context.params?.type==='precision-rectifier'?2:1)){const config=context.original.benchSetup?.config||context.params?.bench;return{sectionsPerChip,semiconductorType:L.semiconductor.is(context.params)?context.params.type:undefined,channels:config?.mode==='real'?config.channels:undefined,instrumentConfig:config,modelMode:config?.mode==='real'?'real':context.params?.instrument||'ideal'};}
  function updatePackageControls(){
   const control=root.querySelector('[data-bb-package-control]'),select=root.querySelector('[data-bb-package]'),available=Boolean(model&&!model.empty&&packageChoices.length>1);
   control.hidden=!available;select.disabled=!available;if(!available)return;
@@ -81,7 +81,7 @@
    }
    root.hidden=!on;if(!on){window.PhysicalBreadboardWorkbench?.suspend();if(checkDialog.open)checkDialog.close();schemaNavigation.interaction.deactivate();return;}const stage=free?$('#freeCanvas').closest('.free-canvas-wrap'):$('#schematicStage');if(root.nextSibling!==stage)stage.before(root);
    const context=read(),newContext=ownerKey()+':'+context.key,epoch=free?(window.circuitEditor.projectEpoch||0):(window.GuidedLab.projectEpoch?.()||0),contextChanged=newContext!==contextKey||epoch!==documentEpoch,config=context.original.benchSetup?.config||context.params?.bench;
-   const key=JSON.stringify({sectionsPerChip:context.original.assemblyStudy?.sectionsPerChip||1,key:newContext,epoch,components:context.doc.components,wires:context.doc.wires,probes:context.doc.probes,settings:context.doc.settings,bench:context.doc.benchSetup,config});
+   const key=JSON.stringify({sectionsPerChip:mountingOptions(context).sectionsPerChip,key:newContext,epoch,components:context.doc.components,wires:context.doc.wires,probes:context.doc.probes,settings:context.doc.settings,bench:context.doc.benchSetup,config});
    const changed=!model||key!==modelKey;
    if(contextChanged){if(checkDialog.open)checkDialog.close();state={part:null,net:null,cable:null,step:3};draftDirty=false;contextKey=newContext;documentEpoch=epoch;if(sourceDialog.open)sourceDialog.close();}
    if(changed){benchReference=null;construction={active:false,index:0};model=B.create(context.doc,mountingOptions(context));packageChoices=B.packagingOptions(model,mountingOptions(context));model.connections=R.connections(model);prepareInspection();modelKey=key;root.dataset.modelRevision=String(++modelRevision);}

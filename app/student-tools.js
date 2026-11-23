@@ -8,6 +8,11 @@
   'half-wave-rc':['Confronta il ripple con e senza carico aggiuntivo.','Carico, capacità o frequenza','Ampiezza e modello del diodo','Leggi media e ripple dell’ultimo periodo.'],
   'mos-iv':['Caratterizza il MOSFET vicino al punto di lavoro.','Vᴅₛ o Vɢₛ','L’altra polarizzazione e i parametri del MOS','Confronta le regioni della curva e le stime attorno a Q.'],
   'mos-amplifier':['Verifica l’inversione e la distorsione del segnale.','Ampiezza d’ingresso','Frequenza e polarizzazione','Confronta il rapporto Vpp e il guadagno a piccolo segnale.'],
+  'cmos-nor':['Identifica la funzione della prima rete CMOS.','Livelli di A e B','Alimentazione a 5 V','Registra Y per ciascuna combinazione DC.'],
+  'cmos-nand':['Identifica la funzione della seconda rete CMOS.','Livelli di A e B','Alimentazione a 5 V','Registra Y per ciascuna combinazione DC e confronta la NOR.'],
+  'precision-rectifier':['Verifica il raddrizzamento di precisione.','Semionda osservata e nodo di misura','Frequenza, ampiezza e rapporti resistivi','Confronta OUT, V₂ e Vₒ′ con i valori di ciascuna semionda.'],
+  'bridge-rectifier':['Individua il percorso della corrente nel ponte.','Tipo di diodo o frequenza','Ampiezza e resistenza di carico','Leggi A e B rispetto a GND e ricava Vᴮ − Vᴬ.'],
+  'common-source':['Collega polarizzazione e guadagno.','Rᵢ, Rᴸ o presenza di C₃','Punto di lavoro, ampiezza e frequenza','Confronta guadagno e attenuazione nelle diverse prove.'],
   'nmos-inverter':logic,'nmos-nor':logic,'nmos-nand':logic,'cmos-inverter':logic
  });
  function lesson(type){const a=lessons[type]||['Esplora il circuito libero.','Un componente alla volta','Segnale e condizioni iniziali','Annota la previsione e confronta i risultati.'];return{goal:a[0],vary:a[1],hold:a[2],measure:a[3]};}
@@ -97,18 +102,20 @@
   return allowed.find(unit=>[unit,...(unitAliases[unit]||[])].some(spelling=>
    new RegExp('(?:^|[_ (\\[])'+spelling+'(?:$|[ )\\]])').test(header)));
  }
- function columnHints(headers,kind='time'){
+ function columnHints(headers,kind='time',{target,paired=false}={}){
   const labels=headers.map(s=>String(s).trim());
-  const sigmaColumn=labels.findIndex(s=>/^u(?:_|$)|sigma|incertezza/i.test(s));
+  const sigmaColumn=labels.findIndex(s=>paired?/^u_(?:diff|math|vb_meno_va|v$)/i.test(s):/^u(?:_|$)|sigma|incertezza/i.test(s));
   const phaseColumn=kind==='bode'?labels.findIndex(s=>/fase|phase/i.test(s)):-1;
   const signalColumn=(pattern,excluded)=>labels.findIndex((s,i)=>i!==sigmaColumn&&i!==phaseColumn&&i!==excluded&&pattern.test(s));
   const xMatch=signalColumn(axisHeaders[kind]||axisHeaders.time,-1);
   const xColumn=xMatch<0?0:xMatch;
   const output=D.currentKinds.includes(kind)?/^(?:i_?d|corrente|current)(?:$|[\s_(\[])/i:
    kind==='charge'?/picco_meno_baseline|vpremax|vout|uscita|output/i:/vout|uscita|output|gain|guadagno|tensione|voltage/i;
-  const yMatch=signalColumn(output,xColumn);
-  const yColumn=yMatch<0?(xColumn===0?1:0):yMatch;
-  return{xColumn,yColumn,sigmaColumn:sigmaColumn<0?null:sigmaColumn,phaseColumn:phaseColumn<0?null:phaseColumn,
+  const yMatch=signalColumn(paired?/^(?:ch\s*2|v?b)(?:$|[\s_(\[])/i:target==='v2'?/^v[2₂](?:$|[\s_(\[])/i:target==='aux'?/^(?:vo|vout2|u2)(?:$|[\s_(\[])/i:output,xColumn);
+  const subtractMatch=paired?signalColumn(/^(?:ch\s*1|v?a)(?:$|[\s_(\[])/i,xColumn):-1;
+  const subtractColumn=subtractMatch<0?(xColumn===0?1:0):subtractMatch;
+  const yColumn=yMatch<0?(paired?[0,1,2].find(column=>column!==xColumn&&column!==subtractColumn):xColumn===0?1:0):yMatch;
+  return{xColumn,yColumn,...(paired?{subtractColumn,subtractUnit:headerUnit(labels[subtractColumn]||'',D.yUnits(kind))}:{}),sigmaColumn:sigmaColumn<0?null:sigmaColumn,phaseColumn:phaseColumn<0?null:phaseColumn,
    xUnit:headerUnit(labels[xColumn]||'',D.xUnits(kind)),yUnit:headerUnit(labels[yColumn]||'',D.yUnits(kind))};
  }
  function resultState({busy,invalid,ready}){return invalid?'invalid':busy?'running':ready?'current':'pending';}

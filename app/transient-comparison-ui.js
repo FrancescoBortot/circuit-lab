@@ -31,14 +31,18 @@
  let doc,params,curves,mode,analysis,revision=0,plot,traces;
  const modes={
   'half-wave-rc':[['load','Con e senza carico a 50 Hz'],['frequency','50 Hz e 1 kHz con lo stesso carico']],
-  'shaper-buffer':[['time','Risposta al gradino'],['bode','Risposta in frequenza']]
+  'shaper-buffer':[['time','Risposta al gradino'],['bode','Risposta in frequenza']],
+  'common-source':[['bypass','Con e senza bypass'],['rin','Con e senza Rᵢ'],['rout','Con e senza Rᴸ']]
  };
  const contexts={
   rc:'Stessi R e C, condensatore inizialmente a 4 V e generatore da 50 Ω. Cambia il carico dell’oscilloscopio.',
   inverting:'Stessi R₁ e Rf. Si confrontano i modelli dell’operazionale da 30 Hz a 1 MHz.',
   'shaper-buffer':'Stesso shaper e stessa sonda ×10. Cambia il buffer di uscita.',
   'mos-iv':'Stessa tensione del generatore e Vᴅₛ = 7 V. A valle, il voltmetro da 10 MΩ carica il nodo del gate.',
-  'mos-amplifier':'Stessa polarizzazione e frequenza di 3 kHz. Cambia il Vpp del generatore.'
+  'mos-amplifier':'Stessa polarizzazione e frequenza di 3 kHz. Cambia il Vpp del generatore.',
+  'precision-rectifier':'Stesse resistenze R₁a–R₁d e stesso ingresso. Varia soltanto R₂.',
+  'bridge-rectifier':'Stesso carico e stessa sinusoide. Il grafico mostra Vᴮ − Vᴬ.',
+  'common-source':'Stesso punto di lavoro e stesso segnale a 10 kHz. Cambia un solo elemento del montaggio.'
  };
  const referenceTime=()=>10*params.Rsh2*params.Csh2;
  function context(){
@@ -58,6 +62,9 @@
   if(type==='mos-iv')return ['Vɢₛ','Iᴅ'];
   if(type==='half-wave-rc')return ['Ripple','Media OUT','A regime'];
   if(type==='mos-amplifier')return ['Vpp OUT / IN'];
+  if(type==='precision-rectifier')return ['OUT · picco semionda positiva','OUT · picco semionda negativa'];
+  if(type==='bridge-rectifier')return ['Minimo Vᴮ − Vᴬ','Media Vᴮ − Vᴬ'];
+  if(type==='common-source')return ['Vpp OUT / IN',...(mode==='rin'?['Rᵢₙ dalla misura']:mode==='rout'?['Rₒᵤₜ dalla misura']:[])];
   return ['OUT con IN alto','OUT con IN basso'];
  }
 
@@ -73,6 +80,13 @@
   const {label,values}=curve,type=params.type;
   if(type==='half-wave-rc')return [label,format(values.ripple,'Vpp'),format(values.outputMean,'V'),values.settled?'Sì':'No'];
   if(type==='mos-amplifier')return [label,format(values.ppGain,'V/V')];
+  if(type==='precision-rectifier')return [label,format(values.positive?.out,'V'),format(values.negative?.out,'V')];
+  if(type==='bridge-rectifier')return [label,format(values.minimum,'V'),format(values.outputMean,'V')];
+  if(type==='common-source'){
+   const loaded=curve===curves[1],gain=values.ppGain;
+   const rout=loaded&&gain>0?curve.params.RL*(curves[0].values.ppGain/gain-1):undefined;
+   return [label,format(gain,'V/V'),...(mode==='rin'?[format(values.rinMeasured,'Ω')]:mode==='rout'?[format(rout,'Ω')]:[])];
+  }
   if(type==='mos-iv')return [label,format(values.vgs,'V'),format(values.id,'A')];
   if(C.isInverter(type))return [label,format(values.truth.find(row=>row.a==='1')?.out,'V'),format(values.truth.find(row=>row.a==='0')?.out,'V')];
   const units=type==='rc'?['s','s']:analysis==='bode'?['dB','Hz']:C.isCompensation(type)?['V','V']:['V','s'];
@@ -82,7 +96,7 @@
 
  function renderTable(){
   const truth=C.isGate(params.type);
-  const columns=truth?['IN1','IN2','NOR','NAND']:['Condizione',...headings()];
+  const columns=truth?(L.semiconductor.extra.isLogic(params.type)?['A','B','NOR','NAND']:['IN1','IN2','NOR','NAND']):['Condizione',...headings()];
   const rows=truth?curves[0].values.truth.map((row,i)=>[row.a,row.b,row.level,curves[1].values.truth[i].level]):curves.map((curve,i)=>{
    const [label,...values]=metrics(curve);return [(i?'B · ':'A · ')+label,...values];
   });
@@ -124,7 +138,7 @@
   read.hidden=false;
   const output=traces.map(trace=>C.interpolate(trace,row.x,'out'));
   const readings=C.isGate(params.type)?[
-   ['IN1',C.interpolate(traces[0],row.x,'vin')],['IN2',C.interpolate(traces[0],row.x,'vin2')],
+   [L.semiconductor.extra.isLogic(params.type)?'A':'IN1',C.interpolate(traces[0],row.x,'vin')],[L.semiconductor.extra.isLogic(params.type)?'B':'IN2',C.interpolate(traces[0],row.x,'vin2')],
    ['NOR',output[0]],['NAND',output[1]]
   ]:[['A',output[0]],['B',output[1]]];
   const {xUnit,yUnit}=plot.config;
@@ -150,7 +164,7 @@
     const xLabel=bode?'Frequenza':phase?'Frazione del periodo':compensation?'Tempo dall’inizio dell’impulso':
      ['rc','shaper-buffer'].includes(type)?'Tempo':'Tempo nell’ultimo periodo';
     plot.set({data,series,scope:true,scopeKey:revision,sharedAutoY:true,centerManualYAtZero:!bode&&!normalized&&zero.checked,xLabel,xUnit:bode?'Hz':phase?'':'s',logX:bode,
-     yLabel:bode?'Modulo':normalized?'(OUT − media) / Vpp IN':compensation?'OUT − baseline':'OUT',
+     yLabel:bode?'Modulo':normalized?'(OUT − media) / Vpp IN':compensation?'OUT − baseline':type==='bridge-rectifier'?'Vᴮ − Vᴬ':'OUT',
      yUnit:bode?'dB':normalized?'V/V':'V',plainY:bode,noZero:bode||type==='half-wave-rc',
      guides:compensation?[{x:referenceTime(),label:'10 tₛₕ'}]:Number.isFinite(cutoff)?[{x:cutoff,label:'−3 dB · B'}]:[]});
    }

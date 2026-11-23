@@ -2,7 +2,7 @@
 
 **Laboratorio di elettronica nel browser per studenti universitari di fisica e ingegneria.**
 
-Simula le esperienze delle sei giornate, costruisci un circuito da zero o confronta le misure del banco con il modello.
+Simula le esperienze delle sei giornate e dell’appendice, costruisci un circuito da zero o confronta le misure del banco con il modello.
 
 **[Apri Circuit Lab](https://francescobortot.github.io/circuit-lab/)** · **[Scarica lo ZIP offline](https://francescobortot.github.io/circuit-lab/Circuit-Lab-offline.zip)**
 
@@ -41,8 +41,11 @@ Per esercitarti con dati sintetici, torna al **Transitorio**. Apri **Misura τ �
 | 4 | Undershoot, compensazione polo-zero, stadio finale e catena completa | Uscita dello shaper prima e dopo l’inserimento di Rpz |
 | 5 | Caratteristica I–V del diodo, raddrizzatori, curve e punto di lavoro nMOS | Ripple del raddrizzatore con filtro RC al variare di carico e frequenza |
 | 6 | Amplificatore nMOS, inverter nMOS e CMOS, porte NOR e NAND | Livelli di uscita degli inverter con lo stesso ingresso |
+| Esperienze extra | A1 NOR e NAND CMOS, A2 raddrizzatore di precisione, A3 ponte a diodi, A4 amplificatore Common Source | Tabelle di verità, rapporti resistivi del raddrizzatore, diodi e LED, bypass e carico del Common Source |
 
 Apri il confronto guidato dal pannello di destra. La legenda indica che cosa rappresentano A e B. Sopra qualsiasi grafico puoi anche premere **Fissa REF** per congelare sullo sfondo la curva attuale e osservare in tempo reale l’effetto di una modifica ai componenti. Sotto il grafico, **Misure e riproduzione** (o **Misure del grafico** nell’editor libero) riporta picchi, baseline, tempi di salita/discesa (10–90%), larghezza a metà altezza (FWHM) e ritardo IN → OUT. Quando il segnale mostra cicli regolari, il pannello riporta anche periodo, frequenza e duty cycle. Nei confronti e nel transitorio puoi regolare le scale per divisione di **CH1**, **CH2** e dell’asse orizzontale. Per confrontare due ampiezze a vista, usa la stessa scala verticale. **Auto** ripristina la vista completa. [Guida ai confronti](docs/USO_RAPIDO.md#confronti-guidati-nelle-sei-giornate).
+
+Nelle **Esperienze extra**, salva le quattro letture di Y accanto alla tabella CMOS. Per il raddrizzatore di precisione scegli **OUT**, **V₂** o **Vₒ′** in **Misure e confronto**. Nel ponte puoi confrontare una colonna differenziale già calcolata oppure scegliere due colonne sincronizzate, con **CH1 su A** e **CH2 su B**. In Common Source apri **Dimensiona il punto di lavoro** per calcolare le resistenze e applicare i valori misurati.
 
 Nella terza giornata, la prova **1.3 · Verifica della linearità** include la scansione in carica e il piano delle misure al banco. Usa il picco rispetto alla baseline, **ΔV = Vmax − Vbase**. [Prova 1.3](docs/USO_RAPIDO.md#preamplificatore--13-verifica-della-linearità).
 

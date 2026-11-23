@@ -16,7 +16,12 @@
   'half-wave-rc':'Confronta carico e frequenza',
   'mos-amplifier':'Confronta due ampiezze',
   'nmos-inverter':'Confronta nMOS e CMOS',
-  'cmos-inverter':'Confronta nMOS e CMOS'
+  'cmos-inverter':'Confronta nMOS e CMOS',
+  'cmos-nor':'Confronta NOR e NAND CMOS',
+  'cmos-nand':'Confronta NOR e NAND CMOS',
+  'precision-rectifier':'Confronta i rapporti resistivi',
+  'bridge-rectifier':'Confronta diodi e LED',
+  'common-source':'Confronta bypass e carichi'
  };
  const rectifierCases=[
   ['probe','Sola sonda ×10 · 50 Hz'],
@@ -24,7 +29,7 @@
   ['fast','Stesso carico · 1 kHz']
  ];
  const isInverter=type=>['nmos-inverter','cmos-inverter'].includes(type);
- const isGate=type=>['nmos-nor','nmos-nand'].includes(type);
+ const isGate=type=>S.extra.isLogic(type)||['nmos-nor','nmos-nand'].includes(type);
  const isCompensation=type=>['preamp-shaper','pz-shaper'].includes(type);
  const analysisFor=(type,mode)=>type==='mos-iv'?'mosOutput':
   type==='inverting'||type==='shaper-buffer'&&mode==='bode'?'bode':'time';
@@ -62,7 +67,8 @@
   }
   if(isGate(p.type)){
    const bench=L.defaults(p.type).bench;
-   return [['NOR','nmos-nor'],['NAND','nmos-nand']].map(([label,type])=>({
+   const prefix=S.extra.isLogic(p.type)?'cmos':'nmos';
+   return [['NOR',prefix+'-nor'],['NAND',prefix+'-nand']].map(([label,type])=>({
     label,params:S.applyPreset({...p,type,bench},'logic').parameters
    }));
   }
@@ -75,6 +81,19 @@
    {label:'100 mVpp',params:S.applyPreset(params,'small').parameters},
    {label:'1 Vpp',params:S.applyPreset(params,'large').parameters}
   ];
+  if(p.type==='precision-rectifier'){
+   const reference=S.applyPreset(p,'output').parameters;
+   return [['R₂ = R₁a/2',1],['R₂ aumentata dell’1%',1.01]].map(([label,factor])=>({
+    label,params:{...reference,R2:Math.max(1,reference.R1a/2*factor)}
+   }));
+  }
+  if(p.type==='bridge-rectifier')return [['Diodi al silicio','diodes'],['LED','leds']].map(([label,key])=>({label,params:S.applyPreset(p,key).parameters}));
+  if(p.type==='common-source'){
+   const variants={
+    bypass:['Senza C₃','unbypassed'],rin:['Con Rᵢ','rin'],rout:['Con Rᴸ','rout']
+   };
+   return [['Riferimento con C₃','gain'],variants[mode]||variants.bypass].map(([label,key])=>({label,params:S.applyPreset(p,key).parameters}));
+  }
   const bench=L.defaults('nmos-inverter').bench;
   const {RD}=doc.circuits['nmos-inverter']||L.defaults('nmos-inverter');
   const {pKp,pVto,pLambda}=doc.circuits['cmos-inverter']||L.defaults('cmos-inverter');

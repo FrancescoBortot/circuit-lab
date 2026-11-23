@@ -22,10 +22,20 @@
  const pullup={keys:['RD','VDD','mosKp'],focus:['RD','VDD','M1'],formula:'VOUT alto tende a Vᴅᴅ quando il percorso verso massa è interdetto.',metrics:p=>[row('Livello alto ideale',p.VDD,'V')]};
  specs['nmos-inverter']=specs['nmos-nor']=specs['nmos-nand']=pullup;
  specs['cmos-inverter']={keys:['VDD'],formula:'Con ingressi ai due livelli di alimentazione, il pMOS porta OUT a Vᴅᴅ e il nMOS porta OUT a massa.',metrics:p=>[row('Livello alto ideale',p.VDD,'V'),row('Livello basso ideale',0,'V')]};
+ for(const [type,operation] of [['cmos-nor','OR'],['cmos-nand','AND']])specs[type]={
+  keys:['VDD'],formula:'Y è la negazione di A '+operation+' B. Le reti pMOS e nMOS sono complementari.',
+  metrics:p=>[row('Livello alto ideale',p.VDD,'V'),row('Livello basso ideale',0,'V')]
+ };
+ specs['precision-rectifier']={keys:['R1a','R1b','R1c','R1d','R2'],formula:'Per V₁ > 0, V₂ ≈ −V₁·R₁b/R₁a. Per V₁ < 0, V₂ ≈ 0. OUT = −R₁d·(V₁/R₁c + V₂/R₂).',
+  metrics:p=>[row('Pendenza OUT/V₁ · V₁ positivo',p.R1d*(p.R1b/(p.R1a*p.R2)-1/p.R1c),'V/V'),row('Pendenza OUT/V₁ · V₁ negativo',-p.R1d/p.R1c,'V/V')]};
+ specs['bridge-rectifier']={keys:['R1'],formula:'Vᴮ − Vᴬ ≈ −max(0, |Vg| − 2·Vf). Corrente da A a B: (Vᴬ − Vᴮ)/R.',
+  metrics:p=>{const peak=p.wave1.vpp/2,vf=p.bridgeLED?2:.7;return[row('Picco di Vᴮ − Vᴬ · Vf costante',-Math.max(0,peak-2*vf),'V'),row('Picco di corrente nel carico · Vf costante',Math.max(0,peak-2*vf)/p.R1,'A')];}};
+ specs['common-source']={keys:['RD','RS','R1','R2','C3'],formula:'Vɢ ≈ Vᴅᴅ·R₁/(R₁ + R₂) e Rᵢₙ ≈ R₁ ∥ R₂. In saturazione il guadagno è circa −gₘRᴅ con C₃ e −gₘRᴅ/(1 + gₘRₛ) senza C₃, a metà banda e senza carico.',
+  metrics:p=>[row('Polarizzazione del gate',p.VDD*p.R1/(p.R1+p.R2),'V'),row('Resistenza del partitore',1/(1/p.R1+1/p.R2),'Ω')]};
  function describe(context,selection={}){
   let {type,params:p,doc,free}=context,focusMap=null;
   if(free){let ref=null;try{ref=R.simpleReference(doc,M.topology(doc));}catch{}if(ref){const r=doc.components.find(c=>c.type==='R'),c=doc.components.find(c=>c.type==='C');type='rc';p={R:r.value,C:c.value};focusMap={R:r.id,C:c.id};}else return{lesson:T.lesson('free'),keys:[],current:[],changed:[],focus:doc.components.find(c=>['R','C','U'].includes(c.type))?.id,formula:'Il modello numerico segue i componenti e i nodi del tuo circuito. Usa Parametri e tolleranze per confrontare due valori della stessa rete.',assumptions:['Questa topologia non ha un riferimento analitico automatico. I risultati numerici si leggono nel grafico e si confrontano con i dati misurati.']};}
-  const spec=specs[type];if(!spec)throw Error('Esperienza senza riferimento didattico.');const keys=spec.keys.filter(k=>Number.isFinite(p[k])&&(k!=='Rbias'||p.biasEnabled)&&(type!=='half-wave-rc'||k!=='RL'||p.externalLoad)),key=keys.includes(selection.key)?selection.key:keys[0],factor=[.5,.99,1.01,2].includes(selection.factor)?selection.factor:2,copy={...p,[key]:p[key]*factor};
+  const spec=specs[type];if(!spec)throw Error('Esperienza senza riferimento didattico.');const keys=spec.keys.filter(k=>Number.isFinite(p[k])&&(k!=='Rbias'||p.biasEnabled)&&(type!=='half-wave-rc'||k!=='RL'||p.externalLoad)&&(type!=='common-source'||k!=='C3'||p.bypass)),key=keys.includes(selection.key)?selection.key:keys[0],factor=[.5,.99,1.01,2].includes(selection.factor)?selection.factor:2,copy={...p,[key]:p[key]*factor};
   const assumptions=['Riferimento ideale: non include banda finita, saturazione, slew rate o carico degli strumenti. Non è una misura né il risultato della simulazione.'];
   if(type==='difference')assumptions.push('Ac nullo indica annullamento ideale con resistenze bilanciate; non implica CMRR infinito nel componente reale.');
   if(type==='shaper-buffer')assumptions.push(p.outputBuffer?'Buffer finale attivo: il suo effetto si valuta sotto lo stesso carico, non dalle sole costanti di tempo.':'Buffer finale assente: confronta le prove con e senza buffer mantenendo invariato il carico.');

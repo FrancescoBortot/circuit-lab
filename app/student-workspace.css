@@ -417,3 +417,19 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
 @media(max-width:760px){
  .measurement-guide{scroll-margin-block-start:8px}
 }
+
+/* In the guided mobile library, group headings remain visible while its list scrolls. */
+@media (max-width:760px){
+ .student-workbench:not(.student-library-collapsed) #appLayout .library{display:flex;flex-direction:column;max-height:min(42dvh,360px);overflow:hidden}
+ .student-workbench #circuitList{display:block;overflow:auto;overscroll-behavior:contain;min-height:0;padding:0 4px 4px}
+ .student-workbench #circuitList .library-group{margin:0 0 10px}
+ .student-workbench #circuitList .library-group h2{position:sticky;top:0;z-index:1;background:var(--panel,#fff);font-size:13px;padding:7px 4px;margin:0 0 4px}
+ .student-workbench #circuitList .circuit-option{width:100%;min-width:0}
+}
+#guidedTruthTable [data-truth-voltage],.common-source-design [data-design-measured]{width:7em;max-width:100%;min-height:36px;padding:4px 7px;border:1px solid #c2d1e7;border-radius:6px}
+#guidedTruthTable th,#guidedTruthTable td,.common-source-design th,.common-source-design td{vertical-align:middle}
+.common-source-design caption{text-align:left;font-weight:600}
+.common-source-design [aria-invalid="true"]{border-color:#b23834}
+.common-source-design [data-design-preview]{line-height:1.65}
+
+.comparison-fields [data-cmp-pair][hidden]{display:none}

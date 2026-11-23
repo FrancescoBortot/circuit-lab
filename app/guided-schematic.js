@@ -52,6 +52,21 @@
 
   function layout(network,type,params){
     const doc=Bench.remove(network);
+    const labels={
+      'cmos-nor':{A:'M1:g',B:'M3:g',Y:'M1:d'},'cmos-nand':{A:'M1:g',B:'M3:g',Y:'M3:d'},
+      'precision-rectifier':{'V₁':'R1a:a','V₂':'R2:a','Vₒ′':'U2:out',OUT:'U1:out'},
+      'bridge-rectifier':{Vg:'V1:p',A:'R1:a',B:'R1:b'},
+      'common-source':{IN:doc.probes.input,G:'M3:g',D:'M3:d',S:'M3:s',OUT:'C2:b'}
+    };
+    if(labels[type])doc.sheetProbes=labels[type];
+    if(['cmos-nor','cmos-nand','common-source'].includes(type)){
+      const hidden=new Set(['Rleak','Rref']);
+      const hiddenGround=doc.wires.filter(w=>hidden.has(w.a.split(':')[0])&&w.b.endsWith(':g')).map(w=>w.b.split(':')[0]);
+      hiddenGround.forEach(id=>hidden.add(id));
+      doc.components=doc.components.filter(part=>!hidden.has(part.id));
+      doc.wires=doc.wires.filter(w=>![w.a,w.b].some(pin=>hidden.has(pin.split(':')[0])));
+      return doc;
+    }
     if(type==='detector-chain'||type==='noninverting')return finalStage(doc);
     if(!['diode-iv','half-wave','half-wave-rc','mos-iv','mos-amplifier','nmos-inverter','nmos-nor','nmos-nand','cmos-inverter'].includes(type))return doc;
 

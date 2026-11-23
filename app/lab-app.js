@@ -42,12 +42,12 @@
       if(button.dataset.sheetPreset===trial.preset)button.setAttribute('aria-current','true');
       else button.removeAttribute('aria-current');
     }
-    const advice=$('sheetPresetAdvice'),hint=type==='diode-iv'?'':S.presetHint(type,trial.preset);
+    const advice=$('sheetPresetAdvice'),hint=type==='diode-iv'?'':S.presetHint(type,trial.preset||(S.extra.is(type)?presets[type][0][0]:''));
     advice.textContent=hint;advice.hidden=!hint;
   }
   function sessionState(withResult=false){
     if(window.circuitEditor?.active)return;const detail={text:M.serialize(project)};
-    if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,...(lastSimulationResult?.values?.truth?{truthCsv:S.truthCsv(params(),lastSimulationResult.values.truth)}:{}),points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
+    if(withResult&&calculationReady){const svg=$('plot').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font:10px Arial;fill:#65768c}';svg.prepend(style);detail.result={analysis:project.analysis,quantity,csv:M.csv(params(),project.analysis,data),svg:svg.outerHTML,count:data.length,...(lastSimulationResult?.values?.truth?{truthCsv:S.truthCsv(params(),lastSimulationResult.values.truth,project.extraStudy?.records[params().type])}:{}),points:params().type==='rc'&&project.analysis==='time'?data.map(p=>({x:p.x,y:p.out})):null};}
     return detail;
   }
   function emitState(withResult=false){const detail=sessionState(withResult);if(detail)document.dispatchEvent(new CustomEvent('guided-lab-state',{detail}));}
@@ -58,8 +58,22 @@
     renderNavigation();renderInspector();fitDiagram();calculate();persist();
   }
   function renderNavigation(){
-    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+[...new Set(M.CATALOG.map(c=>c.day))].map(day=>`<section class="library-group"><h2>${['','Prima','Seconda','Terza','Quarta','Quinta','Sesta'][day]} giornata</h2>${M.CATALOG.filter(c=>c.day===day).map(c=>`<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step}</small></span></button>`).join('')}</section>`).join('');
-    const c=current();$('guidedRCAnalysis').hidden=c.type!=='rc';$('circuitKicker').textContent=`GIORNATA ${c.day} · ESPERIENZA ${c.step}`;$('circuitTitle').textContent=c.name;$('circuitDescription').textContent=c.description;
+    const groups=[...new Set(M.CATALOG.map(c=>c.group||c.day))];
+    const titles=['','Prima','Seconda','Terza','Quarta','Quinta','Sesta'];
+    $('circuitList').innerHTML='<button class="library-editor" data-open-editor><span>＋</span><strong>Editor libero<small>Costruisci da zero</small></strong></button>'+
+      groups.map(group=>{
+        const heading=group==='extra'?'Esperienze extra':titles[group]+' giornata';
+        const buttons=M.CATALOG.filter(c=>(c.group||c.day)===group).map(c=>
+          `<button class="circuit-option" data-experiment="${c.id}" aria-pressed="${project.experiment===c.id}"><span class="circuit-thumbnail">${c.short}</span><span><strong>${c.name}</strong><small>Esperienza ${c.step}</small></span></button>`
+        ).join('');
+        return `<section class="library-group" aria-labelledby="library-group-${group}"><h2 id="library-group-${group}">${heading}</h2>${buttons}</section>`;
+      }).join('');
+    const c=current();
+    $('guidedRCAnalysis').hidden=c.type!=='rc';
+    $('circuitKicker').textContent=(c.group==='extra'?'APPENDICE 1':'GIORNATA '+c.day)+' · ESPERIENZA '+c.step;
+    $('circuitTitle').textContent=c.name;
+    $('commonSourceDesign').hidden=c.type!=='common-source';
+    $('circuitDescription').textContent=c.description;
     const p=params(),options=M.analyses(p),tabs=S.is(p)?options:[['time','Transitorio'],['bode','Bode'],chargeAnalysis(p)?['charge','Linearità · Q']:['vtc','VTC']];
     $$('[data-analysis]').forEach((button,index)=>{
       const [key,label]=tabs[index]||['',''];button.dataset.analysis=key;
@@ -96,6 +110,7 @@
     }
     return `<details class="details-settings" data-baseline-settings${open?' open':''}><summary>Avanzate · Ingresso e baseline</summary>${inputs}${select('baselineMode','Baseline di riferimento',[['auto','Automatica'],['manual','Valore manuale'],['interval','Media su un intervallo']],'Riferimento per le misure di uscita nel transitorio e in carica. Non modifica la tensione del generatore né i campioni simulati.')}${mode==='manual'?field('baselineValue','Baseline manuale di OUT','V'):mode==='interval'?field('baselineStart','Inizio intervallo baseline','time')+field('baselineEnd','Fine intervallo baseline','time','Media pesata sul tempo. L’intervallo deve essere contenuto nel transitorio. Nella scansione in carica è usato in ogni impulso simulato.'):'<p class="field-hint">Impulsi: ultimo campione prima del fronte. Segnali periodici e continui: punto di lavoro DC, quando disponibile.</p>'}</details>`;
   }
+  const opampFields=p=>`<section class="form-section">${select('opamp','Operazionale',[['limited','Banda e saturazione'],['physical','Fisico semplificato'],['ideal','Ideale']])}<details class="details-settings" ${['U1','U2'].includes(selected)?'open':''}><summary>Alimentazione, guadagno e banda</summary>${p.opamp==='physical'?field('positive','Alimentazione V+','V')+field('negative','Alimentazione V−','V')+field('slew','Slew rate interno','slew')+field('rout','Resistenza di uscita','res')+field('ilimit','Corrente massima erogata/assorbita','current'):field('rail','Alimentazione simmetrica ±','V')}${field('headroom','Margine rispetto alle alimentazioni','V')}${field('a0','Guadagno ad anello aperto A₀','V/V')}${field('gbw','Prodotto guadagno-banda','freq','Modello generico a polo dominante. I limiti aggiuntivi si attivano con Fisico semplificato; i valori sono esempi regolabili.')}</details></section>`;
   function renderInspector(focus){
     const content=$('inspectorContent'),panelChanged=content.dataset.panel!==panel,helpOpen=Boolean(content.querySelector('[data-rc-help]')?.open),precisionOpen=Boolean(content.querySelector('[data-analysis-precision]')?.open),readingOpen=Boolean(content.querySelector('[data-analysis-reading]')?.open),p=params();$$('[data-panel]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.panel===panel)));
     $('inspectorTitle').textContent=panel==='components'?(selected&&['R','C','R1','Rf','C1','R3','R4'].includes(selected)?'Modifica '+selected:'Componenti'):panel==='signals'?'Segnali in ingresso':'Analisi del circuito';
@@ -108,6 +123,10 @@
           'Il valore nominale di 10 MΩ rappresenta la lettura ideale. In modalità reale viene sostituito dalla sonda configurata. Un valore diverso resta come carico esterno.':S.componentHint(p.type,key))).join('');
         if(p.type==='half-wave-rc')html+=checkbox('externalLoad','Inserisci il carico esterno Rᴸ')+field('initial','Tensione iniziale su C₁','V');
         if(p.type==='mos-iv')html+=checkbox('gateMeter','Collega il voltmetro da 10 MΩ al gate');
+        for(const [key,label] of S.extra.switches(p.type))html+=checkbox(key,label);
+        if(p.type==='precision-rectifier')html+=opampFields(p);
+        if(S.extra.isLogic(p.type))html+='<p class="field-hint">Il CD4007UB ha body comuni ai pin 7 e 14. Nel modello i body seguono il source locale, senza effetto body.</p>';
+        if(p.type==='common-source')html+='<p class="field-hint">Valori iniziali di esempio. Usa il punto di lavoro e il guadagno assegnati dal docente per dimensionare Rᴅ, Rₛ e il partitore.</p>';
         html+='<p class="field-hint">Parametri di esempio a 27 °C. Inserisci i valori ricavati dai tuoi dati per confrontare il modello con il banco.</p>';
         if(p.type==='nmos-nand')html+='<p class="field-hint">M3 è rappresentato con corpo al source locale e senza effetto body. Rleak (100 MΩ) fissa il potenziale del nodo intermedio a canali spenti.</p>';
       }else{
@@ -122,12 +141,12 @@
       if(p.type==='derivative')html+=field('C1','Condensatore in serie C₁','cap');
       if(p.type==='difference')html+=field('R3','Resistenza d’ingresso R₃','res')+field('R4','Resistenza verso massa R₄','res')+'<button class="text-button" id="balanceResistors">Bilancia: R₃ = R₁ e R₄ = Rf <svg><use href="#i-arrow"/></svg></button>';
       if(p.type==='rc'&&!M.real(p))html+=`<section class="form-section">${select('instrument','Generatore e oscilloscopio',[['ideal','Circuito ideale'],['generator','Solo generatore'],['direct','Oscilloscopio · senza sonde'],['probe','Oscilloscopio · sonde 10×'],['custom','Valori personalizzati']])}${p.instrument==='ideal'?'<p class="field-hint">Scegli una configurazione per aggiungere le impedenze degli strumenti allo schema.</p>':`<details class="details-settings" ${['Rg','CH1','CH2'].includes(selected)?'open':''}><summary>Modifica le impedenze degli strumenti</summary>${field('rg','R del generatore','res')}${p.instrument==='generator'?'':field('scopeR','R d’ingresso di ogni canale','res')+field('scopeC','C d’ingresso di ogni canale','cap','Cavi e sonde inclusi: i valori iniziali sono esempi modificabili.')}</details>`}</section>`;
-      else if(p.type!=='rc')html+=`<section class="form-section">${select('opamp','Operazionale',[['limited','Banda e saturazione'],['physical','Fisico semplificato'],['ideal','Ideale']])}<details class="details-settings" ${selected==='U1'?'open':''}><summary>Alimentazione, guadagno e banda</summary>${p.opamp==='physical'?field('positive','Alimentazione V+','V')+field('negative','Alimentazione V−','V')+field('slew','Slew rate interno','slew')+field('rout','Resistenza di uscita','res')+field('ilimit','Corrente massima erogata/assorbita','current'):field('rail','Alimentazione simmetrica ±','V')}${field('headroom','Margine rispetto alle alimentazioni','V')}${field('a0','Guadagno ad anello aperto A₀','V/V')}${field('gbw','Prodotto guadagno-banda','freq','Modello generico a polo dominante. I limiti aggiuntivi si attivano con Fisico semplificato; i valori sono esempi regolabili.')}</details></section>`;
+      else if(p.type!=='rc')html+=opampFields(p);
       }
     }else if(panel==='signals'){
       if(p.type==='difference')html+=select('drive','Come sono pilotati gli ingressi',[['independent','Due segnali indipendenti'],['v1','V₁ attivo · V₂ a massa'],['v2','V₂ attivo · V₁ a massa'],['common','Modo comune · V₁ = V₂'],['differential','Differenziale · V₂ = −V₁']]);
-      const label=p.type==='difference'?(p.drive==='v2'?'Ingresso V₂':p.drive==='common'?'Segnale comune V₁ = V₂':p.drive==='differential'?'Differenza V₂ − V₁':'Ingresso V₁'):'Ingresso V₁';
-      html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent'||S.twoInputs(p))html+=sourceFields(2,'Ingresso V₂');
+      const label=p.type==='difference'?(p.drive==='v2'?'Ingresso V₂':p.drive==='common'?'Segnale comune V₁ = V₂':p.drive==='differential'?'Differenza V₂ − V₁':'Ingresso V₁'):S.extra.isLogic(p.type)?'Ingresso A':'Ingresso V₁';
+      html+=sourceFields(1,label);if(p.type==='difference'&&p.drive==='independent'||S.twoInputs(p))html+=sourceFields(2,S.extra.isLogic(p.type)?'Ingresso B':'Ingresso V₂');
       if(M.real(p)&&!S.isCharacteristic(project.analysis))html+='<p class="field-hint">Ampiezze delle sorgenti ideali, prima di R_G. IN/OUT sono le letture dei canali collegati; V₂ è il nodo fisico d’ingresso.</p>';else if(p.type!=='rc'&&!S.is(p))html+='<p class="field-hint">Ampiezze impostate nel punto V₁/V₂ della scheda, non a vuoto sul generatore.</p>';
     }else{
       const descriptions={time:p.type==='rc'?'Segui la carica e la scarica del condensatore e misura quanto tempo impiega l’uscita a cambiare.':p.type==='derivative'?'Confronta la forma dell’ingresso con l’uscita per verificare la derivazione del segnale.':'Confronta ingressi e uscita nel tempo: osserva guadagno, inversione e possibili limiti di uscita.',bode:'Scopri come cambiano guadagno e sfasamento al variare della frequenza. Utile per studiare filtri e banda passante.',charge:'Varia la durata di impulsi negativi, calcola Qin = |Vin|·T/Rin e confronta i massimi rispetto alla baseline con un fit lineare.',vtc:'Aumenta l’ampiezza di una sinusoide a frequenza fissa e osserva dove l’uscita smette di crescere linearmente.'};
@@ -231,20 +250,72 @@
     const table=$('guidedTruthTable'),truth=lastSimulationResult?.values?.truth;
     table.hidden=!truth;table.innerHTML=truthTable(p,truth);
   }
+  const truthDrafts=new Map();
   function truthTable(p,rows){
     if(!rows)return '';
-    const two=S.twoInputs(p),head=two?'<th scope="col">IN1</th><th scope="col">IN2</th>':'<th scope="col">IN</th>';
-    return '<table><caption>Tabella di verità simulata · DC</caption><thead><tr>'+head+'<th scope="col">OUT</th><th scope="col">VOUT</th></tr></thead><tbody>'+rows.map(row=>'<tr><td>'+row.a+'</td>'+(two?'<td>'+row.b+'</td>':'')+'<td>'+row.level+'</td><td>'+format(row.out,'V',4)+'</td></tr>').join('')+'</tbody></table><p class="field-hint">Basso sotto 1 V, alto sopra 4 V. Il trattino indica un livello intermedio.</p>';
+    const extra=S.extra.isLogic(p.type),two=S.twoInputs(p);
+    const saved=project.extraStudy?.records[p.type],draft=truthDrafts.get(projectEpoch+':'+p.type);
+    const head=extra?'<th scope="col">A</th><th scope="col">B</th>':two?'<th scope="col">IN1</th><th scope="col">IN2</th>':'<th scope="col">IN</th>';
+    const voltageInVolts=new Intl.NumberFormat('it-IT',{maximumFractionDigits:3});
+    const body=rows.map((row,i)=>{
+      const savedVoltage=saved?.voltages[i],value=draft?.[i]??(savedVoltage==null?'':String(savedVoltage).replace('.',','));
+      return '<tr><th scope="row">'+row.a+'</th>'+(two?'<td>'+row.b+'</td>':'')+
+        '<td>'+row.level+'</td><td>'+(extra?voltageInVolts.format(row.out):format(row.out,'V',4))+'</td>'+
+        (extra?'<td><input data-truth-voltage type="text" inputmode="decimal" maxlength="24" aria-label="Y misurata in volt con A '+row.a+' e B '+row.b+'" value="'+esc(value)+'"></td>':'')+'</tr>';
+    }).join('');
+    const table='<table><caption>Tabella di verità · punto DC</caption><thead><tr>'+head+(
+      extra?'<th scope="col">Y logica</th><th scope="col">Y simulata (V)</th><th scope="col">Y al banco (V)</th>':'<th scope="col">OUT</th><th scope="col">VOUT</th>'
+    )+'</tr></thead><tbody>'+body+'</tbody></table>';
+    if(!extra)return table+'<p class="field-hint">Basso sotto 1 V, alto sopra 4 V. Il trattino indica un livello intermedio.</p>';
+    return '<form data-truth-measurements>'+table+
+      '<p class="field-hint">Livelli simulati: basso sotto il 20% di Vᴅᴅ, alto sopra l’80%. Un campo vuoto indica una misura mancante.</p>'+
+      '<button type="submit" class="button">Salva misure di Y</button><p data-truth-status role="status">'+
+      (saved?'Misure salvate con Vᴅᴅ = '+format(saved.vdd,'V',4)+'.':'')+'</p></form>';
   }
-  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef'};
+  $('guidedTruthTable').addEventListener('input',event=>{
+    if(event.target.matches('[data-truth-voltage]')){
+      truthDrafts.set(projectEpoch+':'+params().type,$$('[data-truth-voltage]').map(el=>el.value));
+      $('guidedTruthTable').querySelector('[data-truth-status]').textContent='Misure da salvare.';
+    }
+  });
+  $('guidedTruthTable').addEventListener('submit',event=>{
+    if(!event.target.matches('[data-truth-measurements]'))return;
+    event.preventDefault();
+    const p=params(),form=event.target,fields=[...form.querySelectorAll('[data-truth-voltage]')];
+    const status=form.querySelector('[data-truth-status]');
+    const voltages=fields.map(input=>input.value.trim()?window.StudentTools.quantity(input.value,1,'V'):null);
+    const bad=voltages.findIndex(value=>value!==null&&(!Number.isFinite(value)||Math.abs(value)>1000));
+    if(bad>=0){status.textContent='Inserisci una tensione in volt oppure lascia vuoto il campo.';fields[bad].focus();return;}
+    const study=copy(project.extraStudy||{version:1,records:{}});
+    study.records[p.type]={vdd:p.VDD,voltages};
+    window.GuidedLab.updateStudies({extraStudy:study});
+    truthDrafts.delete(projectEpoch+':'+p.type);
+    status.textContent='Misure salvate con Vᴅᴅ = '+format(p.VDD,'V',4)+'.';
+    emitState(true);
+  });
+  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef',a:'#5375cd',b:'#a348a7',v2:'#5375cd',aux:'#a348a7',afterRi:'#5375cd',ch1:'#a58014',ch2:'#00879f',math:'#864b00'};
   function series(){const p=params();let s;
+    const extraTraces={
+      'cmos-nor':[['vin','Ingresso A'],['vin2','Ingresso B'],['out','Uscita Y']],
+      'cmos-nand':[['vin','Ingresso A'],['vin2','Ingresso B'],['out','Uscita Y']],
+      'precision-rectifier':[['vin','Ingresso V₁'],['out','OUT · U1'],['v2','Nodo V₂'],['aux','Vₒ′ · U2']],
+      'bridge-rectifier':[['vin','Generatore'],['a','Vᴬ rispetto a GND'],['b','Vᴮ rispetto a GND'],['out','Vᴮ − Vᴬ']],
+      'common-source':[['vin','Ingresso'],['out','Uscita'],...(p.inputResistor?[['afterRi','Dopo Rᵢ']]:[])]
+    };
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
     else if(S.isCharacteristic(project.analysis))s=[{key:'out',label:'Corrente Iᴅ',points:project.analysis==='diodeIV'},...(project.analysis==='diodeIV'?[{key:'linear',label:'Fit semilogaritmico',dash:'5 5'}]:[])];
     else if(project.analysis==='charge')s=[{key:'out',label:'Picco rispetto alla baseline',points:true},{key:'linear',label:'Fit lineare',dash:'5 5'}];
     else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:S.is(p)?'Piccolo segnale':'Senza saturazione',dash:'5 5'}];
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
-    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
-    return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]!==false}));
+    else if(extraTraces[p.type]){
+      s=extraTraces[p.type].map(([key,label])=>({key,label,dash:key==='out'?undefined:'5 4'}));
+      if(M.real(p))s.push(
+        {key:'ch1',label:'Lettura CH1',defaultVisible:false},
+        {key:'ch2',label:'Lettura CH2',defaultVisible:p.type==='precision-rectifier'&&p.bench.channels[1].target!=='output'}
+      );
+      if(p.type==='bridge-rectifier'&&M.real(p)&&p.bench.channels.every(ch=>ch.enabled))s.push({key:'math',label:'Lettura matematica · CH2 − CH1',defaultVisible:false});
+    }else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
+    return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]??d.defaultVisible??true}));
   }
   function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}" aria-label="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${esc(d.label)}</span></button>`).join('');}
 
@@ -273,7 +344,7 @@
   }
   function cursor(d,fraction,cursors){
     $('timeCursor').value=Math.round(fraction*10000);if(playback.running&&playback.mode==='continuous'&&performance.now()-lastContinuousReadout<200)return;lastContinuousReadout=performance.now();const p=params();let rows;
-    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(secondInput(p))rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);if(ref)rows.push([ref.label,format(ref.value,'V',4)],['OUT − baseline',format(d.out-ref.value,'V',4)]);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
+    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(secondInput(p))rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);if(S.extra.is(p.type))for(const trace of names.filter(t=>t.visible&&!['vin','vin2','out'].includes(t.key)))rows.push([trace.label,format(d[trace.key],'V',4)]);const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);if(ref)rows.push([ref.label,format(ref.value,'V',4)],['OUT − baseline',format(d.out-ref.value,'V',4)]);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
     else if(project.analysis==='bode')rows=[['Frequenza',format(d.x,'Hz',4)],['Guadagno',d.magnitude===0?'0 V/V':format(d.magnitude,'',4)+' V/V','primary-value'],['Modulo',d.magnitude===0?'−∞ dB':format(d.db,'dB',4)],['Fase',format(d.phase,'°',4)]];
     else if(S.isCharacteristic(project.analysis))rows=[[S.characteristic(project.analysis).xLabel,format(d.x,'V',4)],['Corrente Iᴅ',format(d.out,'A',4),'primary-value'],...(project.analysis==='diodeIV'?[['Fit',format(d.linear,'A',4)],['Residuo',format(d.residual,'A',4)]]:[])];
     else if(project.analysis==='charge')rows=[['Qin nominale',format(d.x,'C',4)],['Durata impulso',format(d.width,'s',4)],['Baseline',format(d.baseline,'V',4)],['V_max assoluto',format(d.maximum,'V',4)],['Picco − baseline',format(d.out,'V',4)],['Residuo dal fit',format(d.residual,'V',4)]];
@@ -423,7 +494,7 @@
   $('toggleSchematic').addEventListener('click',()=>setWorkspaceView('plot'));$('hideGuidedPlot').addEventListener('click',()=>setWorkspaceView('circuit'));
   $('plotIn').addEventListener('click',()=>{stopPlayback();plot.zoom(1.6);});$('plotOut').addEventListener('click',()=>{stopPlayback();plot.zoom(1/1.6);});$('plotFit').addEventListener('click',()=>{stopPlayback();plot.fit();});
   $('plotQuantity').addEventListener('change',()=>{quantity=$('plotQuantity').value;calculate();});
-  $('plotLegend').addEventListener('click',e=>{const b=e.target.closest('[data-trace]');if(!b)return;stopPlayback();const key=b.dataset.trace,s=series();if(visible[key]&&s.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}visible[key]=!visible[key];renderLegend();plot.updateSeries(series());});
+  $('plotLegend').addEventListener('click',e=>{const b=e.target.closest('[data-trace]');if(!b)return;stopPlayback();const key=b.dataset.trace,s=series();if(s.find(d=>d.key===key)?.visible&&s.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}visible[key]=!s.find(d=>d.key===key)?.visible;renderLegend();plot.updateSeries(series());});
   $('timeCursor').addEventListener('input',()=>{holdReading();plot.setFraction(Number($('timeCursor').value)/10000);});$('playButton').addEventListener('click',play);$('readingStart').addEventListener('click',()=>manualReading(0));$('readingBack').addEventListener('click',()=>manualReading(-1));$('readingNext').addEventListener('click',()=>manualReading(1));$('readingDelay').addEventListener('change',()=>playback.setDelay(Number($('readingDelay').value)));
   $('readingMode').addEventListener('change',()=>{playback.setMode($('readingMode').value);$('readingDelayLabel').textContent=playback.mode==='continuous'?'1% in':'Ogni passo';$('readingHint').textContent=playback.mode==='continuous'?'Il cursore scorre senza scatti; i numeri si aggiornano fino a 5 volte al secondo. Il tempo fisico non cambia.':'Un passo = 1% dell’intervallo visibile. I valori restano fermi tra i passi; il tempo del circuito non cambia.';});document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
   let resizeStart;
@@ -465,8 +536,24 @@
     const next=M.normalizeTime(p),errors=M.validate(next);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);
     project.circuits.preamp=next;project.analysis=linearity?'charge':'time';window.GuidedTrials.select(project,'linearity',M.CATALOG);panel='analysis';quantity='voltage';renderNavigation();renderInspector();calculate();persist();return true;
   }
+  function saveCommonSourceDesign(entry,apply){
+    if(params().type!=='common-source'||window.circuitEditor?.active)throw Error('Apri l’esperienza Common Source.');
+    if(!applyFields())return false;
+    const currentParams=params(),next=copy(project),study=copy(project.extraStudy||{version:1,records:{}});
+    study.records['common-source']=entry;
+    next.extraStudy=study;
+    if(apply){
+      const values=Object.fromEntries(S.extra.sourceResistors.map(key=>[key,apply==='measured'?(entry.measured[key]??entry.nominal[key]):entry.nominal[key]]));
+      next.circuits['common-source']={...currentParams,...values};
+      M.network(next.circuits['common-source']);
+    }
+    project=M.parse(M.serialize(next));
+    if(apply){renderInspector();calculate();}
+    persist();
+    return true;
+  }
   function breadboardColors(enabled){Object.assign(colors,enabled?{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#6b7a8c'}:{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce'});if(calculationReady&&!calculating){plot.updateSeries(series());renderLegend();}}
-  window.GuidedLab={applyPreampSheet,measurementDrawing,projectEpoch:()=>projectEpoch,selectedComponent:()=>selected,captureReading:()=>calculationReady&&!calculating&&valid?{config:copy(plot.config),index:plot.data.indexOf(plot.cursor)}:null,revealErrors:()=>setInspector(true),calculationState:()=>({valid,calculating,ready:calculationReady,analysis:project.analysis,error:studentCalculationError}),inspectSample:index=>calculationReady&&!calculating&&valid?plot.inspectSample(index):false,centerSelected:()=>{if(!selected)return false;const id=networkDiagram(params())&&params().type==='rc'?({R:'R1',C:'C1'}[selected]||selected):selected;return activeDiagram().center(id);},selectComponent,run:()=>{if(!applyFields())return false;calculate();return true;},resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,showInspector:setInspector,showTrials,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(S.isCharacteristic(project.analysis)||!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
+  window.GuidedLab={saveCommonSourceDesign,applyPreampSheet,measurementDrawing,projectEpoch:()=>projectEpoch,selectedComponent:()=>selected,captureReading:()=>calculationReady&&!calculating&&valid?{config:copy(plot.config),index:plot.data.indexOf(plot.cursor)}:null,revealErrors:()=>setInspector(true),calculationState:()=>({valid,calculating,ready:calculationReady,analysis:project.analysis,error:studentCalculationError}),inspectSample:index=>calculationReady&&!calculating&&valid?plot.inspectSample(index):false,centerSelected:()=>{if(!selected)return false;const id=networkDiagram(params())&&params().type==='rc'?({R:'R1',C:'C1'}[selected]||selected):selected;return activeDiagram().center(id);},selectComponent,run:()=>{if(!applyFields())return false;calculate();return true;},resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,showInspector:setInspector,showTrials,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(S.isCharacteristic(project.analysis)||!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
   const loaded=store.read();if(loaded.doc){project=loaded.doc;storageState.ok=true;}else if(!loaded.error)try{const old=localStorage.getItem('rc-studio-project-v1');if(old)project=M.parse(old);}catch{}
   if(loaded.recovered||loaded.error)setTimeout(()=>toast(loaded.recovered?'Recuperata la copia precedente del laboratorio: la più recente non era leggibile.':loaded.error,true),200);
   ensureSession();$('projectName').value=project.name;renderNavigation();renderInspector();calculate();persist();

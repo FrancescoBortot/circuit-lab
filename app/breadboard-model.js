@@ -4,10 +4,11 @@
  const palette={ground:'#263747',input:'#16804d',input2:'#9552cc',output:'#e36c16',negative:'#2867d8',positive:'#d93545',feedback:'#ad7828',channel1:'#b99500',channel2:'#009fce'};
  const extraColors=['#007f89','#c24379','#617819','#7058ae','#b44e22','#2c7cba'];
  const pinNames={1:'OUT A',2:'− A',3:'+ A',4:'V−',5:'+ B',6:'− B',7:'OUT B',8:'V+'};
- // CD4007UB wired as in the course sheet, figures 4, 5 and 8.
+ // CD4007UB wired as in the course sheet, figures 4, 5, 8 and 9.
  const mosPins={M1:{g:6,s:7,d:8},M2:{g:6,s:14,d:13},M3:{g:3,s:4,d:5}};
+ const cmosGatePins={...mosPins,M3:{g:3,s:5,d:4},M4:{g:3,s:1,d:2}};
  const cdPins=['','M4 · drain','M4 · source','Gate M3/M4','M3 · source','M3 · drain','Gate M1/M2','VSS · body nMOS · source M1','M1 · drain','M5 · source','Gate M5/M6','M6 · drain','Drain M5 / source M6','M2 · uscita CMOS','VDD · body pMOS'];
- const partLabel=part=>part.type==='DIP14'?'CD4007UB':part.type==='D'?'1N4148':part.polarized?'Elettrolitico':null;
+ const partLabel=part=>part.type==='DIP14'?'CD4007UB':part.type==='D'?(part.deviceLabel||'1N4148'):part.polarized?'Elettrolitico':null;
  const columns='abcdefghij',clone=M.clone;
  function groups(module,rows){const a=[];for(let r=1;r<=rows;r++)for(const c of ['abcde','fghij'])a.push([...c].map(k=>`${module}:${k}${r}`));for(const rail of ['L1','L2','R1','R2'])a.push(Array.from({length:rows===30?25:50},(_,i)=>`${module}:${rail}.${i+1}`));return a;}
  function group(hole){const[m,h]=hole.split(':');return /^[a-j]/.test(h)?m+':strip'+(columns.indexOf(h[0])<5?'L':'R')+h.slice(1):m+':'+h.split('.')[0];}
@@ -15,20 +16,22 @@
  function create(input,options={}){
   const original=clone(input),doc=original.benchSetup?Bench.remove(original):clone(original);
   const experiment=options.semiconductorType;
-  const equivalents={'mos-iv':['RM'],'mos-amplifier':['Rref','Jout'],'nmos-nand':['Rleak'],'cmos-inverter':['RL','Rref']}[experiment]||[];
+  const extraLogic=['cmos-nor','cmos-nand'].includes(experiment),pinout=extraLogic?cmosGatePins:mosPins;
+  const equivalents={'mos-iv':['RM'],'mos-amplifier':['Rref','Jout'],'nmos-nand':['Rleak'],'cmos-inverter':['RL','Rref'],'cmos-nor':['Rleak','Rref'],'cmos-nand':['Rleak','Rref'],'common-source':['Rref']}[experiment]||[];
   if(experiment==='mos-amplifier'&&doc.components.some(c=>c.id==='RL'&&c.value===10e6))equivalents.push('RL');
   if(equivalents.length){
+   if(experiment==='common-source'||extraLogic)for(const w of doc.wires)if(equivalents.includes(w.a.split(':')[0])&&w.b.endsWith(':g'))equivalents.push(w.b.split(':')[0]);
    const visible=ref=>!equivalents.includes(ref.split(':')[0]);
    doc.components=doc.components.filter(c=>!equivalents.includes(c.id));
    doc.wires=doc.wires.filter(w=>visible(w.a)&&visible(w.b));
   }
   const errors=M.validate(doc);if(errors.length)throw Error(errors[0]);
   if(!doc.components.length)return{empty:true,doc,original,topology:M.topology(doc),modules:[],parts:[],wires:[],nets:[],sources:[],channels:[],contacts:[],groups:[],pinHoles:{},devicePins:[],occupied:[]};
-  const supported=c=>['R','C','L','U','V','G','J'].includes(c.type)||experiment&&(c.type==='D'||c.type==='M'&&Object.hasOwn(mosPins,c.id));
+  const supported=c=>['R','C','L','U','V','G','J'].includes(c.type)||experiment&&(c.type==='D'||c.type==='M'&&Object.hasOwn(pinout,c.id));
   const unsupported=doc.components.filter(c=>!supported(c));if(unsupported.length)throw Error('Breadboard: '+unsupported.map(c=>c.id).join(', ')+' richiede un profilo fisico verificato. Usa lo schema.');
   const voltages=doc.components.filter(c=>c.type==='V');
-  const dcSources=experiment?voltages.filter(c=>['VDD','VG'].includes(c.id)||c.id==='V1'&&['diode-iv','mos-iv'].includes(experiment)).map(c=>({
-   ...c,label:c.id==='VDD'?(experiment==='mos-iv'?'VDS':'VDD'):experiment==='diode-iv'?'V':'VGS'
+  const dcSources=experiment?voltages.filter(c=>extraLogic&&c.wave.kind==='dc'||['VDD','VG'].includes(c.id)||c.id==='V1'&&['diode-iv','mos-iv'].includes(experiment)).map(c=>({
+   ...c,label:c.id==='VDD'?(experiment==='mos-iv'?'VDS':'VDD'):extraLogic?(c.id==='V1'?'A':'B'):experiment==='diode-iv'?'V':'VGS'
   })):[];
   // Keep the protection rails fixed while the laboratory sweeps the drain up to 9 V.
   const bodySupply=experiment==='mos-iv'?{id:'Vbody',label:'VDD chip',wave:{kind:'dc',level:9},physicalOnly:true}:null;
@@ -40,9 +43,13 @@
   const indices=[...new Set(Object.values(nodes))];
   for(const index of indices){const refs=Object.keys(nodes).filter(k=>nodes[k]===index),input2=doc.components.find(c=>c.id==='V2')?.id+':p';let name,indexColor;
    if(index<0){name='GND';indexColor=palette.ground;}else if(doc.probes.output&&nodes[doc.probes.output]===index){name='OUT';indexColor=palette.output;}else if(doc.probes.input&&nodes[doc.probes.input]===index){name='IN';indexColor=palette.input;}else if(nodes[input2]===index){name='IN2';indexColor=palette.input2;}else if(refs.some(r=>r.endsWith(':minus'))){name='Σ−';indexColor=palette.feedback;}else if(refs.some(r=>r.endsWith(':plus'))){name='Σ+';indexColor='#008c94';}else{name='N'+(index+1);indexColor=extraColors[nets.length%extraColors.length];}
+   if(experiment&&doc.nodeLabels){
+    const named=Object.entries(doc.nodeLabels).find(([pin])=>nodes[pin]===index)?.[1];
+    if(named)name=named;
+   }
    const net={id:'net:'+index,index,name,color:indexColor,refs,groups:[]};nets.push(net);byNode.set(index,net);
   }
-  const requestedSections=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??1;if(![1,2].includes(requestedSections))throw Error('Scegli una o due sezioni per integrato.');
+  const requestedSections=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??(experiment==='precision-rectifier'?2:1);if(![1,2].includes(requestedSections))throw Error('Scegli una o due sezioni per integrato.');
   const amps=doc.components.filter(c=>c.type==='U'),sectionsPerChip=amps.length>1?requestedSections:1,passives=doc.components.filter(c=>['R','C','L','D'].includes(c.type)),rows=Math.ceil(amps.length/sectionsPerChip)>1||passives.length>10?63:30;
   if(amps.length){const supply=M.physical(amps[0]);for(const c of amps.slice(1)){const q=M.physical(c);if(q.positive!==supply.positive||q.negative!==supply.negative)throw Error('Il banco usa una sola alimentazione condivisa: '+c.id+' richiede tensioni diverse da '+amps[0].id+'. Allinea V+ e V− oppure usa Schema con alimentazioni distinte.');}}
   // One physical board. Larger assemblies use a full-size board, never a second module.
@@ -67,7 +74,7 @@
   if(mos.length){
    const id='IC1',row=10,physical={},targets={},refs={};
    for(let n=1;n<=14;n++)physical[n]='M1:'+(n<=7?'e'+(row+n-1):'f'+(row+14-n));
-   for(const part of mos)for(const [terminal,pin] of Object.entries(mosPins[part.id])){
+   for(const part of mos)for(const [terminal,pin] of Object.entries(pinout[part.id])){
     const ref=part.id+':'+terminal;
     if(Object.hasOwn(targets,pin)&&targets[pin]!==nodes[ref])throw Error('Collegamenti incompatibili sul pin '+pin+' del CD4007UB.');
     targets[pin]=nodes[ref];refs[pin]=ref;
@@ -81,18 +88,19 @@
    }
    // The unused complementary pairs have their common gate at VSS.
    targets[3]??=-1;targets[10]=-1;
+   if(experiment==='common-source')targets[6]=-1;
    for(let n=1;n<=14;n++)if(!Object.hasOwn(targets,n)){
     targets[n]='nc:'+id+':'+n;
     nets.push({id:targets[n],index:targets[n],name:'NC '+n,color:'#738176',refs:[],groups:[]});
    }
    if(!tryPlace(id,'DIP14',physical,targets,{physical,packageId:id,component:{}}))throw Error('Spazio insufficiente per il CD4007UB.');
-   for(const part of mos)for(const [terminal,pin] of Object.entries(mosPins[part.id]))pinHoles[part.id+':'+terminal]=physical[pin];
+   for(const part of mos)for(const [terminal,pin] of Object.entries(pinout[part.id]))pinHoles[part.id+':'+terminal]=physical[pin];
    for(const [number,hole] of Object.entries(physical))devicePins.push({component:id,packageId:id,number:Number(number),name:cdPins[number],hole,node:targets[number],schematicRef:refs[number]});
   }
   const hints={R1:['a4','a9'],Rf:['b13','b6'],C1:['c9','c20'],R3:['h4','h9'],R4:['i9','i22'],D1:['d4','d8']};
   const candidateRows=[...new Set([4,8,20,24,28,2,6,10,18,22,26,...Array.from({length:Math.floor(rows/2)},(_,i)=>2+i*2),...Array.from({length:Math.ceil(rows/2)},(_,i)=>1+i*2)])];
   for(const c of passives){const ns={a:nodes[c.id+':a'],b:nodes[c.id+':b']};let success=false;
-   const attributes={component:c,...(experiment==='half-wave-rc'&&c.id==='C1'?{polarized:true}:{})};
+   const attributes={component:c,...(c.type==='D'&&c.deviceLabel?{deviceLabel:c.deviceLabel}:{}),...((experiment==='half-wave-rc'&&c.id==='C1'||experiment==='common-source'&&c.id==='C3')?{polarized:true}:{})};
    if(hints[c.id])success=tryPlace(c.id,c.type,{a:'M1:'+hints[c.id][0],b:'M1:'+hints[c.id][1]},ns,attributes);
    if(!success)for(const r of candidateRows){if(tryPlace(c.id,c.type,{a:'M1:e'+r,b:'M1:f'+r},ns,attributes)){success=true;break;}}
    if(!success)throw Error('Spazio insufficiente sulla singola breadboard per '+c.id+'. Riduci il circuito oppure usa Schema.');
@@ -106,11 +114,15 @@
    if(!hole)for(const g of modules[0].groups){const key=group(g[0]);if(!owner.has(key)){hole=g[0];break;}}
    if(!hole)throw Error('Nessun contatto libero sulla singola breadboard per '+id+'. Riduci il circuito oppure usa Schema.');return occupy(hole,node,id);
   }
-  for(const c of doc.components.filter(c=>['V','G','J'].includes(c.type)))for(const pin of M.PINS[c.type]){
+  for(const c of doc.components.filter(c=>['V','G','J'].includes(c.type)&&!c.schematicDecoration))for(const pin of M.PINS[c.type]){
    const ref=c.id+':'+pin,n=netOf(ref),sourceIndex=sources.findIndex(s=>s.id===c.id),dcIndex=dcSources.findIndex(s=>s.id===c.id);
-   const preferred=pin==='p'&&dcIndex>=0?`M1:${dcIndex?'L1':'R1'}.1`:c.type==='V'&&pin==='p'?`M1:${sourceIndex===0?'d':'g'}2`:n===-1?`M1:L2.${contacts.filter(c=>c.node===-1).length+1}`:null;
+   const preferred=pin==='p'&&dcIndex>=0?`M1:${['R1','L1','R2'][dcIndex]||'R1'}.1`:c.type==='V'&&pin==='p'?`M1:${sourceIndex===0?'d':'g'}2`:n===-1?`M1:L2.${contacts.filter(c=>c.node===-1).length+1}`:null;
    const hole=anchor(n,ref,preferred);
    pinHoles[ref]=hole;contacts.push({id:ref,ref,hole,node:n,kind:dcIndex>=0?'dc-source':c.type==='V'?'source':'reference',component:c.id});
+  }
+  for(const c of doc.components.filter(c=>c.type==='J'&&c.schematicDecoration)){
+   const ref=c.id+':j',net=netOf(ref);
+   pinHoles[ref]=Object.entries(pinHoles).find(([other])=>nodes[other]===net)?.[1]||anchor(net,ref);
   }
   if(bodySupply)for(const [pin,node,prefer] of [['p',bodyNode,'M1:R2.1'],['n',-1,'M1:L2.19']]){
    const ref=bodySupply.id+':'+pin,hole=anchor(node,ref,prefer);

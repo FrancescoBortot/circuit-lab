@@ -2,6 +2,27 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./breadboard-model'),require('./breadboard-render'),require('./assembly-guide'),require('./free-model'));else root.BreadboardLab=factory(root.BreadboardModel,root.BreadboardRender,root.AssemblyGuide,root.FreeModel);})(typeof globalThis!=='undefined'?globalThis:this,function(B,R,A,M){
  'use strict';const esc=R.esc,short=h=>h?.split(':')[1]||'',phases=['Componenti','Alimentazioni e GND','Segnale','Sonde'];
  const sheetNotes={
+  'cmos-nor':[
+   'Figura 9 (1). Alimenta il CD4007UB fra pin 14 (+5 V) e 7 (GND). A è sul pin 6, B sul 3. Unisci 13 a 1 e porta 5 a GND. Y è al collegamento fra 2, 4 e 8.',
+   'Usa le due uscite variabili in continua per A e B. Registra Y per 00, 01, 10 e 11 e indica quali transistor conducono.'
+  ],
+  'cmos-nand':[
+   'Figura 9 (2). Alimenta il CD4007UB fra pin 14 (+5 V) e 7 (GND). A è sul pin 6, B sul 3. Unisci 1 a 14 e 5 a 8. Y è al collegamento fra 2, 4 e 13.',
+   'Usa le due uscite variabili in continua per A e B. Registra Y per 00, 01, 10 e 11 e confronta le due tabelle.'
+  ],
+  'precision-rectifier':[
+   'Figura 10. Usa le due sezioni di un TL082C, due 1N4148, quattro resistenze uguali fra 10 e 100 kΩ e R₂ pari alla metà di R₁a.',
+   'Imposta 10 Vpp a 1 kHz. Tieni CH1 su V₁ e sposta CH2 fra OUT, V₂ e Vₒ′. Registra i valori distinti delle due semionde.'
+  ],
+  'bridge-rectifier':[
+   'Figura 11. Metti R da 2,2 kΩ fra A e B. Se usi LED, scegli un colore per D1/D2 e uno per D3/D4. Imposta una sinusoide da 5 a 10 Hz.',
+   'D1/D2 conducono nella semionda positiva, D3/D4 in quella negativa. Collega le sonde ad A e B e le due masse a GND. Leggi Vᴮ − Vᴬ con CH2 − CH1.'
+  ],
+  'common-source':[
+   'Figura 12. Alimenta a +15 V. Monta C₀, C₁ e C₂ da 100 nF e C₃ da 10–100 µF, con il positivo sul source. Usa M3 per tenere separati source (pin 4) e body (pin 7).',
+   'Dimensiona Rᴅ, Rₛ, R₁ (> 150 kΩ) e R₂ per il punto di lavoro assegnato. Controlla Vɢ, Vᴅ, Vₛ e Vᴅᴅ con il generatore a zero.',
+   'Misura il guadagno a circa 10 kHz con 100–200 mVpp. Prova Rᵢ da 50–100 kΩ e Rᴸ da 5–10 kΩ separatamente. Rimuovili e ripeti la misura del guadagno senza C₃.'
+  ],
   'diode-iv':[
    'Figura 1. Collega il 1N4148 e la resistenza di serie all’alimentatore DC. La fascia indica il catodo.',
    'Collega il voltmetro ai capi del diodo e inserisci l’amperometro in serie, interrompendo la maglia. Misura da circa 1 µA a 10 mA. Azzera la tensione prima di cambiare la resistenza.'

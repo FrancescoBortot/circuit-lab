@@ -414,3 +414,6 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
  .measurement-guide-controls label{flex-basis:100%}
  .measurement-guide ol{display:block}
 }
+@media(max-width:760px){
+ .measurement-guide{scroll-margin-block-start:8px}
+}

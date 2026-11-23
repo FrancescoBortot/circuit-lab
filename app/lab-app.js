@@ -470,5 +470,9 @@
   const loaded=store.read();if(loaded.doc){project=loaded.doc;storageState.ok=true;}else if(!loaded.error)try{const old=localStorage.getItem('rc-studio-project-v1');if(old)project=M.parse(old);}catch{}
   if(loaded.recovered||loaded.error)setTimeout(()=>toast(loaded.recovered?'Recuperata la copia precedente del laboratorio: la più recente non era leggibile.':loaded.error,true),200);
   ensureSession();$('projectName').value=project.name;renderNavigation();renderInspector();calculate();persist();
-  if(window.matchMedia('(max-width:760px)').matches)setInspector(false);
+  const narrowViewport=window.matchMedia('(max-width:760px)');
+  if(narrowViewport.matches)setInspector(false);
+  narrowViewport.addEventListener('change',event=>{
+    if(event.matches&&!$('inspector').contains(document.activeElement))setInspector(false);
+  });
 })();

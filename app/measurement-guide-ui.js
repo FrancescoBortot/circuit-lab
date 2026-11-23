@@ -31,6 +31,7 @@
  const schematicStage=$('#schematicStage'),boardWrap=$('.bb-board-wrap');
  const status=field('#meterStatus');
  const boardWorkbench=$('.bb-workbench');
+ const narrowViewport=window.matchMedia('(max-width:760px)');
  let active=false,scope='',currentId='',steps=[],location=null,frame=null;
  const unitOptions={V:[[1,'V'],[1e-3,'mV']],A:[[1e-3,'mA'],[1e-6,'µA'],[1,'A']],
   Ω:[[1,'Ω'],[1e3,'kΩ'],[1e6,'MΩ']],F:[[1e-9,'nF'],[1e-12,'pF'],[1e-6,'µF'],[1e-3,'mF']]};
@@ -99,7 +100,7 @@
  function close(restore=false){
   active=false;panel.hidden=true;clearMarkers();
   button.setAttribute('aria-expanded','false');
-  if(restore)(!button.hidden&&(!button.getClientRects||button.getClientRects().length)?button:$('.guided-view-tools [aria-pressed="true"]'))?.focus({preventScroll:true});
+  if(restore)(!button.hidden&&(!button.getClientRects||button.getClientRects().length)?button:$('.guided-view-tools [aria-pressed="true"]'))?.focus({preventScroll:!narrowViewport.matches});
  }
  function update(){
   const onBoard=board.isActive(),free=window.circuitEditor.active;
@@ -147,17 +148,23 @@
   }));
  }
  function schedule(){if(frame!==null)return;frame=requestAnimationFrame(()=>{frame=null;update();});}
+ function revealStep(initial=false){
+  if(initial||narrowViewport.matches)panel.scrollIntoView({block:narrowViewport.matches?'start':'nearest'});
+ }
  button.addEventListener('click',()=>{
   if(active&&!panel.hidden){close(true);return;}
   if(lab.snapshot()===null){window.circuitEditor.note('Correggi i valori prima di aprire la guida.',true);return;}
   active=true;
   button.setAttribute('aria-expanded','true');
   update();
-  if(!panel.hidden){panel.scrollIntoView({block:'nearest'});choice.focus({preventScroll:true});}
+  if(!panel.hidden){
+   revealStep(true);
+   choice.focus({preventScroll:true});
+  }
  });
- choice.addEventListener('change',()=>{currentId=choice.value;update();});
+ choice.addEventListener('change',()=>{currentId=choice.value;update();revealStep();});
  field('[data-next]').addEventListener('click',()=>{
-  currentId=steps[steps.findIndex(s=>s.id===currentId)+1].id;choice.value=currentId;update();choice.focus({preventScroll:true});
+  currentId=steps[steps.findIndex(s=>s.id===currentId)+1].id;choice.value=currentId;update();revealStep();choice.focus({preventScroll:true});
  });
  field('[data-close]').addEventListener('click',()=>close(true));
  field('[data-meter-compare]').addEventListener('click',()=>$('#compareLabTransients').click());

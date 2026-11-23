@@ -17,7 +17,7 @@
     constructor(svg,onCursor,onStateChange){this.svg=svg;this.onCursor=onCursor;this.onStateChange=onStateChange;this.series=[];this.data=[];this.pointers=new Map();this.dual=false;this.activeCursor='a';
       this.splitY=true;this.traceAxes=new Map();this.verticalSteps={};this.referenceTrace=null;
       this.controls=document.createElement('div');this.controls.className='cursor-toolbar';this.controls.setAttribute('role','group');this.controls.setAttribute('aria-label','Cursori del grafico');
-      this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><button type="button" data-ref-trace aria-pressed="false" title="Congela la traccia attuale sullo sfondo per confrontare in tempo reale le modifiche">Fissa REF</button><span>Clicca il grafico per posizionare</span>';
+      this.controls.innerHTML='<button data-cursor="toggle" aria-pressed="false">Due cursori</button><button data-cursor="a" aria-pressed="true" hidden>A</button><button data-cursor="b" aria-pressed="false" hidden>B</button><button type="button" data-ref-trace disabled aria-pressed="false" title="Congela la traccia attuale sullo sfondo per confrontare in tempo reale le modifiche">Fissa REF</button><span>Clicca il grafico per posizionare</span>';
       svg.parentElement.before(this.controls);
       this.interactionActive=false;svg.setAttribute('tabindex','0');
       this.activationHint=document.createElement('span');this.activationHint.className='plot-activation-hint';this.controls.append(this.activationHint);this.activationHint.id=svg.id+'InteractionHint';svg.setAttribute('aria-describedby',this.activationHint.id);
@@ -141,7 +141,7 @@
       if(!b||a.x===xValue||b.x===a.x)return a.y;
       return a.y+(b.y-a.y)*(xValue-a.x)/(b.x-a.x);
     }
-    syncControls(){if(!this.controls)return;for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}const refBtn=this.controls.querySelector('[data-ref-trace]');if(refBtn){const active=this.hasActiveReference();refBtn.setAttribute('aria-pressed',String(active));refBtn.textContent=active?'Rimuovi REF':'Fissa REF';}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
+    syncControls(){if(!this.controls)return;for(const b of this.controls.querySelectorAll('[data-cursor]')){const key=b.dataset.cursor;b.hidden=key!=='toggle'&&!this.dual;b.setAttribute('aria-pressed',String(key==='toggle'?this.dual:key===this.activeCursor));}const refBtn=this.controls.querySelector('[data-ref-trace]');if(refBtn){const active=this.hasActiveReference();refBtn.disabled=!this.data.length;refBtn.setAttribute('aria-pressed',String(active));refBtn.textContent=active?'Rimuovi REF':'Fissa REF';}this.controls.querySelector('span').textContent=this.dual?'Scegli A o B, poi clicca il grafico':'Passa sul grafico per leggere';}
     axisFor(series){
       const traces=this.config.series,right=traces.find(trace=>trace.key==='out')||traces[1];
       return this.traceAxes.get(this.config.yUnit+':'+series.key)??(series.key===right?.key?'B':'A');

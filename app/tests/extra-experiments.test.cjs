@@ -128,7 +128,12 @@ test('Common Source Q, midband gain and resistance trials agree with independent
 test('A2 keeps independent channel mappings into one original CSV and compares the selected node',()=>{
   const D=require('../comparison-data'),C=require('../study-context');
   const type='precision-rectifier',p={...L.defaults(type),bench:undefined},doc=project(type,p);
-  const data=L.simulate(p),samples=[data[0],data.find(row=>row.x>=.00025),data.find(row=>row.x>=.00075)];
+  const data=L.simulate(p),nearPeaks=[.00025,.00075].map(t=>{
+    const low=data.findLast(row=>row.x<t),high=data.find(row=>row.x>t);
+    return {x:t,...Object.fromEntries(['out','v2','aux'].map(key=>[
+      key,low[key]+(high[key]-low[key])*(t-low.x)/(high.x-low.x)
+    ]))};
+  }),samples=[data[0],...nearPeaks];
   const raw='tempo_s;OUT_V;V2_V;Vo_V\r\n'+samples.map(row=>[row.x,row.out,row.v2,row.aux].join(';')).join('\r\n');
   doc.comparisonStudy={version:1,records:{}};
   for(const [name,yColumn] of [['',1],['v2',2],['aux',3]]){

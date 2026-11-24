@@ -305,7 +305,7 @@
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
     else if(guidedMeasureTraces.length)s=guidedMeasureTraces;
     else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
-    const traces=s.map(d=>({...d,color:colors[d.key],visible:(d.points?guidedTraceVisibility.get(guidedTraceId(d.key)):visible[d.key])??d.defaultVisible??true}));
+    const traces=s.map(d=>({...d,color:colors[d.key],visible:(d.locations?guidedTraceVisibility.get(guidedTraceId(d.key)):visible[d.key])??d.defaultVisible??true}));
     if(guidedMeasureTraces.length&&!traces.some(trace=>trace.visible))traces.find(trace=>trace.key==='out').visible=true;
     return traces;
   }
@@ -580,7 +580,7 @@
     const key=button.dataset.trace,traces=series(),trace=traces.find(d=>d.key===key);
     if(!trace)return;
     if(trace.visible&&traces.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}
-    if(trace.points)guidedTraceVisibility.set(guidedTraceId(key),!trace.visible);
+    if(trace.locations)guidedTraceVisibility.set(guidedTraceId(key),!trace.visible);
     else visible[key]=!trace.visible;
     renderLegend();plot.updateSeries(series());syncMeasurementHighlight();
   });

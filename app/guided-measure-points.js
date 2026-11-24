@@ -5,7 +5,7 @@
 })(globalThis,function(Free){
   'use strict';
   function voltage(key,symbol,detail,ref,defaultVisible=true){
-    return {key,label:symbol,detail,points:[{ref,symbol}],defaultVisible,dash:key==='out'?undefined:'5 4'};
+    return {key,label:symbol,detail,locations:[{ref,symbol}],defaultVisible,dash:key==='out'?undefined:'5 4'};
   }
 
   function describe(p,doc){
@@ -25,7 +25,7 @@
           voltage('vin','Vɢ','Uscita del generatore','V1:p'),
           voltage('a','Vᴬ','Morsetto A di R1','R1:a'),
           voltage('b','Vᴮ','Morsetto B di R1','R1:b'),
-          {key:'out',label:'Vᴮ − Vᴬ',detail:'Ai capi di R1 · B meno A',points:[],relatedKeys:['a','b']}
+          {key:'out',label:'Vᴮ − Vᴬ',detail:'Ai capi di R1 · B meno A',locations:[],relatedKeys:['a','b']}
         ];
         break;
       case 'common-source':
@@ -48,7 +48,7 @@
         break;
       default:return [];
     }
-    const byRef=new Map(traces.flatMap(trace=>trace.points.map(({ref,symbol})=>[ref,symbol])));
+    const byRef=new Map(traces.flatMap(trace=>trace.locations.map(({ref,symbol})=>[ref,symbol])));
     // Use the physical tip even when an AC-coupled reading is taken inside the scope model.
     const tips={input:probe.input,output:probe.output,input2:'V2:p'};
     const channelTraces=(doc.benchSetup?.config.channels||[]).flatMap((channel,i)=>{
@@ -58,18 +58,18 @@
       const target=byRef.get(ref)||id+' · '+Free.pinLabel(part.type,pin);
       return [{key:'ch'+(i+1),label:symbol+' su '+target,target,
         detail:'Lettura simulata · '+(channel.kind==='probe10'?'sonda ×10':'cavo diretto')+' · '+channel.coupling.toUpperCase(),
-        points:[{ref,symbol}],defaultVisible:i===1&&p.type==='precision-rectifier'&&ref!==probe.output}];
+        locations:[{ref,symbol}],defaultVisible:i===1&&p.type==='precision-rectifier'&&ref!==probe.output}];
     });
     if(p.type==='bridge-rectifier'&&channelTraces.length===2){
       traces.push({key:'math',label:'CH2 − CH1',detail:channelTraces[1].target+' meno '+channelTraces[0].target,
-        points:[],relatedKeys:['ch1','ch2'],defaultVisible:false});
+        locations:[],relatedKeys:['ch1','ch2'],defaultVisible:false});
     }
     return [...traces,...channelTraces];
   }
 
   function markers(traces,diagram){
     const groups=new Map();
-    for(const trace of traces)for(const point of trace.points){
+    for(const trace of traces)for(const point of trace.locations){
       const ref=diagram.benchSetup?.sourceMap[point.ref]||point.ref;
       if(!Free.validPin(diagram,ref))continue;
       const group=groups.get(ref)||[];

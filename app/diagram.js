@@ -96,7 +96,13 @@
       const labelX=c.kind==='source'?-38:vertical?36:0,anchor=c.kind==='source'?'end':vertical?'start':'middle';
       const valueX=labelX,valueAnchor=anchor;
       const nameY=c.kind==='opamp'?68:c.kind==='source'?-3:vertical?-5:-55,valueY=c.kind==='opamp'?92:c.kind==='source'?18:vertical?17:-31;
-      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g><g data-label-block="${c.id}"><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${valueX}" y="${valueY}" text-anchor="${valueAnchor}">${c.value}</text>`}</g></g>`;
+      const pins=c.kind==='opamp'?this.opampPins():'';
+      return `<g class="schematic-component ${selected?'selected':''}" data-component="${c.id}" transform="translate(${c.x} ${c.y})" tabindex="0" role="button" aria-pressed="${selected}" aria-label="Modifica ${c.name}"><rect class="component-selection" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" rx="9"/><g class="component-ink" transform="rotate(${rot})">${symbol}</g>${pins}<g data-label-block="${c.id}"><text class="component-name" x="${labelX}" y="${nameY}" text-anchor="${anchor}">${c.name}</text>${c.kind==='probe'?'':`<text class="component-editable-value" x="${valueX}" y="${valueY}" text-anchor="${valueAnchor}">${c.value}</text>`}</g></g>`;
+    }
+    opampPins(){
+      const {terminals,sections:{A:pins}}=window.OpampPinout;
+      return [['minus',-65,-32,'end'],['plus',-65,39,'end'],['out',63,-12,'start']].map(([pin,x,y,anchor])=>
+        `<text class="opamp-pin-label" data-opamp-pin="${pin}" x="${x}" y="${y}" text-anchor="${anchor}" aria-label="${terminals[pin].name} · pin ${pins[pin]}">${terminals[pin].symbol} · ${pins[pin]}</text>`).join('');
     }
     point(e){return new DOMPoint(e.clientX,e.clientY).matrixTransform(this.svg.getScreenCTM().inverse());}
     transform(){const g=this.svg.querySelector('#diagramScene');if(g)g.setAttribute('transform',`translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);this.callbacks.zoom?.(Math.round(this.view.k*100));}

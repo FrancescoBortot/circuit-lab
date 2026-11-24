@@ -434,9 +434,28 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
 
 .comparison-fields [data-cmp-pair][hidden]{display:none}
 
-.guided-mos-pinout{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--line);background:#f6f9ff;color:#263e5e;font-size:12px}
-.guided-mos-pinout[hidden]{display:none}
-.guided-mos-pinout ul{display:flex;gap:4px 14px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
-.guided-mos-pinout li{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
-.guided-mos-pinout li>strong{color:#284d92}
-#realSchematic .free-terminal .mos-pin-label{fill:#233d64;font-size:14px;stroke:#fcfdff;stroke-width:3px;paint-order:stroke;font-weight:650}
+.guided-pinout{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--line);background:#f6f9ff;color:#263e5e;font-size:12px}
+.guided-pinout[hidden]{display:none}
+.guided-pinout ul{display:flex;gap:4px 14px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.guided-pinout li{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.guided-pinout li>strong{color:#284d92}
+#realSchematic .free-terminal :is(.mos-pin-label,.opamp-pin-label),#schematic .opamp-pin-label{fill:#233d64;font-size:14px;stroke:#fcfdff;stroke-width:3px;paint-order:stroke;font-weight:650}
+#schematic .opamp-pin-label{pointer-events:none}
+
+.plot-measure-reference{flex-basis:100%;margin:0;color:#516784;font-size:11px}
+#plotLegend .legend-button small{display:block;font-size:11px;font-weight:450;color:#526681;text-decoration:none}
+#plotLegend .legend-button[aria-pressed=false]:has(small) span{text-decoration:none}
+#plotLegend .legend-button[aria-pressed=false] strong{text-decoration:line-through}
+#realSchematic :is(.guided-measure-badge,.guided-measure-leader,.guided-measure-pin){pointer-events:none}
+#realSchematic .guided-measure-badge rect{fill:#fff;stroke:#bccbe2;stroke-width:1.2}
+#realSchematic .guided-measure-badge text{fill:#243b5e;font-size:15px;font-weight:700}
+#realSchematic .guided-measure-pin{fill:#fcfdff;stroke-width:2.5}
+#realSchematic .guided-measure-leader{fill:none;stroke:#667f9f;stroke-width:1.4;stroke-dasharray:none}
+#realSchematic .guided-measure-badge.measurement-highlight rect{fill:#edf3ff;stroke:#335cc4;stroke-width:2}
+#realSchematic :is(.guided-measure-pin,.guided-measure-leader).measurement-highlight{stroke:#335cc4;stroke-width:3}
+#plot [data-measure-curve].measurement-highlight{stroke-width:3}
+#plot:has([data-measure-curve].measurement-highlight) [data-measure-curve]:not(.measurement-highlight){opacity:.45}
+@media(max-width:760px){
+ #plotLegend:has(small){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+ #plotLegend:has(small) .trace-swatch{width:23px;flex:none}
+}

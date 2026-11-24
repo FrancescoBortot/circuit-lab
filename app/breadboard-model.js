@@ -1,5 +1,5 @@
 /* A physical view of the existing electrical document. No independent solver. */
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./mos-pinout.js'));else root.BreadboardModel=factory(root.FreeModel,root.BenchModel,root.MosPinout);})(typeof globalThis!=='undefined'?globalThis:this,function(M,Bench,MosPinout){
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./mos-pinout.js'),require('./opamp-pinout.js'));else root.BreadboardModel=factory(root.FreeModel,root.BenchModel,root.MosPinout,root.OpampPinout);})(typeof globalThis!=='undefined'?globalThis:this,function(M,Bench,MosPinout,OpampPinout){
  'use strict';
  const palette={ground:'#263747',input:'#16804d',input2:'#9552cc',output:'#e36c16',negative:'#2867d8',positive:'#d93545',feedback:'#ad7828',channel1:'#b99500',channel2:'#009fce'};
  const extraColors=['#007f89','#c24379','#617819','#7058ae','#b44e22','#2c7cba'];
@@ -46,7 +46,7 @@
    }
    const net={id:'net:'+index,index,name,color:indexColor,refs,groups:[]};nets.push(net);byNode.set(index,net);
   }
-  const requestedSections=options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip??(experiment==='precision-rectifier'?2:1);if(![1,2].includes(requestedSections))throw Error('Scegli una o due sezioni per integrato.');
+  const requestedSections=OpampPinout.sectionsPerChip(experiment,options.sectionsPerChip??original.assemblyStudy?.sectionsPerChip);if(![1,2].includes(requestedSections))throw Error('Scegli una o due sezioni per integrato.');
   const amps=doc.components.filter(c=>c.type==='U'),sectionsPerChip=amps.length>1?requestedSections:1,passives=doc.components.filter(c=>['R','C','L','D'].includes(c.type)),rows=Math.ceil(amps.length/sectionsPerChip)>1||passives.length>10?63:30;
   if(amps.length){const supply=M.physical(amps[0]);for(const c of amps.slice(1)){const q=M.physical(c);if(q.positive!==supply.positive||q.negative!==supply.negative)throw Error('Il banco usa una sola alimentazione condivisa: '+c.id+' richiede tensioni diverse da '+amps[0].id+'. Allinea V+ e V− oppure usa Schema con alimentazioni distinte.');}}
   // One physical board. Larger assemblies use a full-size board, never a second module.
@@ -150,7 +150,13 @@
   const netAt=hole=>model.nets.find(n=>n.groups.includes(group(hole))),result=[];
   function add(part,pin,hole,label,extra={}){const net=netAt(hole);if(net)result.push({ref:part+':'+pin,part,pin,hole,label,node:net.index,net:net.id,color:net.color,network:net.name,...extra});}
   for(const c of model.parts){
-   if(c.type==='U')for(const p of model.devicePins.filter(p=>p.component===c.id)){const pin=(c.section==='B'?{5:'plus',6:'minus',7:'out'}:{1:'out',2:'minus',3:'plus'})[p.number]||String(p.number);add(c.id,pin,p.hole,c.id+' · pin '+p.number+' ('+p.name+')',{number:p.number,name:p.name,auxiliary:c.section!=='B'&&p.number>=5&&p.number<=7});}
+   if(c.type==='U'){
+    const pins=Object.entries(OpampPinout.sections[c.section]);
+    for(const p of model.devicePins.filter(p=>p.component===c.id)){
+     const terminal=pins.find(([,number])=>number===p.number)?.[0]||String(p.number);
+     add(c.id,terminal,p.hole,c.id+' · pin '+p.number+' ('+p.name+')',{number:p.number,name:p.name,auxiliary:c.section!=='B'&&p.number>=5&&p.number<=7});
+    }
+   }
    else if(c.type==='DIP14')for(const p of model.devicePins.filter(p=>p.packageId===c.id))add(c.id,String(p.number),p.hole,'CD4007UB · pin '+p.number+' ('+p.name+')',{number:p.number,name:p.name,schematicRef:p.schematicRef});
    else for(const[pin,hole]of Object.entries(c.holes)){
     const name=c.type==='D'?(pin==='a'?'Anodo':'Catodo'):c.polarized?(pin==='a'?'+':'−'):pin.toUpperCase();

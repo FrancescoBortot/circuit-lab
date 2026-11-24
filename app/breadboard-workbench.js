@@ -50,7 +50,7 @@
   if(!original.benchSetup&&params.type==='rc'&&params.instrument!=='ideal')doc=M.example('rc',{...params,instrument:'ideal'});
   return{original,doc,params,project,key:project.experiment};
  }
- function mountingOptions(context,sectionsPerChip=context.original.assemblyStudy?.sectionsPerChip||(context.params?.type==='precision-rectifier'?2:1)){const config=context.original.benchSetup?.config||context.params?.bench;return{sectionsPerChip,semiconductorType:L.semiconductor.is(context.params)?context.params.type:undefined,channels:config?.mode==='real'?config.channels:undefined,instrumentConfig:config,modelMode:config?.mode==='real'?'real':context.params?.instrument||'ideal'};}
+ function mountingOptions(context,sectionsPerChip=window.OpampPinout.sectionsPerChip(context.params?.type,context.original.assemblyStudy?.sectionsPerChip)){const config=context.original.benchSetup?.config||context.params?.bench;return{sectionsPerChip,semiconductorType:L.semiconductor.is(context.params)?context.params.type:undefined,channels:config?.mode==='real'?config.channels:undefined,instrumentConfig:config,modelMode:config?.mode==='real'?'real':context.params?.instrument||'ideal'};}
  function updatePackageControls(){
   const control=root.querySelector('[data-bb-package-control]'),select=root.querySelector('[data-bb-package]'),available=Boolean(model&&!model.empty&&packageChoices.length>1);
   control.hidden=!available;select.disabled=!available;if(!available)return;
@@ -70,7 +70,7 @@
    state.ref=null;state.target=null;state.net=null;state.cable=null;modelKey='';refresh();return true;
   }catch(error){updatePackageControls();message(error.message,true);return false;}
  }
- function setMode(on){if(!finishDraft())return;settings[ownerKey()]=on;save();draftDirty=false;if(sourceDialog.open)sourceDialog.close();refresh();if(!on&&isFree())requestAnimationFrame(()=>window.circuitEditor.canvas.draw());}
+ function setMode(on){if(!finishDraft())return;settings[ownerKey()]=on;save();draftDirty=false;if(sourceDialog.open)sourceDialog.close();refresh();if(!on)requestAnimationFrame(()=>isFree()?window.circuitEditor.canvas.draw():window.GuidedLab.refreshSchematic());}
  function install(toolbar,freeToolbar){const group=document.createElement('div');group.className='bb-view-switch';group.setAttribute('role','group');group.setAttribute('aria-label','Schema o breadboard');group.innerHTML='<button data-bb-mode="schema" aria-pressed="true">Schema</button><button data-bb-mode="breadboard" aria-pressed="false">Breadboard</button>';group.addEventListener('click',e=>{const button=e.target.closest('[data-bb-mode]');if(!button)return;if(freeToolbar){if(window.circuitEditor.readFields()===false)return;window.circuitEditor.canvas.cancelGesture();window.circuitEditor.pending=null;window.circuitEditor.tool='select';}else if(window.GuidedLab.snapshot()===null)return;setMode(button.dataset.bbMode==='breadboard');});toolbar.prepend(group);}
  install($('.guided-view-tools'),false);install($('#freeWorkspace .free-canvas-toolbar')||$('#freeCanvas').closest('section').querySelector('div'),true);
  function refresh(){if(refreshing)return;refreshing=true;try{

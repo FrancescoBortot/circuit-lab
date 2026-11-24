@@ -293,42 +293,60 @@
     status.textContent='Misure salvate con Vᴅᴅ = '+format(p.VDD,'V',4)+'.';
     emitState(true);
   });
-  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef',a:'#5375cd',b:'#a348a7',v2:'#5375cd',aux:'#a348a7',afterRi:'#5375cd',ch1:'#a58014',ch2:'#00879f',math:'#864b00'};
+  const colors={pre:'#bc7e2e',shaper:'#159e89',vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce',linear:'#b0bbc9',current:'#4264ef',db:'#4264ef',phase:'#4264ef',a:'#5375cd',b:'#a348a7',v2:'#5375cd',aux:'#a348a7',afterRi:'#5375cd',ch1:'#a58014',ch2:'#00879f',math:'#864b00',gate:'#7555a1',drain:'#3269a5'};
+  let guidedMeasureTraces=[],hoveredMeasurementTrace=null;
+  const guidedTraceVisibility=new Map();
+  const guidedTraceId=key=>params().type+':'+key;
   function series(){const p=params();let s;
-    const extraTraces={
-      'cmos-nor':[['vin','Ingresso A'],['vin2','Ingresso B'],['out','Uscita Y']],
-      'cmos-nand':[['vin','Ingresso A'],['vin2','Ingresso B'],['out','Uscita Y']],
-      'precision-rectifier':[['vin','Ingresso V₁'],['out','OUT · U1'],['v2','Nodo V₂'],['aux','Vₒ′ · U2']],
-      'bridge-rectifier':[['vin','Generatore'],['a','Vᴬ rispetto a GND'],['b','Vᴮ rispetto a GND'],['out','Vᴮ − Vᴬ']],
-      'common-source':[['vin','Ingresso'],['out','Uscita'],...(p.inputResistor?[['afterRi','Dopo Rᵢ']]:[])]
-    };
     if(project.analysis==='bode')s=[{key:quantity==='phase'?'phase':'db',label:quantity==='phase'?'Fase':'Guadagno'}];
     else if(S.isCharacteristic(project.analysis))s=[{key:'out',label:'Corrente Iᴅ',points:project.analysis==='diodeIV'},...(project.analysis==='diodeIV'?[{key:'linear',label:'Fit semilogaritmico',dash:'5 5'}]:[])];
     else if(project.analysis==='charge')s=[{key:'out',label:'Picco rispetto alla baseline',points:true},{key:'linear',label:'Fit lineare',dash:'5 5'}];
     else if(project.analysis==='vtc')s=[{key:'out',label:'Vpp uscita'},{key:'linear',label:S.is(p)?'Piccolo segnale':'Senza saturazione',dash:'5 5'}];
     else if(quantity==='current'&&p.type==='rc')s=[{key:'current',label:'Corrente in R'}];
-    else if(extraTraces[p.type]){
-      s=extraTraces[p.type].map(([key,label])=>({key,label,dash:key==='out'?undefined:'5 4'}));
-      if(M.real(p))s.push(
-        {key:'ch1',label:'Lettura CH1',defaultVisible:false},
-        {key:'ch2',label:'Lettura CH2',defaultVisible:p.type==='precision-rectifier'&&p.bench.channels[1].target!=='output'}
-      );
-      if(p.type==='bridge-rectifier'&&M.real(p)&&p.bench.channels.every(ch=>ch.enabled))s.push({key:'math',label:'Lettura matematica · CH2 − CH1',defaultVisible:false});
-    }else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
-    return s.map(d=>({...d,color:colors[d.key],visible:visible[d.key]??d.defaultVisible??true}));
+    else if(guidedMeasureTraces.length)s=guidedMeasureTraces;
+    else{s=[{key:'vin',label:M.real(p)?(p.bench.channels?.[0]?.enabled===false?'Ingresso · IN virtuale':'Ingresso · CH1'):'Ingresso · V₁',dash:'5 4'}];if(secondInput(p))s.push({key:'vin2',label:M.real(p)?'Ingresso 2 · V₂ fisico':'Ingresso 2 · V₂',dash:'4 4'});if(M.isRadiation(p)&&M.radiation.hasPre(p)&&p.type!=='preamp')s.push({key:'pre',label:'Uscita preamplificatore',dash:'4 3'});if(p.type==='detector-chain')s.push({key:'shaper',label:'Uscita shaper',dash:'2 3'});s.push({key:'out',label:M.real(p)?(p.bench.channels?.[1]?.enabled===false?'Uscita · OUT virtuale':'Uscita · CH2'):'Uscita · OUT'});if(p.type==='rc'&&(M.real(p)||p.instrument!=='ideal'))s.push({key:'source',label:'Generatore Vɢ',dash:'2 4'});}
+    const traces=s.map(d=>({...d,color:colors[d.key],visible:(d.points?guidedTraceVisibility.get(guidedTraceId(d.key)):visible[d.key])??d.defaultVisible??true}));
+    if(guidedMeasureTraces.length&&!traces.some(trace=>trace.visible))traces.find(trace=>trace.key==='out').visible=true;
+    return traces;
   }
-  function renderLegend(){const s=series();$('plotLegend').innerHTML=s.map(d=>`<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}" aria-label="${d.visible?'Nascondi':'Mostra'} ${esc(d.label)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${esc(d.label)}</span></button>`).join('');}
+  function highlightMeasurement(key){
+    const trace=guidedMeasureTraces.find(trace=>trace.key===key),keys=trace?.relatedKeys||[key];
+    for(const marker of $('realSchematic').querySelectorAll('[data-measure-traces]')){
+      marker.classList.toggle('measurement-highlight',marker.dataset.measureTraces.split(' ').some(key=>keys.includes(key)));
+    }
+    for(const curve of $('plot').querySelectorAll('[data-measure-curve]')){
+      curve.classList.toggle('measurement-highlight',curve.dataset.measureCurve===trace?.key);
+    }
+  }
+  function syncMeasurementHighlight(){
+    const legend=$('plotLegend');
+    const focused=legend.contains(document.activeElement)?document.activeElement:null;
+    highlightMeasurement(hoveredMeasurementTrace||focused?.dataset.trace);
+  }
+  function renderLegend(){
+    const legend=$('plotLegend'),focused=legend.contains(document.activeElement)?document.activeElement.dataset.trace:null;
+    legend.innerHTML=series().map(d=>{
+      const description=(d.visible?'Nascondi':'Mostra')+' '+d.label+(d.detail?' · '+d.detail:'');
+      const label=d.detail?'<strong>'+esc(d.label)+'</strong><small>'+esc(d.detail)+'</small>':esc(d.label);
+      return `<button class="legend-button" data-trace="${d.key}" aria-pressed="${d.visible}" title="${esc(description)}" aria-label="${esc(description)}"><svg class="trace-swatch" viewBox="0 0 36 12" aria-hidden="true"><path d="M2 6H34" fill="none" stroke="${d.color}" stroke-width="3" ${d.dash?'stroke-dasharray="'+d.dash+'"':''}/></svg><span>${label}</span></button>`;
+    }).join('');
+    if(focused)legend.querySelector('[data-trace="'+focused+'"]')?.focus({preventScroll:true});
+    const reference=$('guidedTraceReference');
+    reference.hidden=!guidedMeasureTraces.length;
+    reference.textContent=params().type==='bridge-rectifier'?'Tensioni simulate rispetto a GND. Le differenze indicano l’ordine dei due puntali.':'Tensioni simulate rispetto a GND.';
+  }
 
   function quantityControls(){const p=params(),select=$('plotQuantity');if(project.analysis==='bode')select.innerHTML='<option value="db">Modulo (dB)</option><option value="phase">Fase (°)</option>';else select.innerHTML='<option value="voltage">Tensioni</option><option value="current">Corrente in R</option>';
     if(project.analysis==='bode'&&!['db','phase'].includes(quantity))quantity='db';if(project.analysis==='time'&&!['voltage','current'].includes(quantity))quantity='voltage';
     select.value=quantity;select.hidden=S.isCharacteristic(project.analysis)||['vtc','charge'].includes(project.analysis)||(project.analysis==='time'&&p.type!=='rc');
   }
   async function calculate(){
-    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;studentCalculationError='';stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;lastSimulationResult=null;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.clear();$('plotLegend').replaceChildren();$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
+    hoveredMeasurementTrace=null;
+    const p=copy(params()),revision=++calculationRevision,analysis=project.analysis;studentCalculationError='';stopPlayback();plot.lockHover=false;calculating=true;calculationReady=false;lastSimulationResult=null;derivedMetrics=[];$('guidedCancel').hidden=false;$('guidedCancel').textContent='Annulla calcolo';showErrors({});$('calculationStatus').textContent='Calcolo locale in corso…';data=[];plot.clear();$('plotLegend').replaceChildren();$('guidedTraceReference').hidden=true;$('readout').replaceChildren();$('resultNotice').hidden=true;$('timeline').hidden=true;quantityControls();drawDiagram(p);measurements();try{
       const result=await tasks.run('guidedResult',{params:p,analysis},fraction=>{if(revision===calculationRevision){const message='Calcolo locale · '+(Math.floor(Math.max(0,Math.min(1,fraction))*20)*5)+'%';if($('calculationStatus').textContent!==message)$('calculationStatus').textContent=message;}});if(revision!==calculationRevision)return;lastSimulationResult=result;data=result.data;calculating=false;calculationReady=true;derivedMetrics=S.is(p)?S.metrics(p,analysis,result.values,format):M.metrics(p,analysis==='time'?null:p.bodeInput);if(M.usesNetwork(p)&&analysis==='bode')derivedMetrics.push(...M.curveMetrics(data));
       quantityControls();renderLegend();
       const characteristic=S.characteristic(analysis);
-      plot.set({data,scope:analysis==='time',scopeKey:projectEpoch+':'+project.experiment,baselineSettings:copy(p),wave:analysis==='time'?copy(p.wave1):null,dcBaseline:result.baselineDC,pulse:analysis==='time'&&p.wave1.kind==='pulse'?copy(p.wave1):null,series:series(),logX:analysis==='bode',logY:analysis==='diodeIV',yLabel:characteristic?'Iᴅ':undefined,xUnit:characteristic?'V':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:characteristic?characteristic.xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:characteristic?'A':project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:analysis==='bode'||analysis==='diodeIV',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
+      plot.set({data,scope:analysis==='time',namedMeasurementPoints:guidedMeasureTraces.length>0,scopeKey:projectEpoch+':'+project.experiment,baselineSettings:copy(p),wave:analysis==='time'?copy(p.wave1):null,dcBaseline:result.baselineDC,pulse:analysis==='time'&&p.wave1.kind==='pulse'?copy(p.wave1):null,series:series(),logX:analysis==='bode',logY:analysis==='diodeIV',yLabel:characteristic?'Iᴅ':undefined,xUnit:characteristic?'V':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':project.analysis==='vtc'?'Vpp':'s',xLabel:characteristic?characteristic.xLabel:project.analysis==='bode'?'Frequenza':project.analysis==='charge'?'Carica iniettata Qin':project.analysis==='vtc'?'Ingresso':'Tempo',yUnit:characteristic?'A':project.analysis==='bode'?(quantity==='phase'?'°':'dB'):project.analysis==='vtc'?'Vpp':quantity==='current'?'A':'V',noZero:analysis==='bode'||analysis==='diodeIV',guides:project.analysis==='time'&&p.type==='rc'?[{x:M.rcSummary(p).tau,label:'τ'},...(p.wave1.kind==='cycle'?[{x:p.switchTime,label:'scarica'}]:[])]:[]});
       drawDiagram(p);measurements();
       $('timeline').hidden=project.analysis!=='time';$('timelineDuration').textContent=format(p.duration,'s');
       $('calculationStatus').textContent=project.analysis==='bode'?'Piccolo segnale':project.analysis==='charge'?'Linearità in carica · '+data.length+' impulsi':project.analysis==='vtc'?'Vpp a regime · '+data.length+' ampiezze':characteristic?characteristic.status:S.is(p)?'Transitorio · '+data.length.toLocaleString('it-IT')+' punti':(p.type==='rc'?'Rete RC':'Operazionale '+(p.opamp==='ideal'?'ideale':'a polo dominante'))+' · '+data.length.toLocaleString('it-IT')+' punti';
@@ -344,13 +362,31 @@
   }
   function cursor(d,fraction,cursors){
     $('timeCursor').value=Math.round(fraction*10000);if(playback.running&&playback.mode==='continuous'&&performance.now()-lastContinuousReadout<200)return;lastContinuousReadout=performance.now();const p=params();let rows;
-    if(project.analysis==='time'){const names=series(),label=(key,fallback)=>names.find(t=>t.key===key)?.label||fallback;rows=[['Tempo',format(d.x,'s',4)],[label('vin','Ingresso · V₁'),format(d.vin,'V',4),'input-value']];if(secondInput(p))rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),'second-input-value']);rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),'primary-value']);if(S.extra.is(p.type))for(const trace of names.filter(t=>t.visible&&!['vin','vin2','out'].includes(t.key)))rows.push([trace.label,format(d[trace.key],'V',4)]);const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);if(ref)rows.push([ref.label,format(ref.value,'V',4)],['OUT − baseline',format(d.out-ref.value,'V',4)]);if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);}
+    if(project.analysis==='time'){
+      const traces=series(),classes={vin:'input-value',vin2:'second-input-value',out:'primary-value'};
+      rows=[['Tempo',format(d.x,'s',4)]];
+      if(guidedMeasureTraces.length){
+        for(const trace of traces.filter(t=>t.visible))rows.push([trace.label,format(d[trace.key],'V',4),classes[trace.key]]);
+      }else{
+        const label=(key,fallback)=>traces.find(t=>t.key===key)?.label||fallback;
+        rows.push([label('vin','Ingresso · V₁'),format(d.vin,'V',4),classes.vin]);
+        if(secondInput(p))rows.push([label('vin2','Ingresso 2 · V₂'),format(d.vin2,'V',4),classes.vin2]);
+        rows.push([label('out','Uscita · OUT'),format(d.out,'V',4),classes.out]);
+      }
+      const output=traces.find(t=>t.key==='out');
+      if(!guidedMeasureTraces.length||output?.visible){
+        const ref=window.LabMeasurements.reference(data,'out',p.wave1,p,lastSimulationResult?.baselineDC?.out,d.x);
+        const outputLabel=guidedMeasureTraces.length?output.label:'OUT';
+        if(ref)rows.push([ref.label,format(ref.value,'V',4)],[outputLabel+' − baseline',format(d.out-ref.value,'V',4)]);
+      }
+      if(quantity==='current'&&p.type==='rc')rows.push(['Corrente',format(d.current,'A',4),'primary-value']);
+    }
     else if(project.analysis==='bode')rows=[['Frequenza',format(d.x,'Hz',4)],['Guadagno',d.magnitude===0?'0 V/V':format(d.magnitude,'',4)+' V/V','primary-value'],['Modulo',d.magnitude===0?'−∞ dB':format(d.db,'dB',4)],['Fase',format(d.phase,'°',4)]];
     else if(S.isCharacteristic(project.analysis))rows=[[S.characteristic(project.analysis).xLabel,format(d.x,'V',4)],['Corrente Iᴅ',format(d.out,'A',4),'primary-value'],...(project.analysis==='diodeIV'?[['Fit',format(d.linear,'A',4)],['Residuo',format(d.residual,'A',4)]]:[])];
     else if(project.analysis==='charge')rows=[['Qin nominale',format(d.x,'C',4)],['Durata impulso',format(d.width,'s',4)],['Baseline',format(d.baseline,'V',4)],['V_max assoluto',format(d.maximum,'V',4)],['Picco − baseline',format(d.out,'V',4)],['Residuo dal fit',format(d.residual,'V',4)]];
     else rows=[['Ingresso',format(d.x,'V',4)+'pp'],['Uscita',format(d.out,'V',4)+'pp','primary-value'],['Risposta lineare',format(d.linear,'V',4)+'pp']];
     if(cursors){const {a,b}=cursors,u=project.analysis==='time'?'s':project.analysis==='bode'?'Hz':project.analysis==='charge'?'C':S.isCharacteristic(project.analysis)?'V':'Vpp';rows=[['A',format(a.x,u,4)],['B',format(b.x,u,4)],['Δ'+(project.analysis==='time'?'t':project.analysis==='bode'?'f':project.analysis==='charge'?'Q':'IN'),format(b.x-a.x,u,4)],...plot.series.flatMap(t=>{const unit=project.analysis==='bode'?(quantity==='phase'?'°':'dB'):quantity==='current'||S.isCharacteristic(project.analysis)?'A':'V';return[[t.label+' A / B',format(a[t.key],unit,4)+' / '+format(b[t.key],unit,4)],['Δ '+t.label,format(b[t.key]-a[t.key],unit,4)]];})];}
-    $('readout').innerHTML=rows.map(([label,value,cls=''])=>`<div class="${cls}"><span>${label}</span><strong>${value}</strong></div>`).join('');
+    $('readout').innerHTML=rows.map(([label,value,cls=''])=>`<div class="${cls}"><span>${esc(label)}</span><strong>${value}</strong></div>`).join('');
     $('timeCursor').setAttribute('aria-valuetext',project.analysis==='time'?format(d.x,'s',4):format(d.x,''));
   }
   function presetCandidate(key,base=project){
@@ -395,15 +431,39 @@
   }
 
   let showSchematicDetails=false,schematicType;
+  function renderOpampPinout(type,ids){
+    const {forParts,terminals,supply}=window.OpampPinout;
+    const parts=forParts(ids,type,project.assemblyStudy?.sectionsPerChip),list=$('guidedOpampPinList');
+    const labels=parts.map(({id,section,pins})=>'<li><strong>'+id+' · '+section+'</strong>'+
+      Object.entries(pins).map(([pin,number])=>'<span title="'+terminals[pin].name+'">'+terminals[pin].symbol+' <b>'+number+'</b></span>').join('')+'</li>');
+    if(parts.length)labels.push('<li><strong>Alimentazione</strong><span>V+ <b>'+supply.positive+'</b></span><span>V− <b>'+supply.negative+'</b></span></li>');
+    const html=labels.join('');
+    if(list.innerHTML!==html)list.innerHTML=html;
+    $('guidedOpampPinout').hidden=!parts.length;
+    return Object.fromEntries(parts.flatMap(({id,pins})=>Object.entries(pins).map(([pin,number])=>[
+      id+':'+pin,{...terminals[pin],number}
+    ])));
+  }
   function drawDiagram(p=params()){
     const real=networkDiagram(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
     if(schematicType!==p.type){showSchematicDetails=false;schematicType=p.type;}
     const details=$('guidedSchematicDetails');
-    if(!real){$('guidedMosPinout').hidden=true;details.hidden=true;diagram.render(p,project.layouts[p.type]||{},selected);return;}
+    guidedMeasureTraces=[];
+    if(!real){
+      $('guidedMosPinout').hidden=true;details.hidden=true;
+      renderOpampPinout(p.type,p.type==='rc'?[]:['U1']);
+      diagram.render(p,project.layouts[p.type]||{},selected);return;
+    }
     const full=M.network(p,S.is(p)?project.analysis:project.analysis==='time'?null:p.bodeInput);
     details.hidden=!window.GuidedSchematic.hasModelDetails(full,p.type);
     details.setAttribute('aria-pressed',String(!details.hidden&&showSchematicDetails));
     const d=!details.hidden&&showSchematicDetails?full:window.GuidedSchematic.layout(full,p.type,p);
+    d.opampPinLabels=renderOpampPinout(p.type,full.components.filter(part=>part.type==='U').map(part=>part.id));
+    if(project.analysis==='time'&&S.extra.is(p.type)){
+      guidedMeasureTraces=window.GuidedMeasurePoints.describe(p,full);
+      d.guidedMeasurePoints=window.GuidedMeasurePoints.markers(guidedMeasureTraces,d);
+      d.guidedMeasureColors=colors;
+    }
     const pinout=window.MosPinout.transistors(d,p.type),pinList=$('guidedMosPinList');
     d.mosPinLabels=Object.fromEntries(pinout.flatMap(({id,pins})=>pins.map(pin=>[id+':'+pin.terminal,pin])));
     const labels=pinout.map(({id,pins})=>'<li><strong>'+id+'</strong>'+pins.map(({name,number})=>'<span>'+name+' <b>'+number+'</b></span>').join('')+'</li>').join('');
@@ -412,7 +472,9 @@
     d.settings.analysis=project.analysis==='bode'?'bode':S.isCharacteristic(project.analysis)?'dc':'time';
     for(const c of d.components)if(project.layouts[p.type]?.[c.id])Object.assign(c,project.layouts[p.type][c.id]);
     const id=p.type==='rc'&&selected==='R'?'R1':p.type==='rc'&&selected==='C'?'C1':selected;
-    realDiagram.render(d,id?{kind:'component',id}:null,'select',null,false);if(wasHidden)requestAnimationFrame(()=>realDiagram.fit());
+    realDiagram.render(d,id?{kind:'component',id}:null,'select',null,false);
+    syncMeasurementHighlight();
+    if(wasHidden)requestAnimationFrame(()=>realDiagram.fit());
   }
   const activeDiagram=()=>networkDiagram(params())?realDiagram:diagram;
   function measurementDrawing(){
@@ -499,7 +561,29 @@
   $('toggleSchematic').addEventListener('click',()=>setWorkspaceView('plot'));$('hideGuidedPlot').addEventListener('click',()=>setWorkspaceView('circuit'));
   $('plotIn').addEventListener('click',()=>{stopPlayback();plot.zoom(1.6);});$('plotOut').addEventListener('click',()=>{stopPlayback();plot.zoom(1/1.6);});$('plotFit').addEventListener('click',()=>{stopPlayback();plot.fit();});
   $('plotQuantity').addEventListener('change',()=>{quantity=$('plotQuantity').value;calculate();});
-  $('plotLegend').addEventListener('click',e=>{const b=e.target.closest('[data-trace]');if(!b)return;stopPlayback();const key=b.dataset.trace,s=series();if(s.find(d=>d.key===key)?.visible&&s.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}visible[key]=!s.find(d=>d.key===key)?.visible;renderLegend();plot.updateSeries(series());});
+  $('plotLegend').addEventListener('pointerover',event=>{
+    if(event.pointerType!=='mouse')return;
+    hoveredMeasurementTrace=event.target.closest('[data-trace]')?.dataset.trace;
+    syncMeasurementHighlight();
+  });
+  $('plotLegend').addEventListener('pointerout',event=>{
+    if(event.pointerType!=='mouse')return;
+    const button=event.target.closest('[data-trace]');
+    if(button?.contains(event.relatedTarget))return;
+    hoveredMeasurementTrace=null;syncMeasurementHighlight();
+  });
+  $('plotLegend').addEventListener('focusin',()=>{hoveredMeasurementTrace=null;syncMeasurementHighlight();});
+  $('plotLegend').addEventListener('focusout',()=>requestAnimationFrame(syncMeasurementHighlight));
+  $('plotLegend').addEventListener('click',e=>{
+    const button=e.target.closest('[data-trace]');if(!button)return;
+    stopPlayback();
+    const key=button.dataset.trace,traces=series(),trace=traces.find(d=>d.key===key);
+    if(!trace)return;
+    if(trace.visible&&traces.filter(d=>d.visible).length===1){toast('Mantieni visibile almeno una traccia.');return;}
+    if(trace.points)guidedTraceVisibility.set(guidedTraceId(key),!trace.visible);
+    else visible[key]=!trace.visible;
+    renderLegend();plot.updateSeries(series());syncMeasurementHighlight();
+  });
   $('timeCursor').addEventListener('input',()=>{holdReading();plot.setFraction(Number($('timeCursor').value)/10000);});$('playButton').addEventListener('click',play);$('readingStart').addEventListener('click',()=>manualReading(0));$('readingBack').addEventListener('click',()=>manualReading(-1));$('readingNext').addEventListener('click',()=>manualReading(1));$('readingDelay').addEventListener('change',()=>playback.setDelay(Number($('readingDelay').value)));
   $('readingMode').addEventListener('change',()=>{playback.setMode($('readingMode').value);$('readingDelayLabel').textContent=playback.mode==='continuous'?'1% in':'Ogni passo';$('readingHint').textContent=playback.mode==='continuous'?'Il cursore scorre senza scatti; i numeri si aggiornano fino a 5 volte al secondo. Il tempo fisico non cambia.':'Un passo = 1% dell’intervallo visibile. I valori restano fermi tra i passi; il tempo del circuito non cambia.';});document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
   let resizeStart;
@@ -558,7 +642,14 @@
     return true;
   }
   function breadboardColors(enabled){Object.assign(colors,enabled?{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#6b7a8c'}:{vin:'#16804d',vin2:'#9552cc',out:'#e36c16',source:'#b88bce'});if(calculationReady&&!calculating){plot.updateSeries(series());renderLegend();}}
-  window.GuidedLab={saveCommonSourceDesign,applyPreampSheet,measurementDrawing,projectEpoch:()=>projectEpoch,selectedComponent:()=>selected,captureReading:()=>calculationReady&&!calculating&&valid?{config:copy(plot.config),index:plot.data.indexOf(plot.cursor)}:null,revealErrors:()=>setInspector(true),calculationState:()=>({valid,calculating,ready:calculationReady,analysis:project.analysis,error:studentCalculationError}),inspectSample:index=>calculationReady&&!calculating&&valid?plot.inspectSample(index):false,centerSelected:()=>{if(!selected)return false;const id=networkDiagram(params())&&params().type==='rc'?({R:'R1',C:'C1'}[selected]||selected):selected;return activeDiagram().center(id);},selectComponent,run:()=>{if(!applyFields())return false;calculate();return true;},resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,showInspector:setInspector,showTrials,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(S.isCharacteristic(project.analysis)||!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies:update=>{const checked=M.parse(M.serialize({...project,...update}));for(const k of Object.keys(update))project[k]=copy(checked[k]);persist();},setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
+  function updateStudies(update){
+    const checked=M.parse(M.serialize({...project,...update}));
+    const packagingChanged=checked.assemblyStudy?.sectionsPerChip!==project.assemblyStudy?.sectionsPerChip;
+    for(const key of Object.keys(update))project[key]=copy(checked[key]);
+    if(packagingChanged)drawDiagram();
+    persist();
+  }
+  window.GuidedLab={refreshSchematic:()=>drawDiagram(),saveCommonSourceDesign,applyPreampSheet,measurementDrawing,projectEpoch:()=>projectEpoch,selectedComponent:()=>selected,captureReading:()=>calculationReady&&!calculating&&valid?{config:copy(plot.config),index:plot.data.indexOf(plot.cursor)}:null,revealErrors:()=>setInspector(true),calculationState:()=>({valid,calculating,ready:calculationReady,analysis:project.analysis,error:studentCalculationError}),inspectSample:index=>calculationReady&&!calculating&&valid?plot.inspectSample(index):false,centerSelected:()=>{if(!selected)return false;const id=networkDiagram(params())&&params().type==='rc'?({R:'R1',C:'C1'}[selected]||selected):selected;return activeDiagram().center(id);},selectComponent,run:()=>{if(!applyFields())return false;calculate();return true;},resultDiagnostics:()=>lastSimulationResult?copy({diagnostics:lastSimulationResult.diagnostics,warnings:lastSimulationResult.warnings,assumptions:lastSimulationResult.assumptions}):null,applyBreadboardPreset:applyPreset,editBreadboard,breadboardColors,setWorkspaceView,showInspector:setInspector,showTrials,focusPanel:next=>{if(!applyFields())return false;setInspector(true);panel=next;renderInspector();return true;},plotSnapshot:()=>calculationReady&&!calculating?copy(plot.config):null,setBench:(config,reference)=>{if(S.isCharacteristic(project.analysis)||!applyFields())return false;try{const p=copy(params());p.bench=window.BenchModel.config(config);p.benchReference=reference||p.benchReference||'input';p.instrument='ideal';const candidate=M.normalizeTime(p),errors=M.validate(candidate);if(Object.keys(errors).length)throw Error(Object.values(errors)[0]);if(M.real(candidate))M.network(candidate);project.circuits[p.type]=candidate;selected=null;renderInspector();calculate();persist();requestAnimationFrame(fitDiagram);return true;}catch(e){toast(e.message,true);return false;}},sessionState:()=>sessionState(true),document:()=>copy(project),startSession:name=>{if(!applyFields())return false;project.name=String(name).trim().slice(0,80)||'Nuova sessione';project.session=null;project.guidedTrials={};ensureSession();$('projectName').value=project.name;renderInspector();persist();return true;},updateStudies,setOpampStudy:s=>{project.opampStudy=copy(s);persist();},exportCircuit:()=>{if(!applyFields())return null;return M.circuit(project);},parameters:()=>copy(params()),getACStudy:()=>project.acStudy,setACStudy:s=>{project.acStudy=copy(s);persist();},getRCStudy:()=>project.rcStudy,setRCStudy:s=>{project.rcStudy=copy(s);persist();},storageState:()=>storageState,hasPrevious:()=>Boolean(store.previous()),snapshot:()=>{if(!applyFields())return null;project.name=$('projectName').value.trim()||'Il mio laboratorio';persist();return M.serialize(project);},load:loadProject,recoverPrevious:()=>{const old=store.previous();if(!old)return false;loadProject(M.serialize(old));return true;},suspend:()=>{stopPlayback();const ok=applyFields();if(ok){tasks.cancel();calculationRevision++;calculating=false;$('guidedCancel').hidden=true;}return ok;},resume:()=>{$('appLayout').hidden=false;$('projectName').value=project.name;$('saveProject').disabled=!valid;updateSaveStatus();if(!calculationReady)calculate();else requestAnimationFrame(()=>plot.draw());document.dispatchEvent(new Event('circuit-lab-mode'));}};
   const loaded=store.read();if(loaded.doc){project=loaded.doc;storageState.ok=true;}else if(!loaded.error)try{const old=localStorage.getItem('rc-studio-project-v1');if(old)project=M.parse(old);}catch{}
   if(loaded.recovered||loaded.error)setTimeout(()=>toast(loaded.recovered?'Recuperata la copia precedente del laboratorio: la più recente non era leggibile.':loaded.error,true),200);
   ensureSession();$('projectName').value=project.name;renderNavigation();renderInspector();calculate();persist();

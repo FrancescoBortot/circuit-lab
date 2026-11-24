@@ -1,6 +1,9 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const L=require('../lab-model'),F=require('../free-model'),Q=require('../lab-quality'),B=require('../breadboard-model');
 const Physical=require('../breadboard-layout'),Guide=require('../measurement-guide'),Schematic=require('../guided-schematic');
+const MeasurePoints=require('../guided-measure-points');
+const OpampPinout=require('../opamp-pinout');
+const BreadboardRender=require('../breadboard-render');
 const Files=require('../lab-files'),Spice=require('../spice-netlist'),Trials=require('../guided-trials'),Comparison=require('../experiment-comparison');
 const S=L.semiconductor;
 const catalog=L.CATALOG.filter(entry=>entry.group==='extra');
@@ -59,6 +62,51 @@ test('the precision rectifier agrees with the piecewise circuit equations even w
   near(positive.ch2,positive.v2,1e-9);
   assert.ok(result.data.every(row=>Number.isFinite(row.aux)));
   assert.match(L.csv(p,'time',result.data),/V1_V,OUT_V,V2_V,Vo_primo_V/);
+});
+
+test('appendix measurement labels follow each CH2 position and keep the voltage nodes distinct',()=>{
+  for(const [preset,ref,name] of [['output','U1:out','OUT'],['v2','R2:a','V₂'],['aux','U2:out','Vₒ′']]){
+    const {parameters:p}=trial('precision-rectifier',preset);
+    p.bench.channels[1].coupling='ac';
+    const doc=L.network(p,'time'),traces=MeasurePoints.describe(p,doc);
+    const ch2=traces.find(trace=>trace.key==='ch2');
+    assert.equal(ch2.label,'CH2 su '+name);
+    assert.match(ch2.detail,/sonda ×10 · AC/);
+    assert.notEqual(doc.probes.output,ref,'the scope internal readout is separate under AC coupling');
+    for(const schematic of [doc,Schematic.layout(doc,p.type,p)]){
+      const marks=MeasurePoints.markers(traces,schematic);
+      assert.deepEqual(marks.get(ref).map(mark=>mark.symbol),[name,'CH2']);
+      assert.deepEqual(marks.get('R1a:a').map(mark=>mark.symbol),['V₁','CH1']);
+      assert.equal(marks.size,4);
+    }
+  }
+  const bridge=L.defaults('bridge-rectifier');
+  const traces=MeasurePoints.describe(bridge,L.network(bridge,'time'));
+  assert.deepEqual(traces.find(trace=>trace.key==='out').relatedKeys,['a','b']);
+  assert.equal(traces.find(trace=>trace.key==='math').detail,'Vᴮ meno Vᴬ');
+  bridge.bench.channels[1].enabled=false;
+  const single=MeasurePoints.describe(bridge,L.network(bridge,'time'));
+  assert.ok(single.some(trace=>trace.key==='ch1'));
+  assert.ok(!single.some(trace=>['ch2','math'].includes(trace.key)));
+});
+
+test('the precision rectifier displays the TL082C pins of the selected package arrangement',()=>{
+  const type='precision-rectifier',p=L.defaults(type),doc=L.network(p,'time');
+  for(const [saved,u2Pins] of [[undefined,[5,6,7]],[1,[3,2,1]]]){
+    const board=B.create(doc,{semiconductorType:type,sectionsPerChip:saved});
+    const pinout=OpampPinout.forParts(['U1','U2'],type,saved);
+    assert.deepEqual(Object.values(pinout[0].pins),[3,2,1]);
+    assert.deepEqual(Object.values(pinout[1].pins),u2Pins);
+    const terminals=B.terminalList(board),schema=BreadboardRender.schematic(board);
+    for(const {id,pins} of pinout)for(const [pin,number] of Object.entries(pins)){
+      const ref=id+':'+pin;
+      assert.equal(terminals.find(terminal=>terminal.ref===ref).number,number);
+      assert.ok(schema.includes('data-bb-ref="'+ref+'" role="button" tabindex="0" aria-label="'+id+' '+F.pinLabel('U',pin)+' · pin '+number+' · '));
+    }
+    for(const packageId of board.packages){
+      assert.deepEqual(board.devicePins.filter(pin=>pin.packageId===packageId&&['V−','V+'].includes(pin.name)).map(pin=>pin.number),[4,8]);
+    }
+  }
 });
 
 test('bridge exports the signed load difference and the two conducting pairs',()=>{

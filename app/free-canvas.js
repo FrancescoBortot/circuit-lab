@@ -44,30 +44,51 @@
       html+=this.doc.wires.map(w=>`<g data-wire="${w.id}" tabindex="0" role="button" aria-label="Seleziona filo ${esc(w.id)} da ${esc(w.a)} a ${esc(w.b)}" class="free-wire ${this.selection?.kind==='wire'&&this.selection.id===w.id?'selected':''}"><title>${esc(w.id)} · ${esc(w.a)} → ${esc(w.b)} · ${t.nodes[w.a]<0?'massa':'N'+(t.nodes[w.a]+1)}</title><path class="wire-hit" d="${this.route(w)}"/><path class="wire-separation" d="${this.route(w)}" fill="none" stroke="#fcfdff" stroke-width="6" pointer-events="none"/><path class="wire-ink" d="${this.route(w)}"/></g>`).join('');
       html+=this.doc.components.map(c=>this.symbol(c)).join('');
       if(this.labels||this.dcValues)for(const n of t.groups){const at=this.port(n.pins[0]);html+=`<text class="free-net-label" x="${at.x+12}" y="${at.y-15}">${esc(n.label||n.name)+(this.dcValues?' · '+esc(fmt(this.dcValues[n.name],'V')):'')}</text>`;}
+      const measurePoints=this.doc.guidedMeasurePoints;
       const probes=this.doc.sheetProbes||{IN:this.doc.probes.input,OUT:this.doc.probes.output};
       for(const [label,pin]of Object.entries(probes)){
-        if(!pin)continue;
+        if(!pin||measurePoints?.has(pin))continue;
         const at=this.port(pin),kind=label==='OUT'?'output':'input';
         html+=`<g class="free-probe ${kind}" transform="translate(${at.x+9} ${at.y-36})"><rect width="${label.length>2?43:32}" height="21" rx="5"/><text x="8" y="14">${label}</text></g>`;
       }
       const mosPins=this.doc.mosPinLabels,compactPins=Object.keys(mosPins||{}).length>3;
       const probeOffsets=new Map();for(const [i,probe]of (this.doc.traces||[]).entries()){
-        if(probe.kind!=='voltage')continue;const at=this.port(probe.positive),offset=probeOffsets.get(probe.positive)||0;probeOffsets.set(probe.positive,offset+1);
+        if(probe.kind!=='voltage'||measurePoints?.has(probe.positive))continue;const at=this.port(probe.positive),offset=probeOffsets.get(probe.positive)||0;probeOffsets.set(probe.positive,offset+1);
         const colors=['#159e89','#d78b29','#9c6bce','#dc6c87','#278fa8','#7470d9','#8b9b36','#ae7648'];
         html+=`<g class="free-probe" transform="translate(${at.x+9+offset*35} ${at.y+12})"><rect width="31" height="20" rx="5" style="fill:${colors[i%8]}"/><text x="6" y="14">${probe.id}</text></g>`;
       }
       for(const c of this.doc.components.filter(c=>!c.schematicDecoration))for(const pin of M.PINS[c.type]){
         const ref=c.id+':'+pin,p=this.port(ref),pending=ref===this.pending,mos=mosPins?.[ref];
-        const label=mos?mos.name+' · pin '+mos.number:M.pinLabel(c.type,pin);
-        const caption=mos&&compactPins?mos.name[0]+' · '+mos.number:label;
-        const visible=mos||(this.mode==='wire'||unconnected.has(ref))&&c.type!=='J';
-        html+=`<g data-pin="${ref}" class="free-terminal ${used.has(ref)?'connected':''} ${pending?'pending':''} ${unconnected.has(ref)?'unconnected':''}" role="button" tabindex="0" aria-label="Terminale ${esc(c.id)} ${esc(label)}${unconnected.has(ref)?', da collegare':''}"><title>${esc(c.id)} · ${esc(label)} · ${unconnected.has(ref)?'Da collegare':t.nodes[ref]<0?'massa':'N'+(t.nodes[ref]+1)}</title><circle cx="${p.x}" cy="${p.y}" r="16" class="terminal-hit"/><circle cx="${p.x}" cy="${p.y}" r="5" class="terminal-dot"/>${visible?`<text${mos?' class="mos-pin-label"':''} x="${p.x+(p.dx||1)*13}" y="${p.y+(p.dy||-1)*13}" text-anchor="${p.dx<0?'end':'start'}">${esc(caption)}</text>`:''}</g>`;
+        const opamp=this.doc.opampPinLabels?.[ref],numbered=mos||opamp;
+        const label=numbered?numbered.name+' · pin '+numbered.number:M.pinLabel(c.type,pin);
+        const caption=opamp?opamp.symbol+' · '+opamp.number:mos&&compactPins?mos.name[0]+' · '+mos.number:label;
+        const visible=numbered||(this.mode==='wire'||unconnected.has(ref))&&c.type!=='J';
+        const pinClass=opamp?'opamp-pin-label':mos?'mos-pin-label':'';
+        const pinAnchor=opamp?` data-terminal-anchor="${p.x} ${p.y}"`:'';
+        const captionY=opamp&&pin!=='out'&&p.y>c.y?p.y+21:p.y+(p.dy||-1)*13;
+        const measurement=measurePoints?.get(ref)?.map(point=>point.label).join(', ');
+        html+=`<g data-pin="${ref}" class="free-terminal ${used.has(ref)?'connected':''} ${pending?'pending':''} ${unconnected.has(ref)?'unconnected':''}" role="button" tabindex="0" aria-label="Terminale ${esc(c.id)} ${esc(label)}${measurement?', '+esc(measurement):''}${unconnected.has(ref)?', da collegare':''}"><title>${esc(c.id)} · ${esc(label)} · ${measurement?esc(measurement):unconnected.has(ref)?'Da collegare':t.nodes[ref]<0?'massa':'N'+(t.nodes[ref]+1)}</title><circle cx="${p.x}" cy="${p.y}" r="16" class="terminal-hit"/><circle cx="${p.x}" cy="${p.y}" r="5" class="terminal-dot"/>${visible?`<text class="${pinClass}"${pinAnchor} x="${p.x+(p.dx||1)*13}" y="${captionY}" text-anchor="${p.dx<0?'end':'start'}">${esc(caption)}</text>`:''}</g>`;
       }
+      if(measurePoints)for(const [ref,points] of measurePoints)html+=this.measurementBadge(ref,points);
       if(this.pending){const at=this.port(this.pending);html+=`<path id="freePendingWire" d="M${at.x},${at.y}" class="pending-wire"/>`;}
       if(this.drag?.region){const r=this.drag.region;html+=`<rect class="free-selection-box" x="${r.x0}" y="${r.y0}" width="${r.x1-r.x0}" height="${r.y1-r.y0}"/>`;}
       this.svg.innerHTML=html;this.svg.setAttribute('viewBox',`${this.view.x} ${this.view.y} ${this.view.w} ${this.view.h}`);this.svg.classList.toggle('wire-mode',this.mode==='wire');this.labelBounds=window.SchematicLabels?.place(this.svg)?.bounds;
       if(focused)for(const e of this.svg.querySelectorAll('[data-pin],[data-part],[data-wire]'))if([e.dataset.pin,e.dataset.part,e.dataset.wire].includes(focused)){e.focus({preventScroll:true});break;}
       this.callbacks.zoom?.(Math.round(1000/this.view.w*100));
+    }
+    measurementBadge(ref,points){
+      const at=this.port(ref),colors=this.doc.guidedMeasureColors,keys=points.map(point=>point.key).join(' ');
+      let width=5;
+      const labels=points.map(({key,symbol})=>{
+        const x=width;
+        width+=Math.ceil(symbol.length*8.5)+19;
+        return `<circle cx="${x+6}" cy="13" r="3.5" fill="${colors[key]}"/><text x="${x+14}" y="18">${esc(symbol)}</text>`;
+      }).join('');
+      const scale=this.svg.clientWidth>0&&this.svg.clientWidth<520?1.6:1;
+      const x=at.x+(at.dx<0?-width*scale-10:12),y=at.y-26*scale-11;
+      return `<circle class="guided-measure-pin" data-measure-traces="${keys}" cx="${at.x}" cy="${at.y}" r="5.5" stroke="${colors[points[0].key]}"/>
+        <g class="guided-measure-badge" data-measure-ref="${esc(ref)}" data-measure-traces="${keys}" data-measure-anchor="${at.x} ${at.y}" aria-hidden="true" transform="translate(${x} ${y}) scale(${scale})">
+        <rect width="${width}" height="26" rx="6"/>${labels}</g>`;
     }
     symbol(c){
       let shape='',value='';

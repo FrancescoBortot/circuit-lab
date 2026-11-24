@@ -146,6 +146,9 @@
       const traces=this.config.series,right=traces.find(trace=>trace.key==='out')||traces[1];
       return this.traceAxes.get(this.config.yUnit+':'+series.key)??(series.key===right?.key?'B':'A');
     }
+    axisName(axis){
+      return this.config.namedMeasurementPoints?(axis==='A'?'Asse sinistro':'Asse destro'):channels[axis];
+    }
     syncScope(){
       this.scopeControls.hidden=!this.config?.scope||!this.data.length;
       if(this.scopeControls.hidden)return;
@@ -154,6 +157,13 @@
       field.querySelector('span').textContent=horizontal;
       field.querySelector('input').setAttribute('aria-label',horizontal+' per divisione');
       field.querySelector('select').setAttribute('aria-label','Unità '+horizontal+' per divisione');
+      for(const axis of Object.keys(channels)){
+        const field=this.divisionFields.querySelector('[data-division="'+axis+'"]');
+        const name=!this.splitY&&this.config.namedMeasurementPoints?'Asse Y':this.axisName(axis);
+        field.querySelector('span').textContent=name;
+        field.querySelector('input').setAttribute('aria-label',name+' per divisione');
+        field.querySelector('select').setAttribute('aria-label','Unità '+name+' per divisione');
+      }
       this.timePan.closest('label').firstChild.textContent=horizontal==='Tempo'?'Scorri nel tempo ':'Scorri l’asse X ';
       const timeControls=this.timePan.closest('.plot-time-controls');
       timeControls.setAttribute('aria-label',horizontal==='Tempo'?'Finestra temporale':'Finestra orizzontale');
@@ -171,7 +181,7 @@
         label.textContent=series.label;
         select.dataset.traceKey=series.key;
         select.setAttribute('aria-label','Asse verticale · '+series.label);
-        select.innerHTML='<option value="A">CH1 · sinistra</option><option value="B">CH2 · destra</option>';
+        select.innerHTML=this.config.namedMeasurementPoints?'<option value="A">Asse sinistro</option><option value="B">Asse destro</option>':'<option value="A">CH1 · sinistra</option><option value="B">CH2 · destra</option>';
         select.value=this.axisFor(series);
         label.append(select);this.axisControls.append(label);
       }
@@ -350,7 +360,7 @@
           if(!scope||i%2===0||zero)html+=`<text x="${labelX}" y="${py+4}" text-anchor="${anchor}">${tickLabel}</text>`;
         }
         const unit=this.config.yLabel?this.config.yLabel+' ('+yScale.unit+')':yScale.unit;
-        const channel=scope?(this.splitY?channels[axis]:'Y')+' · ':'';
+        const channel=scope?(this.splitY?this.axisName(axis):this.config.namedMeasurementPoints?'Asse Y':'Y')+' · ':'';
         html+=`<text x="${atRight?w-8:8}" y="12" text-anchor="${atRight?'end':'start'}" class="axis-unit" data-y-axis="${axis}">${channel}${unit}</text>`;
         if(split){
           const spacing=Math.min(21,(pw/2-10)/traces.length);
@@ -388,7 +398,7 @@
         if(refPath)html+=`<path class="plot-ref-trace" d="${refPath}" stroke="${activeRef.color}" stroke-width="1.8" fill="none" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>`;
       }
       for(const s of this.series){const y=traceY.get(s.key);const samples=s.sparse?this.data.filter(row=>Object.hasOwn(row,s.key)):this.data;let path='',started=false;for(let i=0;i<samples.length;i++){const d=samples[i];if(!validY(d[s.key])){started=false;continue;}const domain=this.toDomain(d.x);if(domain<this.view[0]&&i+1<samples.length&&this.toDomain(samples[i+1].x)<this.view[0])continue;if(domain>this.view[1]&&i>0&&this.toDomain(samples[i-1].x)>this.view[1])continue;path+=(started?'L':'M')+x(d.x).toFixed(2)+','+y(d[s.key]).toFixed(2);started=true;}
-        if(s.line!==false)html+=`<path d="${path}" stroke="${s.color}" stroke-width="${s.key==='out'?2.4:1.7}" fill="none" stroke-linejoin="round" stroke-linecap="round"${s.dash?' stroke-dasharray="'+s.dash+'"':''}/>`;
+        if(s.line!==false)html+=`<path d="${path}" stroke="${s.color}" stroke-width="${s.key==='out'?2.4:1.7}" fill="none" stroke-linejoin="round" stroke-linecap="round"${s.dash?' stroke-dasharray="'+s.dash+'"':''}${this.config.namedMeasurementPoints?' data-measure-curve="'+s.key+'"':''}/>`;
         if(s.points||s.sigmaKey)for(const d of visible){if(!validY(d[s.key]))continue;const px=x(d.x),py=y(d[s.key]),sigma=d[s.sigmaKey];if(s.sigmaKey&&Number.isFinite(sigma)&&sigma>0&&validY(d[s.key]-sigma)){const a=y(d[s.key]-sigma),b=y(d[s.key]+sigma);html+=`<path d="M${px},${a}V${b}M${px-3},${a}h6M${px-3},${b}h6" stroke="${s.color}" stroke-width="1" fill="none"/>`;}if(s.points)html+=`<circle cx="${px}" cy="${py}" r="2.6" fill="${s.color}" stroke="white" stroke-width=".7"/>`;}
       }
       html+=`<g id="${this.svg.id}-cursor"></g></g>`;

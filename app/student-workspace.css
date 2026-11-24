@@ -433,3 +433,10 @@ dialog.diode-comparison{width:min(740px,calc(100% - 24px));max-height:85dvh;over
 .common-source-design [data-design-preview]{line-height:1.65}
 
 .comparison-fields [data-cmp-pair][hidden]{display:none}
+
+.guided-mos-pinout{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--line);background:#f6f9ff;color:#263e5e;font-size:12px}
+.guided-mos-pinout[hidden]{display:none}
+.guided-mos-pinout ul{display:flex;gap:4px 14px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.guided-mos-pinout li{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.guided-mos-pinout li>strong{color:#284d92}
+#realSchematic .free-terminal .mos-pin-label{fill:#233d64;font-size:14px;stroke:#fcfdff;stroke-width:3px;paint-order:stroke;font-weight:650}

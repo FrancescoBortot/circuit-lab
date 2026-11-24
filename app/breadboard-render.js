@@ -1,4 +1,4 @@
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./breadboard-model.js'),require('./lab-model.js'),require('./free-model.js'),require('./latex-export.js'));else root.BreadboardRender=factory(root.BreadboardModel,root.LabModel,root.FreeModel,root.LatexExport);})(typeof globalThis!=='undefined'?globalThis:this,function(B,L,M,X){
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./breadboard-model.js'),require('./lab-model.js'),require('./free-model.js'),require('./latex-export.js'),require('./mos-pinout.js'));else root.BreadboardRender=factory(root.BreadboardModel,root.LabModel,root.FreeModel,root.LatexExport,root.MosPinout);})(typeof globalThis!=='undefined'?globalThis:this,function(B,L,M,X,MosPinout){
  'use strict';const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=L.format;
  const text=(x,y,s,size=12,color='#344b43',attrs='')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}" ${attrs}>${esc(s)}</text>`;
  const instrumentPoint=(x,y)=>({x:x*.8,y:y*.8});
@@ -120,13 +120,25 @@
  }
  function schematic(model,state={}){
   if(model.empty)return'';const d=model.doc,t=model.topology,port=ref=>X.port(d,ref),net=ref=>model.nets.find(n=>n.index===t.nodes[ref]);
+  const physicalPins=new Map(model.devicePins.filter(p=>p.packageId==='IC1').map(p=>[p.hole,p.number]));
   const routed=d.wires.flatMap(w=>X.route(d,w)),x=Math.min(...d.components.map(c=>c.x-100),...routed.map(p=>p.x-30)),y=Math.min(...d.components.map(c=>c.y-100),...routed.map(p=>p.y-30)),w=Math.max(...d.components.map(c=>c.x+240),...routed.map(p=>p.x+30))-x,h=Math.max(...d.components.map(c=>c.y+100),...routed.map(p=>p.y+30))-y;
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" role="group" aria-label="Schema con gli stessi nodi della breadboard" class="bb-schema"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fffef9"/>`;
   for(const wire of d.wires){const a=port(wire.a),b=port(wire.b),n=net(wire.a),dim=state.net&&state.net!==n.id,points=X.route(d,wire);s+=action('net',n.id,n.name+' · '+wire.a+' → '+wire.b,`<path d="${path(points)}" fill="none" stroke="#fffef9" stroke-width="7"/><path d="${path(points)}" fill="none" stroke="${n.color}" stroke-width="3" opacity="${dim ? .12 : 1}"/>`);}
   const shapes={D:'M-44 0H-14M-14-14V14L14 0ZM14-15V15M14 0H44',M:'M-46 0H-6M-6-22V22M3-23V-9M3-5V5M3 9V23M3-18H24V-42M3 18H24V42M3 0H24V18',R:'M-44 0H-25V-9H25V9H-25V0M25 0H44',C:'M-34 0H-6M-6-18V18M6-18V18M6 0H34',L:'M-44 0H-25C-25-20-12-20-12 0C-12-20 0-20 0 0C0-20 12-20 12 0C12-20 25-20 25 0H44',U:'M-44-42V42L50 0ZM-52-25H-44M-52 25H-44M50 0H60M-36-25H-27M-36 25H-27M-31 20V30',V:'M0-43V-22M0 22V43M-6-7H6M0-13V-1M-6 9H6',G:'M0-22V0M-18 0H18M-12 6H12M-6 12H6',J:''};
-  for(const c of d.components){const upright=['R','C','L'].includes(c.type)&&c.rotation%180!==0,labelX=c.x+(upright?60:c.type==='U'?-30:14),labelY=c.y+(upright?-5:c.type==='U'?72:-66);const value=['R','C','L'].includes(c.type)?fmt(c.value,{R:'Ω',C:'F',L:'H'}[c.type]):c.type==='U'?'TL082C · '+(model.parts.find(p=>p.id===c.id)?.section||'A'):c.type==='D'?'1N4148':c.type==='M'?(c.polarity==='p'?'pMOS':'nMOS')+' · CD4007UB':'';s+=action('part',c.id,c.id+' '+value,`<g transform="translate(${c.x} ${c.y}) rotate(${c.rotation})"><path d="${shapes[c.type]}" fill="${c.type==='U'?'#fffef9':'none'}" stroke="${state.part===c.id?'#d28d14':'#34483d'}" stroke-width="${state.part===c.id?4:2}"/>${c.type==='V'?'<circle r="22" fill="none" stroke="#34483d" stroke-width="2"/>':''}</g><rect x="${labelX-5}" y="${labelY-21}" width="${Math.max(c.id.length*12,value.length*9)+12}" height="51" rx="4" fill="#fffef9"/>${text(labelX,labelY,c.id,19,'#32473c','font-weight="700"')}${text(labelX,labelY+23,value,16)}`);
-   for(const pin of M.PINS[c.type]){const ref=c.id+':'+pin,a=port(ref),n=net(ref);s+=action('ref',ref,c.id+' '+M.pinLabel(c.type,pin)+' · '+n.name,`<circle cx="${a.x}" cy="${a.y}" r="5" fill="${n.color}"/>${text(a.x+9,a.y-12,n.name,12,n.color)}`);}
-  }return s+'</svg>';
+  const pinCaptions=[];
+  for(const c of d.components){const upright=['R','C','L'].includes(c.type)&&c.rotation%180!==0,labelX=c.x+(upright?60:c.type==='U'?-30:14),labelY=c.y+(upright?-5:c.type==='U'?72:-66);const value=['R','C','L'].includes(c.type)?fmt(c.value,{R:'Ω',C:'F',L:'H'}[c.type]):c.type==='U'?'TL082C · '+(model.parts.find(p=>p.id===c.id)?.section||'A'):c.type==='D'?'1N4148':c.type==='M'?(c.polarity==='p'?'pMOS':'nMOS')+' · CD4007UB':'';s+=action('part',c.id,c.id+' '+value,`<g transform="translate(${c.x} ${c.y}) rotate(${c.rotation})${c.schematicFlipX?' scale(-1 1)':c.schematicFlipY?' scale(1 -1)':''}"><path d="${shapes[c.type]}" fill="${c.type==='U'?'#fffef9':'none'}" stroke="${state.part===c.id?'#d28d14':'#34483d'}" stroke-width="${state.part===c.id?4:2}"/>${c.type==='V'?'<circle r="22" fill="none" stroke="#34483d" stroke-width="2"/>':''}</g><rect x="${labelX-5}" y="${labelY-21}" width="${Math.max(c.id.length*12,value.length*9)+12}" height="51" rx="4" fill="#fffef9"/>${text(labelX,labelY,c.id,19,'#32473c','font-weight="700"')}${text(labelX,labelY+23,value,16)}`);
+   for(const pin of M.PINS[c.type]){
+    const ref=c.id+':'+pin,a=port(ref),n=net(ref),number=c.type==='M'?physicalPins.get(model.pinHoles[ref]):null;
+    const label=number?MosPinout.terminalName(pin)+' · pin '+number:M.pinLabel(c.type,pin);
+    const dot=`<circle cx="${a.x}" cy="${a.y}" r="5" fill="${n.color}"/>`;
+    if(number){
+     const caption=pin.toUpperCase()+' · '+number;
+     pinCaptions.push(action('ref',ref,c.id+' '+label+' · '+n.name,
+      dot+text(a.x-12,a.y+(pin==='g'?-12:5),caption,13,'#233d64',
+        'text-anchor="end" font-weight="700" stroke="#fffef9" stroke-width="4" paint-order="stroke"')));
+    }else s+=action('ref',ref,c.id+' '+label+' · '+n.name,dot+text(a.x+9,a.y-12,n.name,12,n.color));
+   }
+  }return s+pinCaptions.join('')+'</svg>';
  }
  return{board,schematic,geometry,frame,traceStage,connections,assemblySteps,assemblyMarkers,esc,fmt};
 });

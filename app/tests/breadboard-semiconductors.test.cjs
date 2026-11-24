@@ -65,6 +65,26 @@ test('CD4007UB pins implement the shared gates, bulk rails, and NAND series node
   assert.deepEqual(Layout.rotate(rotated,'IC1'),board);
 });
 
+test('the pin numbers and terminal names follow the wired CD4007UB in sheet 3',()=>{
+  const cases=[
+    ['mos-iv','M1',6,8,7],
+    ['common-source','M3',3,5,4],
+    ['cmos-nor','M2',6,13,14],
+    ['cmos-nor','M3',3,4,5],
+    ['cmos-nand','M4',3,2,1]
+  ];
+  for(const [type,id,gate,drain,source] of cases){
+    const model=mount(type),schema=Render.schematic(model);
+    for(const [terminal,name,number] of [['g','Gate',gate],['d','Drain',drain],['s','Source',source]]){
+      const ref=id+':'+terminal,pin=chipPin(model,number);
+      assert.equal(pin.hole,model.pinHoles[ref],type+' '+ref);
+      assert.ok(pin.name.includes(name),pin.name);
+      assert.ok(schema.includes('data-bb-ref="'+ref+'" role="button" tabindex="0" aria-label="'+id+' '+name+' · pin '+number+' · '));
+    }
+  }
+  assert.equal(chipPin(mount('cmos-inverter'),6).name,'M1/M2 · Gate');
+});
+
 test('the checker distinguishes reversed diode and electrolytic from an equivalent board',()=>{
   const {reference,board}=layout(mount('half-wave-rc'));
   const diode=Layout.check(Layout.rotate(board,'D1'),reference);

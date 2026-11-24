@@ -56,7 +56,7 @@
       'cmos-nor':{A:'M1:g',B:'M3:g',Y:'M1:d'},'cmos-nand':{A:'M1:g',B:'M3:g',Y:'M3:d'},
       'precision-rectifier':{'V₁':'R1a:a','V₂':'R2:a','Vₒ′':'U2:out',OUT:'U1:out'},
       'bridge-rectifier':{Vg:'V1:p',A:'R1:a',B:'R1:b'},
-      'common-source':{IN:doc.probes.input,G:'M3:g',D:'M3:d',S:'M3:s',OUT:'C2:b'}
+      'common-source':{IN:doc.probes.input,OUT:'C2:b'}
     };
     if(labels[type])doc.sheetProbes=labels[type];
     if(['cmos-nor','cmos-nand','common-source'].includes(type)){

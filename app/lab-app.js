@@ -399,11 +399,16 @@
     const real=networkDiagram(p),wasHidden=$('realSchematic').hasAttribute('hidden');$('realSchematic').toggleAttribute('hidden',!real);$('schematic').toggleAttribute('hidden',real);
     if(schematicType!==p.type){showSchematicDetails=false;schematicType=p.type;}
     const details=$('guidedSchematicDetails');
-    if(!real){details.hidden=true;diagram.render(p,project.layouts[p.type]||{},selected);return;}
+    if(!real){$('guidedMosPinout').hidden=true;details.hidden=true;diagram.render(p,project.layouts[p.type]||{},selected);return;}
     const full=M.network(p,S.is(p)?project.analysis:project.analysis==='time'?null:p.bodeInput);
     details.hidden=!window.GuidedSchematic.hasModelDetails(full,p.type);
     details.setAttribute('aria-pressed',String(!details.hidden&&showSchematicDetails));
     const d=!details.hidden&&showSchematicDetails?full:window.GuidedSchematic.layout(full,p.type,p);
+    const pinout=window.MosPinout.transistors(d,p.type),pinList=$('guidedMosPinList');
+    d.mosPinLabels=Object.fromEntries(pinout.flatMap(({id,pins})=>pins.map(pin=>[id+':'+pin.terminal,pin])));
+    const labels=pinout.map(({id,pins})=>'<li><strong>'+id+'</strong>'+pins.map(({name,number})=>'<span>'+name+' <b>'+number+'</b></span>').join('')+'</li>').join('');
+    if(pinList.innerHTML!==labels)pinList.innerHTML=labels;
+    $('guidedMosPinout').hidden=!pinout.length;
     d.settings.analysis=project.analysis==='bode'?'bode':S.isCharacteristic(project.analysis)?'dc':'time';
     for(const c of d.components)if(project.layouts[p.type]?.[c.id])Object.assign(c,project.layouts[p.type][c.id]);
     const id=p.type==='rc'&&selected==='R'?'R1':p.type==='rc'&&selected==='C'?'C1':selected;

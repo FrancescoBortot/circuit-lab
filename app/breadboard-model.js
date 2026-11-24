@@ -1,12 +1,9 @@
 /* A physical view of the existing electrical document. No independent solver. */
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'));else root.BreadboardModel=factory(root.FreeModel,root.BenchModel);})(typeof globalThis!=='undefined'?globalThis:this,function(M,Bench){
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./free-model.js'),require('./bench-model.js'),require('./mos-pinout.js'));else root.BreadboardModel=factory(root.FreeModel,root.BenchModel,root.MosPinout);})(typeof globalThis!=='undefined'?globalThis:this,function(M,Bench,MosPinout){
  'use strict';
  const palette={ground:'#263747',input:'#16804d',input2:'#9552cc',output:'#e36c16',negative:'#2867d8',positive:'#d93545',feedback:'#ad7828',channel1:'#b99500',channel2:'#009fce'};
  const extraColors=['#007f89','#c24379','#617819','#7058ae','#b44e22','#2c7cba'];
  const pinNames={1:'OUT A',2:'− A',3:'+ A',4:'V−',5:'+ B',6:'− B',7:'OUT B',8:'V+'};
- // CD4007UB wired as in the course sheet, figures 4, 5, 8 and 9.
- const mosPins={M1:{g:6,s:7,d:8},M2:{g:6,s:14,d:13},M3:{g:3,s:4,d:5}};
- const cmosGatePins={...mosPins,M3:{g:3,s:5,d:4},M4:{g:3,s:1,d:2}};
  const cdPins=['','M4 · drain','M4 · source','Gate M3/M4','M3 · source','M3 · drain','Gate M1/M2','VSS · body nMOS · source M1','M1 · drain','M5 · source','Gate M5/M6','M6 · drain','Drain M5 / source M6','M2 · uscita CMOS','VDD · body pMOS'];
  const partLabel=part=>part.type==='DIP14'?'CD4007UB':part.type==='D'?(part.deviceLabel||'1N4148'):part.polarized?'Elettrolitico':null;
  const columns='abcdefghij',clone=M.clone;
@@ -16,7 +13,7 @@
  function create(input,options={}){
   const original=clone(input),doc=original.benchSetup?Bench.remove(original):clone(original);
   const experiment=options.semiconductorType;
-  const extraLogic=['cmos-nor','cmos-nand'].includes(experiment),pinout=extraLogic?cmosGatePins:mosPins;
+  const extraLogic=['cmos-nor','cmos-nand'].includes(experiment),pinout=MosPinout.forCircuit(experiment);
   const equivalents={'mos-iv':['RM'],'mos-amplifier':['Rref','Jout'],'nmos-nand':['Rleak'],'cmos-inverter':['RL','Rref'],'cmos-nor':['Rleak','Rref'],'cmos-nand':['Rleak','Rref'],'common-source':['Rref']}[experiment]||[];
   if(experiment==='mos-amplifier'&&doc.components.some(c=>c.id==='RL'&&c.value===10e6))equivalents.push('RL');
   if(equivalents.length){
@@ -72,7 +69,7 @@
   }
   const mos=doc.components.filter(c=>c.type==='M');
   if(mos.length){
-   const id='IC1',row=10,physical={},targets={},refs={};
+   const id='IC1',row=10,physical={},targets={},refs={},labels=MosPinout.packageLabels(doc,experiment);
    for(let n=1;n<=14;n++)physical[n]='M1:'+(n<=7?'e'+(row+n-1):'f'+(row+14-n));
    for(const part of mos)for(const [terminal,pin] of Object.entries(pinout[part.id])){
     const ref=part.id+':'+terminal;
@@ -95,7 +92,7 @@
    }
    if(!tryPlace(id,'DIP14',physical,targets,{physical,packageId:id,component:{}}))throw Error('Spazio insufficiente per il CD4007UB.');
    for(const part of mos)for(const [terminal,pin] of Object.entries(pinout[part.id]))pinHoles[part.id+':'+terminal]=physical[pin];
-   for(const [number,hole] of Object.entries(physical))devicePins.push({component:id,packageId:id,number:Number(number),name:cdPins[number],hole,node:targets[number],schematicRef:refs[number]});
+   for(const [number,hole] of Object.entries(physical))devicePins.push({component:id,packageId:id,number:Number(number),name:labels[number]||cdPins[number],hole,node:targets[number],schematicRef:refs[number]});
   }
   const hints={R1:['a4','a9'],Rf:['b13','b6'],C1:['c9','c20'],R3:['h4','h9'],R4:['i9','i22'],D1:['d4','d8']};
   const candidateRows=[...new Set([4,8,20,24,28,2,6,10,18,22,26,...Array.from({length:Math.floor(rows/2)},(_,i)=>2+i*2),...Array.from({length:Math.ceil(rows/2)},(_,i)=>1+i*2)])];

@@ -50,14 +50,18 @@
         const at=this.port(pin),kind=label==='OUT'?'output':'input';
         html+=`<g class="free-probe ${kind}" transform="translate(${at.x+9} ${at.y-36})"><rect width="${label.length>2?43:32}" height="21" rx="5"/><text x="8" y="14">${label}</text></g>`;
       }
+      const mosPins=this.doc.mosPinLabels,compactPins=Object.keys(mosPins||{}).length>3;
       const probeOffsets=new Map();for(const [i,probe]of (this.doc.traces||[]).entries()){
         if(probe.kind!=='voltage')continue;const at=this.port(probe.positive),offset=probeOffsets.get(probe.positive)||0;probeOffsets.set(probe.positive,offset+1);
         const colors=['#159e89','#d78b29','#9c6bce','#dc6c87','#278fa8','#7470d9','#8b9b36','#ae7648'];
         html+=`<g class="free-probe" transform="translate(${at.x+9+offset*35} ${at.y+12})"><rect width="31" height="20" rx="5" style="fill:${colors[i%8]}"/><text x="6" y="14">${probe.id}</text></g>`;
       }
       for(const c of this.doc.components.filter(c=>!c.schematicDecoration))for(const pin of M.PINS[c.type]){
-        const ref=c.id+':'+pin,p=this.port(ref),pending=ref===this.pending,label=M.pinLabel(c.type,pin);
-        html+=`<g data-pin="${ref}" class="free-terminal ${used.has(ref)?'connected':''} ${pending?'pending':''} ${unconnected.has(ref)?'unconnected':''}" role="button" tabindex="0" aria-label="Terminale ${esc(c.id)} ${esc(label)}${unconnected.has(ref)?', da collegare':''}"><title>${esc(c.id)} · ${esc(label)} · ${unconnected.has(ref)?'Da collegare':t.nodes[ref]<0?'massa':'N'+(t.nodes[ref]+1)}</title><circle cx="${p.x}" cy="${p.y}" r="16" class="terminal-hit"/><circle cx="${p.x}" cy="${p.y}" r="5" class="terminal-dot"/>${(this.mode==='wire'||unconnected.has(ref))&&c.type!=='J'?`<text x="${p.x+(p.dx||1)*13}" y="${p.y+(p.dy||-1)*13}" text-anchor="${p.dx<0?'end':'start'}">${esc(label)}</text>`:''}</g>`;
+        const ref=c.id+':'+pin,p=this.port(ref),pending=ref===this.pending,mos=mosPins?.[ref];
+        const label=mos?mos.name+' · pin '+mos.number:M.pinLabel(c.type,pin);
+        const caption=mos&&compactPins?mos.name[0]+' · '+mos.number:label;
+        const visible=mos||(this.mode==='wire'||unconnected.has(ref))&&c.type!=='J';
+        html+=`<g data-pin="${ref}" class="free-terminal ${used.has(ref)?'connected':''} ${pending?'pending':''} ${unconnected.has(ref)?'unconnected':''}" role="button" tabindex="0" aria-label="Terminale ${esc(c.id)} ${esc(label)}${unconnected.has(ref)?', da collegare':''}"><title>${esc(c.id)} · ${esc(label)} · ${unconnected.has(ref)?'Da collegare':t.nodes[ref]<0?'massa':'N'+(t.nodes[ref]+1)}</title><circle cx="${p.x}" cy="${p.y}" r="16" class="terminal-hit"/><circle cx="${p.x}" cy="${p.y}" r="5" class="terminal-dot"/>${visible?`<text${mos?' class="mos-pin-label"':''} x="${p.x+(p.dx||1)*13}" y="${p.y+(p.dy||-1)*13}" text-anchor="${p.dx<0?'end':'start'}">${esc(caption)}</text>`:''}</g>`;
       }
       if(this.pending){const at=this.port(this.pending);html+=`<path id="freePendingWire" d="M${at.x},${at.y}" class="pending-wire"/>`;}
       if(this.drag?.region){const r=this.drag.region;html+=`<rect class="free-selection-box" x="${r.x0}" y="${r.y0}" width="${r.x1-r.x0}" height="${r.y1-r.y0}"/>`;}
